@@ -1,0 +1,24 @@
+
+> ravenshield-temp@0.1.0 build
+> next build
+
+  Γû▓ Next.js 14.2.35
+  - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+ Γ£ô Compiled successfully
+   Skipping linting
+   Checking validity of types ...
+Failed to compile.
+
+./app/api/whatsapp/send/route.ts:21:57
+Type error: Object literal may only specify known properties, and 'resource' does not exist in type '{ companyId: string; userId: string; userName: string; action: "DELETE" | "CREATE" | "UPDATE" | "LOGIN" | "LOGOUT" | "VIEW"; module: string; recordId?: string | undefined; oldValues?: Record<...> | undefined; newValues?: Record<...> | undefined; ipAddress?: string | undefined; }'.
+
+  19 |   const result = await sendWhatsAppMessage({ to, message })
+  20 |
+> 21 |   await logAudit({ companyId, userId, action: 'CREATE', resource: 'WhatsAppMessage', resourceId: userId, newValues: { to, preview: message.slice(0, 50) } })
+     |                                                         ^
+  22 |
+  23 |   if (!result.success) return NextResponse.json({ success: false, error: result.error }, { status: 502 })
+  24 |   return NextResponse.json({ success: true })
+Next.js build worker exited with code: 1 and signal: null

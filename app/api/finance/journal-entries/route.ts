@@ -1,0 +1,134 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getIronSession } from 'iron-session'
+import { SessionData, sessionOptions } from '@/lib/session'
+import { prisma } from '@/lib/prisma'
+import { logAudit } from '@/lib/audit'
+import { paginate } from '@/lib/utils'
+import { nextJournalReference } from '@/lib/auto-numbers'
+import { journalEntrySchema } from '@/lib/validators'
+
+async function getSession(req: NextRequest) {
+  const res = NextResponse.next()
+  const s = await getIronSession<SessionData>(req, res, sessionOptions)
+  return s.isLoggedIn ? s : null
+}
+
+export async function GET(req: NextRequest) {
+  const session = await getSession(req)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const status = searchParams.get('status') || undefined
+  const reference = searchParams.get('reference') || undefined
+  const from = searchParams.get('from')
+  const to = searchParams.get('to')
+  const page = Number(searchParams.get('page') ?? '1')
+
+  const where = {
+    companyId: session.companyId,
+    ...(status && { status }),
+    ...(reference && { reference: { contains: reference } }),
+    ...(from || to
+      ? {
+          entry_date: {
+            ...(from && { gte: new Date(from).toISOString() }),
+            ...(to && { lte: new Date(to).toISOString() }),
+          },
+        }
+      : {}),
+  }
+
+  const entries = await prisma.journalEntry.findMany({
+    where,
+    orderBy: { entry_date: 'desc' },
+    ...paginate(page),
+  })
+  const total = await prisma.journalEntry.count({ where })
+  const entryIds = entries.map((entry) => entry.id)
+  const lineSums = entryIds.length
+    ? await prisma.journalLine.groupBy({
+        by: ['journalEntryId'],
+        where: { journalEntryId: { in: entryIds } },
+        _sum: { debit: true, credit: true },
+      })
+    : []
+  const lineSumMap = Object.fromEntries(
+    lineSums.map((sum) => [sum.journalEntryId, sum]),
+  )
+
+  const enriched = entries.map((e) => ({
+    ...e,
+    totalDebit: Number(lineSumMap[e.id]?._sum.debit ?? 0),
+    totalCredit: Number(lineSumMap[e.id]?._sum.credit ?? 0),
+  }))
+
+  return NextResponse.json({ entries: enriched, total, page })
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getSession(req)
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  try {
+    const data = journalEntrySchema.parse(await req.json())
+
+    const totalDebit = data.lines.reduce((s, l) => s + Number(l.debit ?? 0), 0)
+    const totalCredit = data.lines.reduce((s, l) => s + Number(l.credit ?? 0), 0)
+    if (Math.abs(totalDebit - totalCredit) > 0.005) {
+      return NextResponse.json({ error: 'Total debits must equal total credits' }, { status: 400 })
+    }
+
+    const entryDate = new Date(data.entryDate as string)
+    const lockDate = await prisma.lockDate.findFirst({
+      where: { companyId: session.companyId, lockedUntil: { gte: entryDate } },
+    })
+    if (lockDate) {
+      return NextResponse.json(
+        { error: `Period is locked until ${lockDate.lockedUntil.toLocaleDateString()}` },
+        { status: 422 },
+      )
+    }
+
+    const reference = await nextJournalReference(session.companyId)
+
+    const entry = await prisma.$transaction(async (tx) => {
+      const je = await tx.journalEntry.create({
+        data: {
+          id: crypto.randomUUID(),
+          companyId: session.companyId,
+          reference,
+          entry_date: entryDate.toISOString(),
+          description: data.description,
+          status: 'DRAFT',
+        },
+      })
+
+      await tx.journalLine.createMany({
+        data: data.lines.map((line) => ({
+          id: crypto.randomUUID(),
+          journalEntryId: je.id,
+          accountId: line.accountId,
+          description: line.description ?? '',
+          debit: Number(line.debit ?? 0),
+          credit: Number(line.credit ?? 0),
+        })),
+      })
+
+      return je
+    })
+
+    await logAudit({
+      companyId: session.companyId,
+      userId: session.userId,
+      userName: session.name,
+      action: 'CREATE',
+      module: 'JournalEntries',
+      recordId: entry.id,
+      newValues: { reference, description: data.description, totalDebit },
+    })
+
+    return NextResponse.json({ entry }, { status: 201 })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+  }
+}

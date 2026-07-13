@@ -1,0 +1,201 @@
+>   export type SalesInvoiceOrderByWithRelationInput = {
+      id?: SortOrder
+      tax_amount?: SortOrderInput | SortOrder
+      bank_account_id?: SortOrderInput | SortOrder
+      journal_entry_id?: SortOrderInput | SortOrder
+      amount_paid?: SortOrderInput | SortOrder
+      notes?: SortOrderInput | SortOrder
+      attachments?: SortOrderInput | SortOrder
+      discount_amount?: SortOrderInput | SortOrder
+      invoice_date?: SortOrderInput | SortOrder
+      reference?: SortOrderInput | SortOrder
+      terms?: SortOrderInput | SortOrder
+      is_vat_inclusive?: SortOrderInput | SortOrder
+      invoice_type?: SortOrderInput | SortOrder
+      currency?: SortOrderInput | SortOrder
+      supplier_name?: SortOrderInput | SortOrder
+      lines?: SortOrderInput | SortOrder
+      invoice_number?: SortOrderInput | SortOrder
+      vat_rate?: SortOrderInput | SortOrder
+      exchange_rate?: SortOrderInput | SortOrder
+      due_date?: SortOrderInput | SortOrder
+      bank_account_name?: SortOrderInput | SortOrder
+      receivables_account_id?: SortOrderInput | SortOrder
+      total_amount?: SortOrderInput | SortOrder
+      subtotal?: SortOrderInput | SortOrder
+      revenue_account_id?: SortOrderInput | SortOrder
+      customer_name?: SortOrderInput | SortOrder
+      balance_due?: SortOrderInput | SortOrder
+      customer_id?: SortOrderInput | SortOrder
+      supplier_id?: SortOrderInput | SortOrder
+      overall_description?: SortOrderInput | SortOrder
+      status?: SortOrderInput | SortOrder
+      created_date?: SortOrderInput | SortOrder
+      updated_date?: SortOrderInput | SortOrder
+      created_by_id?: SortOrderInput | SortOrder
+      created_by?: SortOrderInput | SortOrder
+      is_sample?: SortOrderInput | SortOrder
+      lineItems?: SalesInvoiceLineOrderByRelationAggregateInput
+    }
+  
+    export type SalesInvoiceWhereUniqueInput = Prisma.AtLeast<{
+      id?: string
+      AND?: SalesInvoiceWhereInput | SalesInvoiceWhereInput[]
+      OR?: SalesInvoiceWhereInput[]
+      NOT?: SalesInvoiceWhereInput | SalesInvoiceWhereInput[]
+      tax_amount?: FloatNullableFilter<"SalesInvoice"> | number | null
+      bank_account_id?: StringNullableFilter<"SalesInvoice"> | string | null
+      journal_entry_id?: StringNullableFilter<"SalesInvoice"> | string | null
+      amount_paid?: FloatNullableFilter<"SalesInvoice"> | number | null
+      notes?: StringNullableFilter<"SalesInvoice"> | string | null
+      attachments?: StringNullableFilter<"SalesInvoice"> | string | null
+      discount_amount?: FloatNullableFilter<"SalesInvoice"> | number | null
+      invoice_date?: StringNullableFilter<"SalesInvoice"> | string | null
+      reference?: StringNullableFilter<"SalesInvoice"> | string | null
+      terms?: StringNullableFilter<"SalesInvoice"> | string | null
+      is_vat_inclusive?: BoolNullableFilter<"SalesInvoice"> | boolean | null
+      invoice_type?: StringNullableFilter<"SalesInvoice"> | string | null
+      currency?: StringNullableFilter<"SalesInvoice"> | string | null
+      supplier_name?: StringNullableFilter<"SalesInvoice"> | string | null
+      lines?: StringNullableFilter<"SalesInvoice"> | string | null
+      invoice_number?: StringNullableFilter<"SalesInvoice"> | string | null
+      vat_rate?: FloatNullableFilter<"SalesInvoice"> | number | null
+      exchange_rate?: FloatNullableFilter<"SalesInvoice"> | number | null
+      due_date?: StringNullableFilter<"SalesInvoice"> | string | null
+      bank_account_name?: StringNullableFilter<"SalesInvoice"> | string | null
+      receivables_account_id?: StringNullableFilter<"SalesInvoice"> | string | null
+      total_amount?: FloatNullableFilter<"SalesInvoice"> | number | null
+      subtotal?: FloatNullableFilter<"SalesInvoice"> | number | null
+      revenue_account_id?: StringNullableFilter<"SalesInvoice"> | string | null
+      customer_name?: StringNullableFilter<"SalesInvoice"> | string | null
+      balance_due?: FloatNullableFilter<"SalesInvoice"> | number | null
+      customer_id?: StringNullableFilter<"SalesInvoice"> | string | null
+      supplier_id?: StringNullableFilter<"SalesInvoice"> | string | null
+      overall_description?: StringNullableFilter<"SalesInvoice"> | string | null
+      status?: StringNullableFilter<"SalesInvoice"> | string | null
+      created_date?: StringNullableFilter<"SalesInvoice"> | string | null
+      updated_date?: StringNullableFilter<"SalesInvoice"> | string | null
+      created_by_id?: StringNullableFilter<"SalesInvoice"> | string | null
+      created_by?: StringNullableFilter<"SalesInvoice"> | string | null
+      is_sample?: BoolNullableFilter<"SalesInvoice"> | boolean | null
+      lineItems?: SalesInvoiceLineListRelationFilter
+    }, "id">
+  
+    export type SalesInvoiceOrderByWithAggregationInput = {
+      id?: SortOrder
+      tax_amount?: SortOrderInput | SortOrder
+      bank_account_id?: SortOrderInput | SortOrder
+      journal_entry_id?: SortOrderInput | SortOrder
+      amount_paid?: SortOrderInput | SortOrder
+      notes?: SortOrderInput | SortOrder
+      attachments?: SortOrderInput | SortOrder
+      discount_amount?: SortOrderInput | SortOrder
+      invoice_date?: SortOrderInput | SortOrder
+      reference?: SortOrderInput | SortOrder
+      terms?: SortOrderInput | SortOrder
+      is_vat_inclusive?: SortOrderInput | SortOrder
+      invoice_type?: SortOrderInput | SortOrder
+      currency?: SortOrderInput | SortOrder
+      supplier_name?: SortOrderInput | SortOrder
+      lines?: SortOrderInput | SortOrder
+      invoice_number?: SortOrderInput | SortOrder
+      vat_rate?: SortOrderInput | SortOrder
+      exchange_rate?: SortOrderInput | SortOrder
+      due_date?: SortOrderInput | SortOrder
+      bank_account_name?: SortOrderInput | SortOrder
+      receivables_account_id?: SortOrderInput | SortOrder
+      total_amount?: SortOrderInput | SortOrder
+      subtotal?: SortOrderInput | SortOrder
+      revenue_account_id?: SortOrderInput | SortOrder
+      customer_name?: SortOrderInput | SortOrder
+      balance_due?: SortOrderInput | SortOrder
+      customer_id?: SortOrderInput | SortOrder
+      supplier_id?: SortOrderInput | SortOrder
+      overall_description?: SortOrderInput | SortOrder
+      status?: SortOrderInput | SortOrder
+      created_date?: SortOrderInput | SortOrder
+      updated_date?: SortOrderInput | SortOrder
+      created_by_id?: SortOrderInput | SortOrder
+      created_by?: SortOrderInput | SortOrder
+      is_sample?: SortOrderInput | SortOrder
+      _count?: SalesInvoiceCountOrderByAggregateInput
+      _avg?: SalesInvoiceAvgOrderByAggregateInput
+      _max?: SalesInvoiceMaxOrderByAggregateInput
+      _min?: SalesInvoiceMinOrderByAggregateInput
+      _sum?: SalesInvoiceSumOrderByAggregateInput
+    }
+  
+    export type SalesInvoiceScalarWhereWithAggregatesInput = {
+      AND?: SalesInvoiceScalarWhereWithAggregatesInput | SalesInvoiceScalarWhereWithAggregatesInput[]
+      OR?: SalesInvoiceScalarWhereWithAggregatesInput[]
+      NOT?: SalesInvoiceScalarWhereWithAggregatesInput | SalesInvoiceScalarWhereWithAggregatesInput[]
+      id?: StringWithAggregatesFilter<"SalesInvoice"> | string
+      tax_amount?: FloatNullableWithAggregatesFilter<"SalesInvoice"> | number | null
+      bank_account_id?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      journal_entry_id?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      amount_paid?: FloatNullableWithAggregatesFilter<"SalesInvoice"> | number | null
+      notes?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      attachments?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      discount_amount?: FloatNullableWithAggregatesFilter<"SalesInvoice"> | number | null
+      invoice_date?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      reference?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      terms?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      is_vat_inclusive?: BoolNullableWithAggregatesFilter<"SalesInvoice"> | boolean | null
+      invoice_type?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      currency?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      supplier_name?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      lines?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      invoice_number?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      vat_rate?: FloatNullableWithAggregatesFilter<"SalesInvoice"> | number | null
+      exchange_rate?: FloatNullableWithAggregatesFilter<"SalesInvoice"> | number | null
+      due_date?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      bank_account_name?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      receivables_account_id?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      total_amount?: FloatNullableWithAggregatesFilter<"SalesInvoice"> | number | null
+      subtotal?: FloatNullableWithAggregatesFilter<"SalesInvoice"> | number | null
+      revenue_account_id?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      customer_name?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      balance_due?: FloatNullableWithAggregatesFilter<"SalesInvoice"> | number | null
+      customer_id?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      supplier_id?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      overall_description?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      status?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      created_date?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      updated_date?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      created_by_id?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      created_by?: StringNullableWithAggregatesFilter<"SalesInvoice"> | string | null
+      is_sample?: BoolNullableWithAggregatesFilter<"SalesInvoice"> | boolean | null
+    }
+  
+    export type SalesInvoiceLineWhereInput = {
+      AND?: SalesInvoiceLineWhereInput | SalesInvoiceLineWhereInput[]
+      OR?: SalesInvoiceLineWhereInput[]
+      NOT?: SalesInvoiceLineWhereInput | SalesInvoiceLineWhereInput[]
+      id?: StringFilter<"SalesInvoiceLine"> | string
+      salesInvoiceId?: StringFilter<"SalesInvoiceLine"> | string
+      description?: StringFilter<"SalesInvoiceLine"> | string
+      quantity?: FloatFilter<"SalesInvoiceLine"> | number
+      unitPrice?: FloatFilter<"SalesInvoiceLine"> | number
+      taxRate?: FloatNullableFilter<"SalesInvoiceLine"> | number | null
+      lineTotal?: FloatFilter<"SalesInvoiceLine"> | number
+      salesInvoice?: XOR<SalesInvoiceRelationFilter, SalesInvoiceWhereInput>
+    }
+  
+    export type SalesInvoiceLineOrderByWithRelationInput = {
+      id?: SortOrder
+      salesInvoiceId?: SortOrder
+      description?: SortOrder
+      quantity?: SortOrder
+      unitPrice?: SortOrder
+      taxRate?: SortOrderInput | SortOrder
+      lineTotal?: SortOrder
+      salesInvoice?: SalesInvoiceOrderByWithRelationInput
+    }
+  
+    export type SalesInvoiceLineWhereUniqueInput = Prisma.AtLeast<{
+      id?: string
+      AND?: SalesInvoiceLineWhereInput | SalesInvoiceLineWhereInput[]
+      OR?: SalesInvoiceLineWhereInput[]
+      NOT?: SalesInvoiceLineWhereInput | SalesInvoiceLineWhereInput[]
+      salesInvoiceId?: StringFilter<"SalesInvoiceLine"> | string
+      description?: StringFilter<"SalesInvoiceLine"> | string

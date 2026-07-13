@@ -1,0 +1,100 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getIronSession } from 'iron-session'
+import { cookies } from 'next/headers'
+import { SessionData, sessionOptions } from '@/lib/session'
+import { prisma } from '@/lib/prisma'
+import { logAudit } from '@/lib/audit'
+
+export async function GET(req: NextRequest) {
+  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
+  if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const { searchParams } = new URL(req.url)
+  const guardId = searchParams.get('guardId')
+  const documentType = searchParams.get('documentType')
+  const page = Number(searchParams.get('page') ?? 1)
+  const limit = Number(searchParams.get('limit') ?? 20)
+
+  const where: any = { companyId: session.companyId }
+  if (guardId) where.guardId = guardId
+  if (documentType) where.documentType = documentType
+
+  const [documents, total] = await Promise.all([
+    prisma.hRDocument.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
+    prisma.hRDocument.count({ where }),
+  ])
+
+  // Check for expiring documents
+  const expiringDocs = await prisma.hRDocument.findMany({
+    where: {
+      companyId: session.companyId,
+      expiryDate: {
+        gte: new Date(),
+        lte: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+      },
+    },
+    select: { id: true, title: true, expiryDate: true, guardId: true },
+  })
+
+  return NextResponse.json({
+    documents,
+    total,
+    page,
+    pageSize: limit,
+    totalPages: Math.ceil(total / limit),
+    expiringDocuments: expiringDocs,
+  })
+}
+
+export async function POST(req: NextRequest) {
+  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
+  if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const body = await req.json()
+  const { guardId, documentType, title, fileUrl, fileName, fileSize, mimeType, expiryDate, notes } = body
+
+  if (!documentType || !title || !fileUrl || !fileName || !fileSize || !mimeType) {
+    return NextResponse.json({
+      error: 'documentType, title, fileUrl, fileName, fileSize, mimeType are required',
+    }, { status: 400 })
+  }
+
+  try {
+    const doc = await prisma.hRDocument.create({
+      data: {
+        id: crypto.randomUUID(),
+        companyId: session.companyId,
+        guardId: guardId || null,
+        documentType,
+        title,
+        fileUrl,
+        fileName,
+        fileSize: Number(fileSize),
+        mimeType,
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        notes: notes || null,
+        uploadedBy: session.userId,
+      },
+    })
+
+    await logAudit({
+      companyId: session.companyId,
+      userId: session.userId,
+      userName: session.name,
+      action: 'CREATE',
+      module: 'HRDocuments',
+      recordId: doc.id,
+      newValues: doc as any,
+    })
+
+    return NextResponse.json(doc, { status: 201 })
+  } catch (err: any) {
+    console.error('HR Document creation error:', err)
+    return NextResponse.json({ error: err.message || 'Failed to create document' }, { status: 400 })
+  }
+}

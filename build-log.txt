@@ -1,0 +1,215 @@
+
+> ravenshield-temp@0.1.0 build
+> next build
+
+  Γû▓ Next.js 14.2.35
+  - Environments: .env.local, .env
+
+   Creating an optimized production build ...
+
+warn - The class `duration-[350ms]` is ambiguous and matches multiple utilities.
+warn - If this is content and not a class, replace it with `duration-&lsqb;350ms&rsqb;` to silence this warning.
+ Γ£ô Compiled successfully
+   Skipping linting
+   Checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/146) ...
+   Generating static pages (36/146) 
+   Generating static pages (72/146) 
+   Generating static pages (109/146) 
+ Γ£ô Generating static pages (146/146)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                              Size     First Load JS
+Γöî Γùï /                                                    148 B          87.9 kB
+Γö£ Γùï /_not-found                                          880 B          88.7 kB
+Γö£ ╞Æ /ai-helpdesk                                         3.02 kB         128 kB
+Γö£ ╞Æ /api/ai-helpdesk                                     0 B                0 B
+Γö£ ╞Æ /api/audit                                           0 B                0 B
+Γö£ ╞Æ /api/auth/change-password                            0 B                0 B
+Γö£ ╞Æ /api/auth/google                                     0 B                0 B
+Γö£ ╞Æ /api/auth/login                                      0 B                0 B
+Γö£ ╞Æ /api/auth/logout                                     0 B                0 B
+Γö£ ╞Æ /api/auth/me                                         0 B                0 B
+Γö£ ╞Æ /api/auth/oauth/callback                             0 B                0 B
+Γö£ ╞Æ /api/auth/register                                   0 B                0 B
+Γö£ ╞Æ /api/auth/reset-password                             0 B                0 B
+Γö£ ╞Æ /api/bd/customers                                    0 B                0 B
+Γö£ ╞Æ /api/bd/customers/[id]                               0 B                0 B
+Γö£ ╞Æ /api/bd/leads                                        0 B                0 B
+Γö£ ╞Æ /api/bd/leads/[id]                                   0 B                0 B
+Γö£ ╞Æ /api/bd/quotations                                   0 B                0 B
+Γö£ ╞Æ /api/bd/quotations/[id]                              0 B                0 B
+Γö£ ╞Æ /api/cron/overdue-invoices                           0 B                0 B
+Γö£ ╞Æ /api/cron/reminders                                  0 B                0 B
+Γö£ ╞Æ /api/dashboard                                       0 B                0 B
+Γö£ ╞Æ /api/dashboard/bd                                    0 B                0 B
+Γö£ ╞Æ /api/dashboard/executive                             0 B                0 B
+Γö£ ╞Æ /api/dashboard/finance                               0 B                0 B
+Γö£ ╞Æ /api/dashboard/guard                                 0 B                0 B
+Γö£ ╞Æ /api/dashboard/hr                                    0 B                0 B
+Γö£ ╞Æ /api/dashboard/operations                            0 B                0 B
+Γö£ ╞Æ /api/dashboard/readonly                              0 B                0 B
+Γö£ ╞Æ /api/dashboard/staff                                 0 B                0 B
+Γö£ ╞Æ /api/files                                           0 B                0 B
+Γö£ ╞Æ /api/files/[id]                                      0 B                0 B
+Γö£ ╞Æ /api/finance/accounts                                0 B                0 B
+Γö£ ╞Æ /api/finance/accounts/[id]                           0 B                0 B
+Γö£ ╞Æ /api/finance/bank-accounts                           0 B                0 B
+Γö£ ╞Æ /api/finance/bank-accounts/[id]                      0 B                0 B
+Γö£ ╞Æ /api/finance/bank-reconciliations                    0 B                0 B
+Γö£ ╞Æ /api/finance/customers                               0 B                0 B
+Γö£ ╞Æ /api/finance/customers/[id]                          0 B                0 B
+Γö£ ╞Æ /api/finance/employee-accounts                       0 B                0 B
+Γö£ ╞Æ /api/finance/employee-accounts/[id]                  0 B                0 B
+Γö£ ╞Æ /api/finance/employees                               0 B                0 B
+Γö£ ╞Æ /api/finance/exchange-rates                          0 B                0 B
+Γö£ ╞Æ /api/finance/fixed-assets                            0 B                0 B
+Γö£ ╞Æ /api/finance/fixed-assets/[id]                       0 B                0 B
+Γö£ ╞Æ /api/finance/inventory                               0 B                0 B
+Γö£ ╞Æ /api/finance/inventory/[id]                          0 B                0 B
+Γö£ ╞Æ /api/finance/journal-entries                         0 B                0 B
+Γö£ ╞Æ /api/finance/journal-entries/[id]                    0 B                0 B
+Γö£ ╞Æ /api/finance/lock-dates                              0 B                0 B
+Γö£ ╞Æ /api/finance/payments                                0 B                0 B
+Γö£ ╞Æ /api/finance/payroll                                 0 B                0 B
+Γö£ ╞Æ /api/finance/payslip-items                           0 B                0 B
+Γö£ ╞Æ /api/finance/payslip-items/[id]                      0 B                0 B
+Γö£ ╞Æ /api/finance/planning                                0 B                0 B
+Γö£ ╞Æ /api/finance/purchase-invoices                       0 B                0 B
+Γö£ ╞Æ /api/finance/purchase-invoices/[id]                  0 B                0 B
+Γö£ ╞Æ /api/finance/receipts                                0 B                0 B
+Γö£ ╞Æ /api/finance/reports                                 0 B                0 B
+Γö£ ╞Æ /api/finance/sales-invoices                          0 B                0 B
+Γö£ ╞Æ /api/finance/sales-invoices/[id]                     0 B                0 B
+Γö£ ╞Æ /api/finance/suppliers                               0 B                0 B
+Γö£ ╞Æ /api/finance/suppliers/[id]                          0 B                0 B
+Γö£ ╞Æ /api/finance/transfers                               0 B                0 B
+Γö£ ╞Æ /api/hr/documents                                    0 B                0 B
+Γö£ ╞Æ /api/hr/documents/[id]                               0 B                0 B
+Γö£ ╞Æ /api/hr/employees                                    0 B                0 B
+Γö£ ╞Æ /api/hr/employees/[id]                               0 B                0 B
+Γö£ ╞Æ /api/hr/employees/[id]/create-account                0 B                0 B
+Γö£ ╞Æ /api/hr/employees/[id]/send-credentials              0 B                0 B
+Γö£ ╞Æ /api/hr/leave                                        0 B                0 B
+Γö£ ╞Æ /api/hr/leave/[id]                                   0 B                0 B
+Γö£ ╞Æ /api/hr/payroll                                      0 B                0 B
+Γö£ ╞Æ /api/hr/payroll/[id]                                 0 B                0 B
+Γö£ ╞Æ /api/hr/payslip-items                                0 B                0 B
+Γö£ ╞Æ /api/hr/payslip-items/[id]                           0 B                0 B
+Γö£ ╞Æ /api/hr/payslips                                     0 B                0 B
+Γö£ ╞Æ /api/hr/payslips/[id]                                0 B                0 B
+Γö£ ╞Æ /api/hr/trainings                                    0 B                0 B
+Γö£ ╞Æ /api/hr/trainings/[id]                               0 B                0 B
+Γö£ ╞Æ /api/hr/trainings/[id]/participants                  0 B                0 B
+Γö£ ╞Æ /api/hr/trainings/[id]/participants/[participantId]  0 B                0 B
+Γö£ ╞Æ /api/notifications                                   0 B                0 B
+Γö£ ╞Æ /api/operations/attendance                           0 B                0 B
+Γö£ ╞Æ /api/operations/coverage-requests                    0 B                0 B
+Γö£ ╞Æ /api/operations/coverage-requests/[id]               0 B                0 B
+Γö£ ╞Æ /api/operations/deployments                          0 B                0 B
+Γö£ ╞Æ /api/operations/deployments/[id]                     0 B                0 B
+Γö£ ╞Æ /api/operations/equipment                            0 B                0 B
+Γö£ ╞Æ /api/operations/equipment/[id]                       0 B                0 B
+Γö£ ╞Æ /api/operations/incidents                            0 B                0 B
+Γö£ ╞Æ /api/operations/incidents/[id]                       0 B                0 B
+Γö£ ╞Æ /api/operations/patrols                              0 B                0 B
+Γö£ ╞Æ /api/operations/patrols/[id]                         0 B                0 B
+Γö£ ╞Æ /api/operations/sites                                0 B                0 B
+Γö£ ╞Æ /api/operations/sites/[id]                           0 B                0 B
+Γö£ ╞Æ /api/search                                          0 B                0 B
+Γö£ ╞Æ /api/settings                                        0 B                0 B
+Γö£ ╞Æ /api/tasks/meetings                                  0 B                0 B
+Γö£ ╞Æ /api/tasks/meetings/[id]                             0 B                0 B
+Γö£ ╞Æ /api/tasks/requests                                  0 B                0 B
+Γö£ ╞Æ /api/tasks/requests/[id]                             0 B                0 B
+Γö£ ╞Æ /api/tasks/tasks                                     0 B                0 B
+Γö£ ╞Æ /api/tasks/tasks/[id]                                0 B                0 B
+Γö£ ╞Æ /api/users                                           0 B                0 B
+Γö£ ╞Æ /api/users/[id]                                      0 B                0 B
+Γö£ ╞Æ /api/whatsapp/send                                   0 B                0 B
+Γö£ ╞Æ /business-development                                2.61 kB         133 kB
+Γö£ ╞Æ /business-development/bd-reports                     4.22 kB         284 kB
+Γö£ ╞Æ /business-development/client-liaison                 345 B          88.1 kB
+Γö£ ╞Æ /business-development/customers                      8.07 kB         164 kB
+Γö£ ╞Æ /business-development/leads                          22.1 kB         206 kB
+Γö£ ╞Æ /business-development/quotations                     8.67 kB         193 kB
+Γö£ ╞Æ /business-development/sites                          345 B          88.1 kB
+Γö£ Γùï /change-password                                     4.19 kB         131 kB
+Γö£ ╞Æ /dashboard                                           1.98 kB         112 kB
+Γö£ ╞Æ /dashboard/business-development                      5.28 kB         258 kB
+Γö£ ╞Æ /dashboard/executive                                 6.05 kB         255 kB
+Γö£ ╞Æ /dashboard/finance                                   5.23 kB         262 kB
+Γö£ ╞Æ /dashboard/guard                                     5.83 kB         143 kB
+Γö£ ╞Æ /dashboard/hr                                        5.43 kB         262 kB
+Γö£ ╞Æ /dashboard/operations                                5.42 kB         263 kB
+Γö£ ╞Æ /dashboard/readonly                                  4.87 kB         134 kB
+Γö£ ╞Æ /dashboard/staff                                     5.76 kB         143 kB
+Γö£ ╞Æ /external-portals                                    2.31 kB         116 kB
+Γö£ ╞Æ /file-manager                                        8.02 kB         151 kB
+Γö£ ╞Æ /finance                                             5.58 kB         254 kB
+Γö£ ╞Æ /finance/bank-accounts                               6.62 kB         191 kB
+Γö£ ╞Æ /finance/bank-reconciliations                        6.62 kB         191 kB
+Γö£ ╞Æ /finance/business-reports                            5.71 kB         174 kB
+Γö£ ╞Æ /finance/chart-of-accounts                           7.01 kB         191 kB
+Γö£ ╞Æ /finance/customers                                   6.85 kB         191 kB
+Γö£ ╞Æ /finance/department-reports                          5.78 kB         175 kB
+Γö£ ╞Æ /finance/employee-accounts                           6.71 kB         191 kB
+Γö£ ╞Æ /finance/employees                                   3.52 kB         134 kB
+Γö£ ╞Æ /finance/exchange-rates                              6.47 kB         190 kB
+Γö£ ╞Æ /finance/finance-reports                             5.98 kB         141 kB
+Γö£ ╞Æ /finance/fixed-assets                                6.94 kB         191 kB
+Γö£ ╞Æ /finance/inventory                                   6.91 kB         191 kB
+Γö£ ╞Æ /finance/journal-entries                             7.61 kB         192 kB
+Γö£ ╞Æ /finance/lock-dates                                  6.07 kB         168 kB
+Γö£ ╞Æ /finance/payments                                    6.78 kB         191 kB
+Γö£ ╞Æ /finance/payroll                                     4.82 kB         169 kB
+Γö£ ╞Æ /finance/payslip-items                               6.79 kB         191 kB
+Γö£ ╞Æ /finance/planning                                    6.49 kB         191 kB
+Γö£ ╞Æ /finance/purchase-invoices                           7.96 kB         192 kB
+Γö£ ╞Æ /finance/receipts                                    6.88 kB         191 kB
+Γö£ ╞Æ /finance/sales-invoices                              8.29 kB         192 kB
+Γö£ ╞Æ /finance/suppliers                                   6.77 kB         191 kB
+Γö£ ╞Æ /finance/transfers                                   6.68 kB         191 kB
+Γö£ ╞Æ /human-resources                                     2.27 kB         132 kB
+Γö£ ╞Æ /human-resources/documents                           3.52 kB         109 kB
+Γö£ ╞Æ /human-resources/employees                           8.92 kB         193 kB
+Γö£ ╞Æ /human-resources/leave-management                    7.2 kB          191 kB
+Γö£ ╞Æ /human-resources/leave-requests                      7.2 kB          191 kB
+Γö£ ╞Æ /human-resources/payroll                             6.76 kB         188 kB
+Γö£ ╞Æ /human-resources/payslip-items                       6.58 kB         191 kB
+Γö£ ╞Æ /human-resources/payslips                            5.56 kB         171 kB
+Γö£ ╞Æ /human-resources/trainings                           3.33 kB         109 kB
+Γö£ Γùï /login                                               15.6 kB         177 kB
+Γö£ ╞Æ /notifications                                       2.86 kB         133 kB
+Γö£ ╞Æ /operations                                          2.21 kB         132 kB
+Γö£ ╞Æ /operations/attendance                               7.75 kB         192 kB
+Γö£ ╞Æ /operations/coverage-requests                        7.19 kB         191 kB
+Γö£ ╞Æ /operations/deployments                              7.11 kB         191 kB
+Γö£ ╞Æ /operations/equipment                                7.58 kB         192 kB
+Γö£ ╞Æ /operations/incidents                                7.54 kB         192 kB
+Γö£ ╞Æ /operations/patrols                                  7.06 kB         191 kB
+Γö£ ╞Æ /operations/sites                                    7.47 kB         192 kB
+Γö£ Γùï /portal/client                                       7.4 kB          141 kB
+Γö£ Γùï /portal/guard                                        7.52 kB         141 kB
+Γö£ Γùï /register                                            4.81 kB         175 kB
+Γö£ ╞Æ /settings/audit-trail                                3.25 kB         133 kB
+Γö£ ╞Æ /settings/company                                    1.93 kB        89.7 kB
+Γö£ ╞Æ /settings/users                                      338 B          88.1 kB
+Γö£ ╞Æ /tasks-requests                                      2.21 kB         132 kB
+Γö£ ╞Æ /tasks-requests/calendar                             4.38 kB         150 kB
+Γö£ ╞Æ /tasks-requests/meetings                             7.78 kB         175 kB
+Γö£ ╞Æ /tasks-requests/requests                             8.12 kB         197 kB
+Γöö ╞Æ /tasks-requests/tasks                                7.02 kB         193 kB
++ First Load JS shared by all                            87.8 kB
+  Γö£ chunks/2117-14995413aaa04c14.js                      31.9 kB
+  Γö£ chunks/fd9d1056-c1f95327ceb95c1d.js                  53.6 kB
+  Γöö other shared chunks (total)                          2.23 kB
+
+
+╞Æ Middleware                                             31.7 kB
+
+Γùï  (Static)   prerendered as static content
+╞Æ  (Dynamic)  server-rendered on demand
+

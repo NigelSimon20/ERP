@@ -1,0 +1,1482 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================
+// COMPANY
+// ============================================================
+
+model Company {
+  id                       String   @id @default(cuid())
+  // NOTE: many fields below @map to snake_case columns that hold the real
+  // imported production data — the plain camelCase columns of the same name
+  // (created by an earlier `db push` baseline) exist but are empty/stale.
+  // Discovered 2026-07-08 by comparing live values directly (e.g. name was
+  // NULL while company_name held the real value; defaultVatRate was 0.00
+  // while default_vat_rate held the real 15.5). Always map to the snake_case
+  // column when both exist.
+  name                     String   @map("company_name")
+  tradingName              String?  @map("trading_name")
+  logo                     String?  @map("logo_url")
+  registrationNumber       String?  @map("registration_number")
+  vatNumber                String?  @map("vat_number")
+  tinNumber                String?  @map("tin_number")
+  address                  String?
+  city                     String?
+  country                  String?
+  phone                    String?
+  email                    String?
+  website                  String?
+  currency                 String   @default("USD")
+  defaultVatRate           Decimal  @default(0) @db.Decimal(5,2) @map("default_vat_rate")
+  fiscalYearStart         String   @default("01-01") @map("fiscal_year_start")
+  forceNumberPrefix        String?  @map("force_number_prefix")
+  // Branding
+  motto                    String?
+  favicon                  String?
+  primaryColor             String?
+  secondaryColor           String?
+  accentColor              String?
+  sidebarColor             String?
+  headerColor              String?
+  buttonColor              String?
+  pdfThemeColor            String?
+  loginBackground          String?
+  loginLogo                String?
+  contractExpiryNotifyDays Int      @default(15)
+  // Invoice settings
+  invoicePrefix            String?  @map("invoice_prefix")
+  nextInvoiceNumber        Int?     @default(1) @map("next_invoice_number")
+  paymentTermsDefault      Int?
+  standardHoursPerMonth    Int?     @default(160)
+  invoiceTerms             String?  @db.Text @map("invoice_terms")
+  // Document numbering (other document types)
+  quotationPrefix          String?  @map("quotation_prefix")
+  nextQuotationNumber      Int?     @default(1) @map("next_quotation_number")
+  quotationTerms           String?  @db.Text @map("quotation_terms")
+  paymentPrefix            String?  @map("payment_prefix")
+  nextPaymentNumber        Int?     @default(1) @map("next_payment_number")
+  receiptPrefix            String?  @map("receipt_prefix")
+  nextReceiptNumber        Int?     @default(1) @map("next_receipt_number")
+  nextJournalNumber        Int?     @default(1) @map("next_journal_number")
+  purchaseInvoicePrefix    String?  @map("purchase_invoice_prefix")
+  nextPurchaseInvoiceNumber Int?    @default(1) @map("next_purchase_invoice_number")
+  nextForceNumber          Int?     @default(1) @map("next_force_number")
+  vatAccountId             String?  @map("vat_account_id")
+  // Notifications / integrations
+  whatsappEnabled          Boolean? @default(false) @map("whatsapp_enabled")
+  whatsappNumber           String?  @map("whatsapp_number")
+  emailNotifications       Boolean? @default(true) @map("email_notifications")
+  externalPortals          String?  @db.Text @map("external_portals")
+  customTemplates          String?  @db.Text @map("custom_templates")
+  userPermissions          String?  @db.Text @map("user_permissions")
+  supportedCurrencies      String?  @db.Text @map("supported_currencies")
+  footerMessage            String?
+  defaultCurrency          String?  @map("default_currency")
+  qrEnabled               Boolean? @default(false)
+  barcodeEnabled          Boolean? @default(false)
+  watermark                String?
+  digitalSignature         String?
+  companyStamp             String?
+  showVat                 Boolean? @default(true)
+  showDiscount            Boolean? @default(true)
+  autoDueDate             Boolean? @default(true)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  longServiceTiers         LongServiceTier[]
+  regions                  CompanyRegion[]
+  leaveRequests            LeaveRequest[]
+  users                    User[]
+  guards                   Guard[]
+  customers                Customer[]
+  suppliers                Supplier[]
+  payments                 Payment[]
+
+  // Banking details
+  bankName                 String?  @map("bank_name")
+  bankBranch               String?  @map("bank_branch")
+  bankAccountName          String?
+  bankAccountNumber        String?  @map("bank_account_number")
+  bankSwift                String?
+  bankBranchCode           String?
+  mobileMoneyDetails       String?
+
+  // Email / SMTP settings
+  smtpServer               String?
+  smtpPort                 Int?
+  smtpUsername             String?
+  smtpPassword             String?
+  smtpSenderName           String?
+  smtpReplyTo              String?
+
+  @@map("companies")
+}
+
+model LongServiceTier {
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  minYears      Int
+  maxYears      Int?
+  allowanceType String   @default("FIXED")
+  amount        Decimal  @db.Decimal(10,2)
+  region        String?
+  isDefault     Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+  @@map("long_service_tiers")
+}
+
+model CompanyRegion {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  createdAt DateTime @default(now())
+
+  @@index([companyId])
+  @@map("company_regions")
+}
+
+// ============================================================
+// CUSTOMERS
+// ============================================================
+
+model Customer {
+  id                    String   @id @map("id")
+  companyId             String
+  company               Company  @relation(fields: [companyId], references: [id])
+  country               String?
+  is_active             Boolean?
+  notes                 String?  @db.Text
+  contact_person        String?
+  city                  String?
+  vat_number            String?
+  mobile                String?
+  coverage_requirements String?  @db.Text
+  contract_expiry_date  String?
+  billing_address       String?  @db.Text
+  payment_terms         Int?
+  risk_level            String?
+  account_id            String?
+  phone                 String?
+  company_name          String?
+  credit_limit          Float?
+  current_balance       Float?
+  currency              String?
+  shipping_address      String?  @db.Text
+  opening_balance       Float?
+  customer_code         String?
+  email                 String?
+  created_date          String?
+  updated_date          String?
+  created_by_id         String?
+  created_by            String?
+  is_sample             Boolean?
+
+  @@index([companyId])
+  @@map("customers")
+}
+
+// ============================================================
+// SUPPLIERS
+// ============================================================
+
+model Supplier {
+  id                   String   @id @map("id")
+  companyId            String
+  company              Company  @relation(fields: [companyId], references: [id])
+  country              String?
+  bank_branch          String?
+  bank_account_number  String?
+  address              String?  @db.Text
+  is_active            Boolean?
+  notes                String?  @db.Text
+  contact_person       String?
+  city                 String?
+  vat_number           String?
+  mobile               String?
+  payment_terms        Int?
+  account_id           String?
+  phone                String?
+  company_name         String?
+  bank_name            String?
+  current_balance      Float?
+  currency             String?
+  opening_balance      Float?
+  supplier_code        String?
+  withholding_tax_rate Float?
+  email                String?
+  created_date         String?
+  updated_date         String?
+  created_by_id        String?
+  created_by           String?
+  is_sample            Boolean?
+  purchaseInvoices     PurchaseInvoice[]
+
+  @@index([companyId])
+  @@map("suppliers")
+}
+
+// ============================================================
+// GUARDS / EMPLOYEES
+// ============================================================
+
+model Guard {
+  id                    String   @id @map("id")
+  companyId             String
+  company               Company  @relation(fields: [companyId], references: [id])
+  national_id           String?
+  leave_days_entitled   Float?
+  bank_account_number   String?
+  daily_rate            Float?
+  notes                 String?  @db.Text
+  gender                String?
+  leave_days_taken      Float?
+  leave_daily_value     Float?
+  city                  String?
+  assigned_payslip_items String? @db.Text
+  date_of_birth         String?
+  assigned_sites        String?  @db.Text
+  is_admin_employee     Boolean?
+  contract_start_date   String?
+  employee_code         String?
+  blacklist_reason      String?  @db.Text
+  bank_name             String?
+  linked_account_id     String?
+  photo_url             String?
+  ecocash_number        String?
+  department            String?
+  first_name            String?
+  email                 String?
+  equipment_assigned    String?  @db.Text
+  force_number          String?
+  leave_balance         Float?
+  leave_accrual_rate    Float?
+  address               String?  @db.Text
+  is_active             Boolean?
+  next_of_kin_phone     String?
+  last_name             String?
+  contract_expiry_date  String?
+  is_blacklisted        Boolean?
+  hire_date             String?
+  employee_type         String?
+  full_name             String?
+  blacklist_date        String?
+  phone                 String?
+  next_of_kin_name      String?
+  basic_salary          Float?
+  next_of_kin_relationship String?
+  position              String?
+  region                String?
+  status                String?
+  created_date          String?
+  updated_date          String?
+  created_by_id         String?
+  created_by            String?
+  is_sample             Boolean?
+  leaveRequests         LeaveRequest[]
+  attendances           Attendance[]
+  user                  User?
+
+  @@map("guards")
+}
+
+enum LeaveType {
+  ANNUAL
+  SICK
+  MATERNITY
+  PATERNITY
+  COMPASSIONATE
+  UNPAID
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                 String   @id @map("id")
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id])
+  guardId            String?  @unique
+  guard              Guard?   @relation(fields: [guardId], references: [id])
+  name               String
+  email              String   @unique
+  password           String
+  role               String
+  department         String?
+  phone              String?
+  whatsapp           String?
+  avatar             String?
+  active             Boolean  @default(true)
+  mustChangePassword Boolean  @default(false)
+  lastLogin          DateTime?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  approvedLeaves     LeaveRequest[] @relation("ApprovedBy")
+  leadsAssigned      Lead[]         @relation("LeadAssignedTo")
+
+  @@map("users")
+}
+
+model LeaveRequest {
+  id                   String      @id @map("id")
+  guardId              String
+  companyId            String
+  leaveType            LeaveType
+  startDate            DateTime
+  endDate              DateTime
+  days                 Int         @map("daysRequested")
+  reason               String?
+  status               LeaveStatus @default(PENDING)
+  approvedBy           String?     
+  rejectionNote        String?
+  annualLeaveEntitled  Int         @default(30)
+  returnToWorkDate     DateTime?
+  medicalCertRequired  Boolean     @default(false)
+  medicalCertUploaded  Boolean     @default(false)
+  createdAt            DateTime    @default(now())
+  updatedAt            DateTime    @updatedAt
+
+  guard                Guard       @relation(fields: [guardId], references: [id])
+  company              Company     @relation(fields: [companyId], references: [id])
+  approvedByUser       User?       @relation("ApprovedBy", fields: [approvedBy], references: [id])
+
+  @@index([guardId])
+  @@index([companyId])
+  @@index([status])
+  @@map("leave_requests")
+}
+
+// ============================================================
+// TRAINING
+// ============================================================
+
+enum TrainingStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ParticipantStatus {
+  REGISTERED
+  ATTENDED
+  ABSENT
+  PASSED
+  FAILED
+}
+
+model Training {
+  id             String         @id @default(cuid())
+  companyId      String
+  title          String
+  description    String?
+  category       String
+  trainer        String?
+  location       String?
+  startDate      DateTime
+  endDate        DateTime
+  durationHours  Decimal        @db.Decimal(6,2)
+  status         TrainingStatus @default(SCHEDULED)
+  mandatory      Boolean        @default(false)
+  notes          String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  participants   TrainingParticipant[]
+
+  @@index([companyId])
+  @@map("trainings")
+}
+
+model TrainingParticipant {
+  id           String            @id @default(cuid())
+  trainingId   String
+  guardId      String
+  attendance   ParticipantStatus @default(REGISTERED)
+  score        Decimal?          @db.Decimal(5,2)
+  passed       Boolean?
+  notes        String?
+  training     Training           @relation(fields: [trainingId], references: [id])
+
+  @@index([trainingId])
+  @@index([guardId])
+  @@map("training_participants")
+}
+
+// ============================================================
+// HR DOCUMENTS
+// ============================================================
+
+model HRDocument {
+  id           String   @id @default(cuid())
+  companyId    String
+  guardId      String?
+  documentType String
+  title        String
+  fileUrl      String
+  fileName     String
+  fileSize     Int
+  mimeType     String
+  expiryDate   DateTime?
+  notes        String?
+  uploadedBy   String
+  createdAt    DateTime @default(now())
+
+  @@index([companyId])
+  @@index([guardId])
+  @@map("hr_documents")
+}
+
+// ============================================================
+// SITES
+// ============================================================
+
+model Site {
+  id                    String   @id @map("id")
+  billing_rate_day      Float?
+  billing_rate_night    Float?
+  notes                 String?  @db.Text
+  contact_phone         String?
+  city                  String?
+  site_code             String?
+  coverage_schedule     String?  @db.Text
+  equipment_requirements String? @db.Text
+  contract_start_date   String?
+  contract_end_date     String?
+  night_shift_shortage  Int?
+  day_shift_assigned    Int?
+  special_instructions  String?  @db.Text
+  address               String?  @db.Text
+  is_active             Boolean?
+  contact_person        String?
+  extra_hours_weekend   Float?
+  extra_hours_weekday   Float?
+  night_shift_assigned  Int?
+  site_name             String?
+  day_shift_shortage    Int?
+  risk_level            String?
+  day_shift_required    Int?
+  night_shift_required  Int?
+  customer_name         String?
+  allowances            String?  @db.Text
+  customer_id           String?
+  status                String?
+  created_date          String?
+  updated_date          String?
+  created_by_id         String?
+  created_by            String?
+  is_sample             Boolean?
+  attendances           Attendance[]
+
+  @@map("sites")
+}
+
+// ============================================================
+// ATTENDANCE
+// ============================================================
+
+model Attendance {
+  id            String           @id @map("id")
+  guardId       String           @map("guardId")
+  guard         Guard            @relation(fields: [guardId], references: [id])
+  siteId        String?          @map("siteId")
+  site          Site?            @relation(fields: [siteId], references: [id])
+  date          DateTime         @map("date")
+  checkIn       DateTime?        @map("checkIn")
+  checkOut      DateTime?        @map("checkOut")
+  hoursWorked   Decimal          @db.Decimal(6,2) @default(0) @map("hoursWorked")
+  overtimeHours Decimal          @db.Decimal(6,2) @default(0) @map("overtimeHours")
+  status        AttendanceStatus @default(PRESENT) @map("status")
+  shift         ShiftType?       @map("shift")
+  notes         String?          @map("notes")
+  createdAt     DateTime         @default(now()) @map("createdAt")
+  updatedAt     DateTime         @default(now()) @map("updatedAt")
+
+  @@unique([guardId, date], name: "guardId_date")
+  @@index([guardId])
+  @@index([siteId])
+  @@index([date])
+  @@map("attendance")
+}
+
+enum Severity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum IncidentStatus {
+  OPEN
+  INVESTIGATING
+  RESOLVED
+  CLOSED
+}
+
+model Incident {
+  id         String         @id @map("id")
+  siteId     String
+  guardId    String?
+  title      String
+  description String        @db.Text
+  severity   Severity
+  status     IncidentStatus @default(OPEN)
+  reportedBy String
+  reportedAt DateTime       @default(now())
+  resolvedAt DateTime?
+  notes      String?        @db.Text
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  @@index([siteId])
+  @@index([guardId])
+  @@index([severity])
+  @@index([status])
+  @@map("incidents")
+}
+
+// ============================================================
+// EQUIPMENT
+// ============================================================
+
+model Equipment {
+  id               String   @id @map("id")
+  equipment_name   String?
+  reorder_level    Float?
+  is_active        Boolean?
+  notes            String?  @db.Text
+  equipment_code   String?
+  description      String?  @db.Text
+  quantity_in_stock Float?
+  quantity_lost    Float?
+  quantity_issued  Float?
+  equipment_class  String?
+  unit_cost        Float?
+  location         String?
+  category         String?
+  supplier_id      String?
+  quantity_damaged Float?
+  charge_amount    Float?
+  serial_numbers   String?  @db.Text
+  created_date     String?
+  updated_date     String?
+  created_by_id    String?
+  created_by       String?
+  is_sample        Boolean?
+
+  @@map("equipment")
+}
+
+// ============================================================
+// CHART OF ACCOUNTS
+// ============================================================
+
+model ChartOfAccount {
+  id                 String   @id @map("id")
+  companyId          String
+  account_type       String?
+  is_active          Boolean?
+  account_subtype    String?
+  description        String?  @db.Text
+  cash_flow_group    String?
+  is_bank_account    Boolean?
+  is_control_account Boolean?
+  tax_code           String?
+  parent_account_id  String?
+  account_name       String?
+  account_code       String?
+  current_balance    Float?
+  currency           String?
+  opening_balance    Float?
+  department         String?
+  created_date       String?
+  updated_date       String?
+  created_by_id      String?
+  created_by         String?
+  is_sample          Boolean?
+
+  @@index([companyId])
+  @@index([account_type])
+  @@map("chart_of_accounts")
+}
+
+// ============================================================
+// BANK ACCOUNTS
+// ============================================================
+
+model BankAccount {
+  id                  String   @id @map("id")
+  companyId           String
+  account_number      String?
+  account_type        String?
+  is_active           Boolean?
+  swift_code          String?
+  chart_account_id    String?
+  is_default          Boolean?
+  branch              String?
+  last_reconciled_date String?
+  account_name        String?
+  reconciled_balance  Float?
+  bank_name           String?
+  current_balance     Float?
+  currency            String?
+  opening_balance     Float?
+  created_date        String?
+  updated_date        String?
+  created_by_id       String?
+  created_by          String?
+  is_sample           Boolean?
+
+  @@index([companyId])
+  @@map("bank_accounts")
+}
+
+// ============================================================
+// JOURNAL ENTRIES
+// ============================================================
+
+model JournalEntry {
+  id            String   @id @map("id")
+  companyId     String
+  period        String?
+  attachments   String?  @db.Text
+  entry_number  String?
+  total_credit  Float?
+  is_balanced   Boolean?
+  description   String?  @db.Text
+  source_type   String?
+  total_debit   Float?
+  entry_date    String?
+  reference     String?
+  source_id     String?
+  lines         String?  @db.Text
+  is_recurring  Boolean?
+  status        String?
+  created_date  String?
+  updated_date  String?
+  created_by_id String?
+  created_by    String?
+  is_sample     Boolean?
+
+  @@index([companyId])
+  @@index([status])
+  @@index([entry_date])
+  @@map("journal_entries")
+}
+
+// ============================================================
+// PAYMENTS
+// ============================================================
+
+model Payment {
+  id                String   @id @map("id")
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id])
+  bank_account_id   String?
+  journal_entry_id  String?
+  amount            Float?
+  attachments       String?  @db.Text
+  exchange_rate     Float?
+  description       String?  @db.Text
+  reference         String?
+  bank_account_name String?
+  payment_type      String?
+  party_name        String?
+  allocations       String?  @db.Text
+  payment_number    String?
+  employee_id       String?
+  currency          String?
+  customer_id       String?
+  lines             String?  @db.Text
+  supplier_id       String?
+  payment_date      String?
+  payment_method    String?
+  status            String?
+  created_date      String?
+  updated_date      String?
+  created_by_id     String?
+  created_by        String?
+  is_sample         Boolean?
+
+  @@index([companyId])
+  @@index([payment_date])
+  @@index([customer_id])
+  @@index([supplier_id])
+  @@map("payments")
+}
+
+// ============================================================
+// PAYSLIPS
+// ============================================================
+
+model Payslip {
+  id                            String   @id @map("id")
+  payroll_run_id                String?
+  pay_date                      String?
+  bank_account_id               String?
+  journal_entry_id              String?
+  attendance_id                 String?
+  daily_rate                    Float?
+  notes                         String?  @db.Text
+  deductions                    String?  @db.Text
+  is_admin_employee             Boolean?
+  net_pay                       Float?
+  contributions                 String?  @db.Text
+  currency                      String?
+  total_deductions              Float?
+  payment_method                String?
+  force_number                  String?
+  period                        String?
+  days_worked                   Float?
+  total_contributions_employee  Float?
+  employee_name                 String?
+  earnings                      String?  @db.Text
+  total_earnings                Float?
+  employee_id                   String?
+  basic_salary                  Float?
+  payslip_number                String?
+  total_contributions_employer  Float?
+  status                        String?
+  created_date                  String?
+  updated_date                  String?
+  created_by_id                 String?
+  created_by                    String?
+  is_sample                     Boolean?
+
+  @@index([payroll_run_id])
+  @@map("payslips")
+}
+
+// ============================================================
+// SALES INVOICES
+// ============================================================
+
+enum InvoiceStatus {
+  UNPAID
+  PARTIAL
+  PAID
+  OVERDUE
+  VOID
+}
+
+
+model SalesInvoice {
+  id                     String   @id @map("id")
+  companyId              String
+  tax_amount             Float?
+  bank_account_id        String?
+  journal_entry_id       String?
+  amount_paid            Float?
+  notes                  String?  @db.Text
+  attachments            String?  @db.Text
+  discount_amount        Float?
+  invoice_date           String?
+  reference              String?
+  terms                  String?  @db.Text
+  is_vat_inclusive        Boolean?
+  invoice_type           String?
+  currency               String?
+  supplier_name          String?
+  lines                  String?  @db.Text
+  invoice_number         String?
+  vat_rate               Float?
+  exchange_rate          Float?
+  due_date               String?
+  bank_account_name      String?
+  receivables_account_id String?
+  total_amount           Float?
+  subtotal               Float?
+  revenue_account_id     String?
+  customer_name          String?
+  balance_due            Float?
+  customer_id            String?
+  supplier_id            String?
+  overall_description    String?  @db.Text
+  status                 String?
+  created_date           String?
+  updated_date           String?
+  created_by_id          String?
+  created_by             String?
+  is_sample              Boolean?
+  lineItems              SalesInvoiceLine[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([customer_id])
+  @@index([due_date])
+  @@map("sales_invoices")
+}
+
+model SalesInvoiceLine {
+  id             String      @id @map("id")
+  salesInvoiceId String      @map("invoiceId")
+  description    String      @db.Text
+  quantity       Float
+  unitPrice      Float
+  taxRate        Float?      @default(0)
+  lineTotal      Float
+
+  salesInvoice   SalesInvoice @relation(fields: [salesInvoiceId], references: [id])
+
+  @@map("invoice_line_items")
+}
+
+// ============================================================
+// PURCHASE INVOICES
+// ============================================================
+
+model PurchaseInvoice {
+  id           String   @id @map("id")
+  companyId    String
+  supplierId   String
+  invoiceNumber String  @unique
+  issueDate    DateTime
+  dueDate      DateTime
+  subtotal     Float
+  taxAmount    Float?   @default(0)
+  totalAmount  Float
+  paidAmount   Float?   @default(0)
+  balanceDue   Float
+  status       InvoiceStatus @default(UNPAID)
+  notes        String?  @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime?
+  supplier     Supplier @relation(fields: [supplierId], references: [id])
+  lineItems    PurchaseInvoiceLineItem[]
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@index([status])
+  @@index([dueDate])
+  @@map("purchase_invoices")
+}
+
+model PurchaseInvoiceLineItem {
+  id               String   @id @map("id")
+  purchaseInvoiceId String  @map("purchaseInvoiceId")
+  description      String   @db.Text
+  quantity         Float
+  unitPrice        Float
+  taxRate          Float?   @default(0)
+  subtotal         Float
+  taxAmount        Float?   @default(0)
+  lineTotal        Float
+
+  purchaseInvoice  PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id])
+
+  @@map("purchase_invoice_line_items")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  FINANCE_MANAGER
+  OPERATIONS_MANAGER
+  HR_MANAGER
+  BD_MANAGER
+  STAFF
+  GUARD
+  CLIENT
+  READ_ONLY
+}
+
+enum GuardStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  TERMINATED
+}
+
+enum SiteStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum ShiftType {
+  DAY
+  NIGHT
+  FULLDAY
+  ROTATING
+}
+
+enum DeploymentStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  SICK
+  LEAVE
+  AWOL
+  OFF
+  INDUCTION_PAID
+  INDUCTION_UNPAID
+  RELIEVED
+  TRANSFERRED
+}
+
+enum PatrolStatus {
+  SCHEDULED
+  COMPLETED
+  MISSED
+  DELAYED
+}
+
+enum EquipmentStatus {
+  AVAILABLE
+  ASSIGNED
+  REPAIR
+  RETIRED
+}
+
+enum CoverageStatus {
+  PENDING
+  APPROVED
+  FULFILLED
+  REJECTED
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  REVENUE
+  EXPENSE
+}
+
+enum JournalStatus {
+  DRAFT
+  POSTED
+  VOID
+}
+
+enum TransferStatus {
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum AssetStatus {
+  ACTIVE
+  DISPOSED
+  SOLD
+}
+
+enum PayItemType {
+  EARNING
+  DEDUCTION
+}
+
+enum PayrollStatus {
+  DRAFT
+  CONFIRMED
+  PAID
+}
+
+enum PayslipStatus {
+  PENDING
+  PAID
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL_SENT
+  NEGOTIATION
+  WON
+  LOST
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+  EXPIRED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum RequestStatus {
+  PENDING
+  IN_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+model Deployment {
+  id String @id
+  guardId String
+  siteId String
+  startDate DateTime
+  endDate DateTime?
+  shiftType ShiftType
+  hoursPerDay Decimal
+  ratePerHour Decimal
+  status DeploymentStatus @default(ACTIVE)
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("deployments")
+}
+
+model Patrol {
+  id String @id
+  siteId String
+  guardId String
+  scheduledTime DateTime
+  actualTime DateTime?
+  status PatrolStatus @default(SCHEDULED)
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("patrols")
+}
+
+model CoverageRequest {
+  id String @id
+  siteId String
+  requestedBy String
+  reason String
+  requiredGuards Int
+  startDate DateTime
+  endDate DateTime
+  status CoverageStatus @default(PENDING)
+  approvedBy String?
+  rejectionReason String?
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("coverage_requests")
+}
+
+model JournalLine {
+  id String @id
+  journalEntryId String
+  accountId String
+  description String?
+  debit Decimal
+  credit Decimal
+
+  @@map("journal_lines")
+}
+
+model BankTransfer {
+  id String @id
+  fromAccountId String
+  toAccountId String
+  amount Decimal
+  transferDate DateTime
+  reference String @unique
+  notes String?
+  status TransferStatus @default(COMPLETED)
+  journalEntryId String?
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@map("bank_transfers")
+}
+
+model Receipt {
+  id String @id
+  companyId String
+  receiptDate DateTime
+  reference String @unique
+  amount Decimal
+  bankAccountId String
+  customerId String
+  invoiceId String?
+  notes String?
+  createdAt DateTime @default(now())
+
+  @@map("receipts")
+}
+
+model FixedAsset {
+  id String @id
+  companyId String
+  name String
+  category String
+  purchaseDate DateTime
+  purchasePrice Decimal
+  usefulLifeYears Int
+  depreciationMethod String @default("STRAIGHT_LINE")
+  accumulatedDepreciation Decimal
+  currentValue Decimal
+  status AssetStatus @default(ACTIVE)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("fixed_assets")
+}
+
+model InventoryItem {
+  id String @id
+  companyId String
+  itemName String
+  category String
+  unit String
+  quantityOnHand Decimal
+  reorderLevel Decimal
+  unitCost Decimal
+  totalValue Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("inventory_items")
+}
+
+model BankReconciliation {
+  id String @id
+  bankAccountId String
+  reconcileDate DateTime
+  statementBalance Decimal
+  bookBalance Decimal
+  difference Decimal
+  status String @default("OPEN")
+  createdAt DateTime @default(now())
+
+  @@map("bank_reconciliations")
+}
+
+model ExchangeRate {
+  id String @id
+  baseCurrency String
+  targetCurrency String
+  rate Decimal
+  effectiveDate DateTime
+  createdAt DateTime @default(now())
+
+  @@map("exchange_rates")
+}
+
+model LockDate {
+  id String @id
+  companyId String
+  module String
+  lockedUntil DateTime
+  lockedBy String
+  createdAt DateTime @default(now())
+
+  @@map("lock_dates")
+}
+
+model Department {
+  id String @id
+  companyId String
+  name String
+  managerId String?
+  budget Decimal?
+  createdAt DateTime @default(now())
+
+  @@map("departments")
+}
+
+model Budget {
+  id             String   @id
+  companyId      String
+  department     String
+  month          Int
+  year           Int
+  budgetedAmount Decimal
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@unique([companyId, department, month, year])
+  @@index([companyId, year])
+  @@map("budgets")
+}
+
+model EmployeeAccount {
+  id String @id
+  guardId String
+  accountType String
+  accountNumber String
+  bankName String
+  branch String?
+  currency String @default("USD")
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("employee_accounts")
+}
+
+model PayslipItem {
+  id String @id
+  companyId String
+  name String
+  itemType PayItemType
+  calculationMethod String
+  fixedAmount Decimal?
+  percentage Decimal?
+  taxable Boolean @default(true)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("payslip_items")
+}
+
+model PayrollRun {
+  id String @id
+  companyId String
+  periodStart DateTime
+  periodEnd DateTime
+  runDate DateTime @default(now())
+  status PayrollStatus @default(DRAFT)
+  totalGross Decimal
+  totalDeductions Decimal
+  totalNet Decimal
+  processedBy String
+  bankAccountId String?
+  createdAt DateTime @default(now())
+
+  @@map("payroll_runs")
+}
+
+model PayslipLine {
+  id String @id
+  payslipId String
+  itemName String
+  itemType PayItemType
+  amount Decimal
+
+  @@map("payslip_lines")
+}
+
+model Lead {
+  id String @id
+  companyId String
+  companyName String
+  contactName String
+  contactPhone String
+  contactEmail String?
+  source String?
+  industry String?
+  estimatedValue Decimal
+  probability Int
+  status LeadStatus @default(NEW)
+  assignedTo String?
+  assignedUser User? @relation("LeadAssignedTo", fields: [assignedTo], references: [id])
+  quotations Quotation[]
+  notes String?
+  lostReason String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("leads")
+}
+
+model Quotation {
+  id String @id
+  companyId String
+  leadId String?
+  lead Lead? @relation(fields: [leadId], references: [id])
+  customerId String?
+  quoteNumber String @unique
+  issueDate DateTime
+  validUntil DateTime
+  subtotal Decimal
+  tax Decimal
+  total Decimal
+  status QuoteStatus @default(DRAFT)
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("quotations")
+}
+
+model QuotationItem {
+  id String @id
+  quotationId String
+  description String
+  quantity Decimal
+  unitPrice Decimal
+  total Decimal
+
+  @@map("quotation_items")
+}
+
+model ClientLiaison {
+  id String @id
+  customerId String
+  guardId String?
+  userId String?
+  siteId String?
+  role String
+  startDate DateTime
+  endDate DateTime?
+  notes String?
+  createdAt DateTime @default(now())
+
+  @@map("client_liaisons")
+}
+
+model Task {
+  id String @id
+  companyId String
+  title String
+  description String?
+  assignedTo String
+  assignedBy String
+  dueDate DateTime
+  priority Priority @default(MEDIUM)
+  status TaskStatus @default(PENDING)
+  whatsappReminder Boolean @default(false)
+  reminderTime DateTime?
+  reminderSent Boolean @default(false)
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("tasks")
+}
+
+model Request {
+  id String @id
+  companyId String
+  requestType String
+  title String
+  description String
+  requestedBy String
+  assignedTo String?
+  priority Priority @default(MEDIUM)
+  status RequestStatus @default(PENDING)
+  approvalNote String?
+  whatsappReminder Boolean @default(false)
+  reminderTime DateTime?
+  reminderSent Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("requests")
+}
+
+model Meeting {
+  id String @id
+  companyId String
+  title String
+  description String?
+  organizerId String
+  location String?
+  meetingDate DateTime
+  startTime DateTime
+  endTime DateTime
+  status MeetingStatus @default(SCHEDULED)
+  notes String?
+  whatsappReminder Boolean @default(false)
+  reminderTime DateTime?
+  reminderSent Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("meetings")
+}
+
+model MeetingAttendee {
+  id String @id
+  meetingId String
+  userId String
+  attendanceStatus String @default("INVITED")
+
+  @@map("meeting_attendees")
+}
+
+model Notification {
+  id String @id
+  userId String
+  companyId String
+  title String
+  message String
+  type String
+  read Boolean @default(false)
+  link String?
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+
+model FileRecord {
+  id String @id
+  companyId String
+  uploadedBy String
+  fileName String
+  originalName String
+  fileUrl String
+  fileSize Int
+  mimeType String
+  folder String @default("general")
+  linkedModule String?
+  linkedId String?
+  createdAt DateTime @default(now())
+
+  @@map("file_records")
+}
+
+model AuditTrail {
+  id String @id
+  companyId String
+  userId String
+  userName String
+  action String
+  module String
+  recordId String?
+  oldValues String?
+  newValues String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_trail")
+}
+
+model OtpToken {
+  id String @id
+  email String
+  token String
+  expiresAt DateTime
+  used Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("otp_tokens")
+}

@@ -1,0 +1,87 @@
+#0 building with "desktop-linux" instance using docker driver
+
+#1 [internal] load build definition from Dockerfile
+#1 transferring dockerfile:
+#1 transferring dockerfile: 394B 0.2s done
+#1 DONE 0.9s
+
+#2 [internal] load metadata for docker.io/library/node:20-bookworm-slim
+#2 ...
+
+#3 [auth] library/node:pull token for registry-1.docker.io
+#3 DONE 0.0s
+
+#2 [internal] load metadata for docker.io/library/node:20-bookworm-slim
+#2 DONE 9.3s
+
+#4 [1/6] FROM docker.io/library/node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0
+#4 resolve docker.io/library/node:20-bookworm-slim@sha256:2cf067cfed83d5ea958367df9f966191a942351a2df77d6f0193e162b5febfc0 0.2s done
+#4 DONE 0.2s
+
+#5 [2/6] WORKDIR /app
+#5 CACHED
+
+#6 [internal] load .dockerignore
+#6 transferring context: 135B 0.0s done
+#6 DONE 0.1s
+
+#7 [internal] load build context
+#7 transferring context: 32.01kB 0.5s done
+#7 DONE 0.6s
+
+#8 [3/6] COPY package*.json ./
+#8 DONE 0.2s
+
+#9 [4/6] RUN npm ci
+#9 174.9 npm warn deprecated scmp@2.1.0: Just use Node.js's crypto.timingSafeEqual()
+#9 460.3 
+#9 460.3 added 712 packages, and audited 713 packages in 8m
+#9 460.3 
+#9 460.3 174 packages are looking for funding
+#9 460.3   run `npm fund` for details
+#9 463.1 
+#9 463.1 5 vulnerabilities (1 moderate, 4 high)
+#9 463.1 
+#9 463.1 To address all issues (including breaking changes), run:
+#9 463.1   npm audit fix --force
+#9 463.1 
+#9 463.1 Run `npm audit` for details.
+#9 463.2 npm notice
+#9 463.2 npm notice New major version of npm available! 10.8.2 -> 11.18.0
+#9 463.2 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.18.0
+#9 463.2 npm notice To update run: npm install -g npm@11.18.0
+#9 463.2 npm notice
+#9 DONE 551.6s
+
+#10 [5/6] COPY . .
+#10 DONE 21.5s
+
+#11 [6/7] RUN ls -la node_modules && ls -la node_modules/.bin && test -f node_modules/.bin/prisma && cat node_modules/.bin/prisma | sed -n '1,20p'
+#11 CACHED
+
+#12 [3/7] COPY package*.json ./
+#12 CACHED
+
+#13 [4/7] RUN npm ci
+#13 CACHED
+
+#14 [5/7] COPY . .
+#14 CACHED
+
+#15 [7/7] RUN ./node_modules/.bin/prisma generate
+#15 CACHED
+
+#16 exporting to image
+#16 exporting layers
+#16 exporting layers 1.3s done
+#16 exporting manifest sha256:3ec10041c902c90b64c00241034ccc59438e3510b6a1a86fd7ffc607d3d42aab
+#16 exporting manifest sha256:3ec10041c902c90b64c00241034ccc59438e3510b6a1a86fd7ffc607d3d42aab done
+#16 exporting config sha256:a137525bf8f77b4e12787847178d9c4c4351d9a13d64c44c01b13a610ad8aef0 0.0s done
+#16 exporting attestation manifest sha256:8219e700cd5f923677781ba472d9333e136299fcb69912096a6fbba2d3a7f3eb
+#16 exporting attestation manifest sha256:8219e700cd5f923677781ba472d9333e136299fcb69912096a6fbba2d3a7f3eb 0.3s done
+#16 exporting manifest list sha256:6cc6aaaa0c18b749e2d6f6e0dae152de44b2b54ab4312b9fc4745492ee57e4b3 0.1s done
+#16 naming to moby-dangling@sha256:6cc6aaaa0c18b749e2d6f6e0dae152de44b2b54ab4312b9fc4745492ee57e4b3
+#16 naming to moby-dangling@sha256:6cc6aaaa0c18b749e2d6f6e0dae152de44b2b54ab4312b9fc4745492ee57e4b3 0.0s done
+#16 unpacking to moby-dangling@sha256:6cc6aaaa0c18b749e2d6f6e0dae152de44b2b54ab4312b9fc4745492ee57e4b3
+#16 unpacking to moby-dangling@sha256:6cc6aaaa0c18b749e2d6f6e0dae152de44b2b54ab4312b9fc4745492ee57e4b3 470.6s done
+#16 DONE 476.4s

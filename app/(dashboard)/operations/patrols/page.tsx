@@ -1,0 +1,210 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useForm, Controller } from 'react-hook-form'
+import { FaPlus, FaShieldAlt } from 'react-icons/fa'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { formatDate } from '@/lib/utils'
+import toast from 'react-hot-toast'
+
+interface Patrol { id: string; scheduledTime: string; actualTime: string | null; status: string; notes: string | null; site: { id: string; name: string }; guard: { id: string; name: string } | null }
+interface Site { id: string; name: string }
+interface Guard { id: string; name: string }
+type ScheduleForm = { siteId: string; guardId: string; scheduledTime: string; notes: string }
+type CompletionForm = { actualTime: string; status: string; notes: string }
+
+const STATUS_STYLES: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700', COMPLETED: 'bg-green-100 text-green-700', MISSED: 'bg-red-100 text-red-600', PARTIAL: 'bg-amber-100 text-amber-700' }
+
+function fmtTime(dt: string | null) { return dt ? new Date(dt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—' }
+
+export default function PatrolsPage() {
+  const [patrols, setPatrols] = useState<Patrol[]>([])
+  const [complianceRates, setComplianceRates] = useState<Record<string, number>>({})
+  const [sites, setSites] = useState<Site[]>([])
+  const [guards, setGuards] = useState<Guard[]>([])
+  const [loading, setLoading] = useState(true)
+  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [filterSite, setFilterSite] = useState('')
+  const [showScheduleDialog, setShowScheduleDialog] = useState(false)
+  const [completionTarget, setCompletionTarget] = useState<Patrol | null>(null)
+
+  const { register: sr, handleSubmit: sSubmit, control: sCtrl, reset: sReset, formState: { isSubmitting: sSubmitting } } = useForm<ScheduleForm>({
+    defaultValues: { siteId: '', guardId: '', scheduledTime: '', notes: '' },
+  })
+  const { register: cr, handleSubmit: cSubmit, reset: cReset, formState: { isSubmitting: cSubmitting } } = useForm<CompletionForm>()
+
+  async function fetchPatrols() {
+    setLoading(true)
+    const params = new URLSearchParams({ date })
+    if (filterSite) params.set('siteId', filterSite)
+    try {
+      const res = await fetch(`/api/operations/patrols?${params}`)
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Failed to load patrols'); setPatrols([]); setComplianceRates({}); return }
+      setPatrols(json.patrols ?? [])
+      setComplianceRates(json.complianceRates ?? {})
+    } catch {
+      toast.error('Network error loading patrols')
+      setPatrols([])
+      setComplianceRates({})
+    } finally { setLoading(false) }
+  }
+
+  useEffect(() => { fetchPatrols() }, [date, filterSite])
+  useEffect(() => {
+    Promise.all([fetch('/api/operations/sites').then(r => r.json()), fetch('/api/guards').then(r => r.json())]).then(([s, g]) => {
+      setSites(s.sites ?? []); setGuards(g.guards ?? [])
+    }).catch((err) => {
+      console.error(err)
+      toast.error('Failed to load sites/guards')
+    })
+  }, [])
+
+  async function onSchedule(data: ScheduleForm) {
+    const res = await fetch('/api/operations/patrols', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...data, guardId: data.guardId || null, scheduledTime: `${date}T${data.scheduledTime}:00`, notes: data.notes || null }),
+    })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error); return }
+    toast.success('Patrol scheduled'); setShowScheduleDialog(false); sReset(); fetchPatrols()
+  }
+
+  function openCompletion(p: Patrol) {
+    setCompletionTarget(p)
+    cReset({ actualTime: new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }), status: 'COMPLETED', notes: '' })
+  }
+
+  async function onComplete(data: CompletionForm) {
+    if (!completionTarget) return
+    const res = await fetch(`/api/operations/patrols/${completionTarget.id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ actualTime: `${date}T${data.actualTime}:00`, status: data.status, notes: data.notes || null }),
+    })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error); return }
+    toast.success('Patrol recorded'); setCompletionTarget(null); fetchPatrols()
+  }
+
+  return (
+    <div>
+      <PageHeader title="Patrols" description="Schedule and track guard patrols" action={<Button type="button" onClick={() => { sReset(); setShowScheduleDialog(true) }} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} />
+
+      <div className="mt-4 flex flex-wrap items-center gap-3">
+        <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-40" />
+        <Select value={filterSite} onValueChange={setFilterSite}>
+          <SelectTrigger className="w-56"><SelectValue placeholder="All sites" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">All sites</SelectItem>
+            {sites.map(s => (
+              <SelectItem key={s.id} value={s.id}>
+                {s.name}{complianceRates[s.id] != null ? ` — ${complianceRates[s.id]}% compliance` : ''}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+        {loading ? (
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+        ) : patrols.length === 0 ? (
+          <div className="py-16"><EmptyState icon={FaShieldAlt} title="No patrols scheduled" description={`No patrols for ${date}`} action={<Button type="button" onClick={() => setShowScheduleDialog(true)} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} /></div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Site</th>
+                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Guard</th>
+                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Scheduled</th>
+                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Actual</th>
+                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
+                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Notes</th>
+                <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {patrols.map((p) => (
+                <tr key={p.id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 font-medium text-[#0D1B2A]">{p.site?.name}</td>
+                  <td className="px-4 py-3 text-gray-600">{p.guard?.name ?? <span className="text-gray-400">Unassigned</span>}</td>
+                  <td className="px-4 py-3 text-right font-mono text-sm">{fmtTime(p.scheduledTime)}</td>
+                  <td className="px-4 py-3 text-right font-mono text-sm">{fmtTime(p.actualTime)}</td>
+                  <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[p.status] ?? 'bg-gray-100 text-gray-600'}`}>{p.status}</span></td>
+                  <td className="px-4 py-3 text-gray-400 text-xs">{p.notes ?? '—'}</td>
+                  <td className="px-4 py-3">
+                    {p.status === 'SCHEDULED' && (
+                      <button type="button" onClick={() => openCompletion(p)} className="text-xs text-green-600 hover:underline" aria-label="Record patrol completion">Record</button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+
+      {/* Schedule Dialog */}
+      <Dialog open={showScheduleDialog} onOpenChange={setShowScheduleDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Schedule Patrol</DialogTitle></DialogHeader>
+          <form onSubmit={sSubmit(onSchedule)} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Site *</Label>
+              <Controller control={sCtrl} name="siteId" render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger><SelectValue placeholder="Select site" /></SelectTrigger>
+                  <SelectContent>{sites.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Guard</Label>
+              <Controller control={sCtrl} name="guardId" render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger><SelectValue placeholder="Select guard" /></SelectTrigger>
+                  <SelectContent><SelectItem value="">— Unassigned —</SelectItem>{guards.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="space-y-1.5"><Label>Scheduled Time *</Label><Input type="time" {...sr('scheduledTime', { required: true })} /></div>
+            <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Route or instructions" {...sr('notes')} /></div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowScheduleDialog(false)}>Cancel</Button>
+              <Button type="submit" disabled={sSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{sSubmitting ? 'Saving…' : 'Schedule'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Completion Dialog */}
+      <Dialog open={!!completionTarget} onOpenChange={(open) => !open && setCompletionTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Record Patrol — {completionTarget?.site?.name}</DialogTitle></DialogHeader>
+          <form onSubmit={cSubmit(onComplete)} className="space-y-4">
+            <div className="space-y-1.5"><Label>Actual Time</Label><Input type="time" {...cr('actualTime')} /></div>
+            <div className="space-y-1.5">
+              <Label>Outcome</Label>
+              <select className="w-full h-9 rounded-md border border-gray-300 px-3 text-sm" {...cr('status')} aria-label="Patrol outcome">
+                <option value="COMPLETED">Completed</option>
+                <option value="PARTIAL">Partial</option>
+                <option value="MISSED">Missed</option>
+              </select>
+            </div>
+            <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Observations or issues" {...cr('notes')} /></div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCompletionTarget(null)}>Cancel</Button>
+              <Button type="submit" disabled={cSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{cSubmitting ? 'Saving…' : 'Save Record'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

@@ -1,0 +1,434 @@
+---
+model Deployment {
+  id String @id
+  guardId String
+  siteId String
+  startDate DateTime
+  endDate DateTime?
+  shiftType SHIFTTYPE
+  hoursPerDay Decimal
+  ratePerHour Decimal
+  status DEPLOYMENTSTATUS @default("ACTIVE")
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("deployments")
+}
+---
+model Patrol {
+  id String @id
+  siteId String
+  guardId String
+  scheduledTime DateTime
+  actualTime DateTime?
+  status PATROLSTATUS @default("SCHEDULED")
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("patrols")
+}
+---
+model CoverageRequest {
+  id String @id
+  siteId String
+  requestedBy String
+  reason String
+  requiredGuards Int
+  startDate DateTime
+  endDate DateTime
+  status COVERAGESTATUS @default("PENDING")
+  approvedBy String?
+  rejectionReason String?
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("coverage_requests")
+}
+---
+model JournalLine {
+  id String @id
+  journalEntryId String
+  accountId String
+  description String?
+  debit Decimal
+  credit Decimal
+
+  @@map("journal_lines")
+}
+---
+model BankTransfer {
+  id String @id
+  fromAccountId String
+  toAccountId String
+  amount Decimal
+  transferDate DateTime
+  reference String @unique
+  notes String?
+  status TRANSFERSTATUS @default("COMPLETED")
+  journalEntryId String?
+  createdBy String
+  createdAt DateTime @default(now())
+
+  @@map("bank_transfers")
+}
+---
+model InvoiceLineItem {
+  id String @id
+  invoiceId String
+  description String
+  quantity Decimal
+  unitPrice Decimal
+  taxRate Decimal
+  lineTotal Decimal
+
+  @@map("invoice_line_items")
+}
+---
+model Receipt {
+  id String @id
+  companyId String
+  receiptDate DateTime
+  reference String @unique
+  amount Decimal
+  bankAccountId String
+  customerId String
+  invoiceId String?
+  notes String?
+  createdAt DateTime @default(now())
+
+  @@map("receipts")
+}
+---
+model FixedAsset {
+  id String @id
+  companyId String
+  name String
+  category String
+  purchaseDate DateTime
+  purchasePrice Decimal
+  usefulLifeYears Int
+  depreciationMethod String @default("STRAIGHT_LINE")
+  accumulatedDepreciation Decimal
+  currentValue Decimal
+  status ASSETSTATUS @default("ACTIVE")
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("fixed_assets")
+}
+---
+model InventoryItem {
+  id String @id
+  companyId String
+  itemName String
+  category String
+  unit String
+  quantityOnHand Decimal
+  reorderLevel Decimal
+  unitCost Decimal
+  totalValue Decimal
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("inventory_items")
+}
+---
+model BankReconciliation {
+  id String @id
+  bankAccountId String
+  reconcileDate DateTime
+  statementBalance Decimal
+  bookBalance Decimal
+  difference Decimal
+  status String @default("OPEN")
+  createdAt DateTime @default(now())
+
+  @@map("bank_reconciliations")
+}
+---
+model ExchangeRate {
+  id String @id
+  baseCurrency String
+  targetCurrency String
+  rate Decimal
+  effectiveDate DateTime
+  createdAt DateTime @default(now())
+
+  @@map("exchange_rates")
+}
+---
+model LockDate {
+  id String @id
+  companyId String
+  module String
+  lockedUntil DateTime
+  lockedBy String
+  createdAt DateTime @default(now())
+
+  @@map("lock_dates")
+}
+---
+model Department {
+  id String @id
+  companyId String
+  name String
+  managerId String?
+  budget Decimal?
+  createdAt DateTime @default(now())
+
+  @@map("departments")
+}
+---
+model EmployeeAccount {
+  id String @id
+  guardId String
+  accountType String
+  accountNumber String
+  bankName String
+  branch String?
+  currency String @default("USD")
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("employee_accounts")
+}
+---
+model PayslipItem {
+  id String @id
+  companyId String
+  name String
+  itemType PAYITEMTYPE
+  calculationMethod String
+  fixedAmount Decimal?
+  percentage Decimal?
+  taxable Boolean @default(true)
+  active Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@map("payslip_items")
+}
+---
+model PayrollRun {
+  id String @id
+  companyId String
+  periodStart DateTime
+  periodEnd DateTime
+  runDate DateTime @default(now())
+  status PAYROLLSTATUS @default("DRAFT")
+  totalGross Decimal
+  totalDeductions Decimal
+  totalNet Decimal
+  processedBy String
+  bankAccountId String?
+  createdAt DateTime @default(now())
+
+  @@map("payroll_runs")
+}
+---
+model PayslipLine {
+  id String @id
+  payslipId String
+  itemName String
+  itemType PAYITEMTYPE
+  amount Decimal
+
+  @@map("payslip_lines")
+}
+---
+model Lead {
+  id String @id
+  companyId String
+  companyName String
+  contactName String
+  contactPhone String
+  contactEmail String?
+  source String?
+  industry String?
+  estimatedValue Decimal
+  probability Int
+  status LEADSTATUS @default("NEW")
+  assignedTo String?
+  notes String?
+  lostReason String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("leads")
+}
+---
+model Quotation {
+  id String @id
+  companyId String
+  leadId String?
+  customerId String?
+  quoteNumber String @unique
+  issueDate DateTime
+  validUntil DateTime
+  subtotal Decimal
+  tax Decimal
+  total Decimal
+  status QUOTESTATUS @default("DRAFT")
+  notes String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("quotations")
+}
+---
+model QuotationItem {
+  id String @id
+  quotationId String
+  description String
+  quantity Decimal
+  unitPrice Decimal
+  total Decimal
+
+  @@map("quotation_items")
+}
+---
+model ClientLiaison {
+  id String @id
+  customerId String
+  guardId String?
+  userId String?
+  siteId String?
+  role String
+  startDate DateTime
+  endDate DateTime?
+  notes String?
+  createdAt DateTime @default(now())
+
+  @@map("client_liaisons")
+}
+---
+model Task {
+  id String @id
+  companyId String
+  title String
+  description String?
+  assignedTo String
+  assignedBy String
+  dueDate DateTime
+  priority PRIORITY @default("MEDIUM")
+  status TASKSTATUS @default("PENDING")
+  whatsappReminder Boolean @default(false)
+  reminderTime DateTime?
+  reminderSent Boolean @default(false)
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("tasks")
+}
+---
+model Request {
+  id String @id
+  companyId String
+  requestType String
+  title String
+  description String
+  requestedBy String
+  assignedTo String?
+  priority PRIORITY @default("MEDIUM")
+  status REQUESTSTATUS @default("PENDING")
+  approvalNote String?
+  whatsappReminder Boolean @default(false)
+  reminderTime DateTime?
+  reminderSent Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("requests")
+}
+---
+model Meeting {
+  id String @id
+  companyId String
+  title String
+  description String?
+  organizerId String
+  location String?
+  meetingDate DateTime
+  startTime DateTime
+  endTime DateTime
+  status MEETINGSTATUS @default("SCHEDULED")
+  notes String?
+  whatsappReminder Boolean @default(false)
+  reminderTime DateTime?
+  reminderSent Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+
+  @@map("meetings")
+}
+---
+model MeetingAttendee {
+  id String @id
+  meetingId String
+  userId String
+  attendanceStatus String @default("INVITED")
+
+  @@map("meeting_attendees")
+}
+---
+model Notification {
+  id String @id
+  userId String
+  companyId String
+  title String
+  message String
+  type String
+  read Boolean @default(false)
+  link String?
+  createdAt DateTime @default(now())
+
+  @@map("notifications")
+}
+---
+model FileRecord {
+  id String @id
+  companyId String
+  uploadedBy String
+  fileName String
+  originalName String
+  fileUrl String
+  fileSize Int
+  mimeType String
+  folder String @default("general")
+  linkedModule String?
+  linkedId String?
+  createdAt DateTime @default(now())
+
+  @@map("file_records")
+}
+---
+model AuditTrail {
+  id String @id
+  companyId String
+  userId String
+  userName String
+  action String
+  module String
+  recordId String?
+  oldValues String?
+  newValues String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@map("audit_trail")
+}
+---
+model OtpToken {
+  id String @id
+  email String
+  token String
+  expiresAt DateTime
+  used Boolean @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("otp_tokens")
+}
+Total missing models: 29

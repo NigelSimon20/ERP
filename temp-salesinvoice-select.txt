@@ -1,0 +1,201 @@
+>   export type SalesInvoiceSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+      id?: boolean
+      tax_amount?: boolean
+      bank_account_id?: boolean
+      journal_entry_id?: boolean
+      amount_paid?: boolean
+      notes?: boolean
+      attachments?: boolean
+      discount_amount?: boolean
+      invoice_date?: boolean
+      reference?: boolean
+      terms?: boolean
+      is_vat_inclusive?: boolean
+      invoice_type?: boolean
+      currency?: boolean
+      supplier_name?: boolean
+      lines?: boolean
+      invoice_number?: boolean
+      vat_rate?: boolean
+      exchange_rate?: boolean
+      due_date?: boolean
+      bank_account_name?: boolean
+      receivables_account_id?: boolean
+      total_amount?: boolean
+      subtotal?: boolean
+      revenue_account_id?: boolean
+      customer_name?: boolean
+      balance_due?: boolean
+      customer_id?: boolean
+      supplier_id?: boolean
+      overall_description?: boolean
+      status?: boolean
+      created_date?: boolean
+      updated_date?: boolean
+      created_by_id?: boolean
+      created_by?: boolean
+      is_sample?: boolean
+      lineItems?: boolean | SalesInvoice$lineItemsArgs<ExtArgs>
+      _count?: boolean | SalesInvoiceCountOutputTypeDefaultArgs<ExtArgs>
+    }, ExtArgs["result"]["salesInvoice"]>
+  
+>   export type SalesInvoiceSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+      id?: boolean
+      tax_amount?: boolean
+      bank_account_id?: boolean
+      journal_entry_id?: boolean
+      amount_paid?: boolean
+      notes?: boolean
+      attachments?: boolean
+      discount_amount?: boolean
+      invoice_date?: boolean
+      reference?: boolean
+      terms?: boolean
+      is_vat_inclusive?: boolean
+      invoice_type?: boolean
+      currency?: boolean
+      supplier_name?: boolean
+      lines?: boolean
+      invoice_number?: boolean
+      vat_rate?: boolean
+      exchange_rate?: boolean
+      due_date?: boolean
+      bank_account_name?: boolean
+      receivables_account_id?: boolean
+      total_amount?: boolean
+      subtotal?: boolean
+      revenue_account_id?: boolean
+      customer_name?: boolean
+      balance_due?: boolean
+      customer_id?: boolean
+      supplier_id?: boolean
+      overall_description?: boolean
+      status?: boolean
+      created_date?: boolean
+      updated_date?: boolean
+      created_by_id?: boolean
+      created_by?: boolean
+      is_sample?: boolean
+    }, ExtArgs["result"]["salesInvoice"]>
+  
+>   export type SalesInvoiceSelectScalar = {
+      id?: boolean
+      tax_amount?: boolean
+      bank_account_id?: boolean
+      journal_entry_id?: boolean
+      amount_paid?: boolean
+      notes?: boolean
+      attachments?: boolean
+      discount_amount?: boolean
+      invoice_date?: boolean
+      reference?: boolean
+      terms?: boolean
+      is_vat_inclusive?: boolean
+      invoice_type?: boolean
+      currency?: boolean
+      supplier_name?: boolean
+      lines?: boolean
+      invoice_number?: boolean
+      vat_rate?: boolean
+      exchange_rate?: boolean
+      due_date?: boolean
+      bank_account_name?: boolean
+      receivables_account_id?: boolean
+      total_amount?: boolean
+      subtotal?: boolean
+      revenue_account_id?: boolean
+      customer_name?: boolean
+      balance_due?: boolean
+      customer_id?: boolean
+      supplier_id?: boolean
+      overall_description?: boolean
+      status?: boolean
+      created_date?: boolean
+      updated_date?: boolean
+      created_by_id?: boolean
+      created_by?: boolean
+      is_sample?: boolean
+    }
+  
+    export type SalesInvoiceInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+      lineItems?: boolean | SalesInvoice$lineItemsArgs<ExtArgs>
+      _count?: boolean | SalesInvoiceCountOutputTypeDefaultArgs<ExtArgs>
+    }
+    export type SalesInvoiceIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {}
+  
+    export type $SalesInvoicePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+      name: "SalesInvoice"
+      objects: {
+        lineItems: Prisma.$SalesInvoiceLinePayload<ExtArgs>[]
+      }
+      scalars: $Extensions.GetPayloadResult<{
+        id: string
+        tax_amount: number | null
+        bank_account_id: string | null
+        journal_entry_id: string | null
+        amount_paid: number | null
+        notes: string | null
+        attachments: string | null
+        discount_amount: number | null
+        invoice_date: string | null
+        reference: string | null
+        terms: string | null
+        is_vat_inclusive: boolean | null
+        invoice_type: string | null
+        currency: string | null
+        supplier_name: string | null
+        lines: string | null
+        invoice_number: string | null
+        vat_rate: number | null
+        exchange_rate: number | null
+        due_date: string | null
+        bank_account_name: string | null
+        receivables_account_id: string | null
+        total_amount: number | null
+        subtotal: number | null
+        revenue_account_id: string | null
+        customer_name: string | null
+        balance_due: number | null
+        customer_id: string | null
+        supplier_id: string | null
+        overall_description: string | null
+        status: string | null
+        created_date: string | null
+        updated_date: string | null
+        created_by_id: string | null
+        created_by: string | null
+        is_sample: boolean | null
+      }, ExtArgs["result"]["salesInvoice"]>
+      composites: {}
+    }
+  
+    type SalesInvoiceGetPayload<S extends boolean | null | undefined | SalesInvoiceDefaultArgs> = $Result.GetResult<Prisma.$SalesInvoicePayload, S>
+  
+    type SalesInvoiceCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
+      Omit<SalesInvoiceFindManyArgs, 'select' | 'include' | 'distinct'> & {
+        select?: SalesInvoiceCountAggregateInputType | true
+      }
+  
+    export interface SalesInvoiceDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
+      [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SalesInvoice'], meta: { name: 'SalesInvoice' } }
+      /**
+       * Find zero or one SalesInvoice that matches the filter.
+       * @param {SalesInvoiceFindUniqueArgs} args - Arguments to find a SalesInvoice
+       * @example
+       * // Get one SalesInvoice
+       * const salesInvoice = await prisma.salesInvoice.findUnique({
+       *   where: {
+       *     // ... provide filter here
+       *   }
+       * })
+       */
+      findUnique<T extends SalesInvoiceFindUniqueArgs>(args: SelectSubset<T, SalesInvoiceFindUniqueArgs<ExtArgs>>): Prisma__SalesInvoiceClient<$Result.GetResult<Prisma.$SalesInvoicePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
+  
+      /**
+       * Find one SalesInvoice that matches the filter or throw an error with `error.code='P2025'` 
+       * if no matches were found.
+       * @param {SalesInvoiceFindUniqueOrThrowArgs} args - Arguments to find a SalesInvoice
+       * @example
+       * // Get one SalesInvoice
+       * const salesInvoice = await prisma.salesInvoice.findUniqueOrThrow({
+       *   where: {
