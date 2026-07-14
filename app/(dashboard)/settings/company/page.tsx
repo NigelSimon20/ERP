@@ -49,7 +49,7 @@ function CompanyInfoTab() {
       <p className="text-sm leading-6 text-slate-600">Update core company details and registration information. Changes to branding will apply immediately to generated invoices.</p>
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-card p-5">
           <label htmlFor="company-name" className="block text-sm font-medium">Company Name</label>
           <input id="company-name" title="Company Name" placeholder="Company Name" value={company.name||''} onChange={e=>setCompany({...company,name:e.target.value})} className="mt-1 input" />
 
@@ -63,7 +63,7 @@ function CompanyInfoTab() {
           <input id="company-vat" title="VAT Number" placeholder="VAT Number" value={company.vatNumber||''} onChange={e=>setCompany({...company,vatNumber:e.target.value})} className="mt-1 input" />
         </div>
 
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-card p-5">
           <label htmlFor="company-address" className="block text-sm font-medium">Address</label>
           <textarea id="company-address" title="Company Address" placeholder="Company Address" value={company.address||''} onChange={e=>setCompany({...company,address:e.target.value})} className="mt-1 textarea" />
 
@@ -104,7 +104,7 @@ function BrandingTab() {
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-card p-5">
           <label htmlFor="company-logo" className="block text-sm font-medium">Logo URL</label>
           <input id="company-logo" title="Company Logo URL" placeholder="Logo URL" value={company.logo||''} onChange={e=>setCompany({...company,logo:e.target.value})} className="mt-1 input" />
           <label htmlFor="company-favicon" className="block text-sm font-medium mt-4">Favicon URL</label>
@@ -112,7 +112,7 @@ function BrandingTab() {
           <label htmlFor="company-login-logo" className="block text-sm font-medium mt-4">Login Logo URL</label>
           <input id="company-login-logo" title="Login Logo URL" placeholder="Login Logo URL" value={company.loginLogo||''} onChange={e=>setCompany({...company,loginLogo:e.target.value})} className="mt-1 input" />
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-white p-5">
+        <div className="rounded-2xl border border-slate-200 bg-card p-5">
           <label htmlFor="company-primary-color" className="block text-sm font-medium">Primary Colour</label>
           <input id="company-primary-color" type="color" title="Primary Colour" value={company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,primaryColor:e.target.value})} className="mt-1" />
           <label htmlFor="company-secondary-color" className="block text-sm font-medium mt-4">Secondary Colour</label>
@@ -148,7 +148,7 @@ function InvoiceTab() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="rounded-2xl border border-slate-200 bg-card p-6">
         <label htmlFor="invoice-prefix" className="block text-sm font-medium">Invoice Prefix</label>
         <input id="invoice-prefix" title="Invoice Prefix" placeholder="Invoice Prefix" value={company.invoicePrefix||''} onChange={e=>setCompany({...company,invoicePrefix:e.target.value})} className="mt-1 input" />
         <label htmlFor="next-invoice-number" className="block text-sm font-medium mt-4">Next Invoice Number</label>
@@ -169,7 +169,7 @@ function BankingTab() {
       <p className="text-sm leading-6 text-slate-600">
         Manage banking records, account details, and default ledger assignments for your company.
       </p>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="rounded-2xl border border-slate-200 bg-card p-6">
         <div className="text-sm font-medium text-slate-900">Banking data placeholder</div>
         <p className="mt-2 text-sm text-slate-500">Add, edit, or remove bank accounts and mark a default account for payments and receipts.</p>
       </div>
@@ -183,7 +183,7 @@ function DocumentsTab() {
       <p className="text-sm leading-6 text-slate-600">
         Document numbering schemes and invoice sequence settings are stored here for consistent document control.
       </p>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="rounded-2xl border border-slate-200 bg-card p-6">
         <div className="text-sm font-medium text-slate-900">Document numbering placeholder</div>
         <p className="mt-2 text-sm text-slate-500">Configure prefixes, next numbering values, and document types for invoices, orders, and other records.</p>
       </div>
@@ -197,7 +197,7 @@ function PortalsTab() {
       <p className="text-sm leading-6 text-slate-600">
         External portals and integration endpoints can be managed from this section.
       </p>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="rounded-2xl border border-slate-200 bg-card p-6">
         <div className="text-sm font-medium text-slate-900">Portal settings placeholder</div>
         <p className="mt-2 text-sm text-slate-500">Store portal names, URLs, categories, and display tags for external services.</p>
       </div>
@@ -211,7 +211,7 @@ function NotificationsTab() {
       <p className="text-sm leading-6 text-slate-600">
         Notification settings let you choose how your company receives alerts for system events and approvals.
       </p>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="rounded-2xl border border-slate-200 bg-card p-6">
         <div className="text-sm font-medium text-slate-900">Notification preferences placeholder</div>
         <p className="mt-2 text-sm text-slate-500">Configure email, SMS, and in-app notifications for critical workflows and user alerts.</p>
       </div>
@@ -225,7 +225,7 @@ function UsersTab() {
       <p className="text-sm leading-6 text-slate-600">
         User settings and access roles are controlled from this section. Keep track of active accounts and role assignments.
       </p>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="rounded-2xl border border-slate-200 bg-card p-6">
         <div className="text-sm font-medium text-slate-900">User management placeholder</div>
         <p className="mt-2 text-sm text-slate-500">Create and manage user accounts, permissions, and profile settings for company staff.</p>
       </div>
@@ -239,7 +239,7 @@ function AccessControlTab() {
       <p className="text-sm leading-6 text-slate-600">
         Access control defines who can view and edit company settings and portal entries.
       </p>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="rounded-2xl border border-slate-200 bg-card p-6">
         <div className="text-sm font-medium text-slate-900">Access control placeholder</div>
         <p className="mt-2 text-sm text-slate-500">Manage roles, permissions, and secure access groups for business-critical settings.</p>
       </div>
@@ -253,7 +253,7 @@ function BackupRestoreTab() {
       <p className="text-sm leading-6 text-slate-600">
         Backup and restore tools help protect your company settings and stored configuration data.
       </p>
-      <div className="rounded-2xl border border-slate-200 bg-white p-6">
+      <div className="rounded-2xl border border-slate-200 bg-card p-6">
         <div className="text-sm font-medium text-slate-900">Backup & restore placeholder</div>
         <p className="mt-2 text-sm text-slate-500">Download backups, schedule restores, and keep company configuration data safe.</p>
       </div>
@@ -309,7 +309,7 @@ export default function CompanySettingsPage() {
                 key={tab.key}
                 type="button"
                 onClick={() => setActiveTab(tab.key)}
-                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${isActive ? 'border-slate-300 bg-slate-100 text-slate-900' : 'border-transparent bg-white text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'}`}
+                className={`rounded-full border px-4 py-2 text-sm font-medium transition ${isActive ? 'border-slate-300 bg-slate-100 text-slate-900' : 'border-transparent bg-card text-slate-600 hover:border-slate-200 hover:bg-slate-50 hover:text-slate-900'}`}
               >
                 {tab.label}
               </button>
@@ -318,7 +318,7 @@ export default function CompanySettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-card p-6 shadow-sm">
         <div className="mb-6 flex items-center justify-between gap-4">
           <div>
             <p className="text-base font-semibold text-slate-900">{tabs.find((tab) => tab.key === activeTab)?.label}</p>

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { FaShieldAlt, FaChevronDown, FaChevronRight, FaDownload } from 'react-icons/fa'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { formatDateTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { ArrowDownloadRegular, ChevronDownRegular, ChevronRightRegular, ShieldRegular } from '@fluentui/react-icons';
 
 interface AuditLog {
   id: string
@@ -21,12 +21,12 @@ interface AuditLog {
 interface User { id: string; name: string }
 
 const ACTION_COLORS: Record<string, string> = {
-  CREATE: 'bg-green-100 text-green-700',
-  UPDATE: 'bg-blue-100 text-blue-700',
-  DELETE: 'bg-red-100 text-red-700',
-  LOGIN: 'bg-gray-100 text-gray-600',
-  LOGOUT: 'bg-gray-100 text-gray-500',
-  VIEW: 'bg-purple-100 text-purple-600',
+  CREATE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  UPDATE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  DELETE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  LOGIN: 'bg-muted text-muted-foreground',
+  LOGOUT: 'bg-muted text-muted-foreground',
+  VIEW: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
 }
 
 const MODULES = ['Finance', 'Operations', 'HR', 'BD', 'Tasks', 'Auth', 'System', 'Settings', 'Users']
@@ -36,18 +36,18 @@ function DiffRow({ old: oldVals, next: newVals }: { old: Record<string, unknown>
   if (!oldVals && !newVals) return null
   const keys = Array.from(new Set([...Object.keys(oldVals ?? {}), ...Object.keys(newVals ?? {})]))
   const changed = keys.filter(k => JSON.stringify((oldVals ?? {})[k]) !== JSON.stringify((newVals ?? {})[k]))
-  if (!changed.length) return <span className="text-gray-400 text-xs">No field changes recorded</span>
+  if (!changed.length) return <span className="text-brand-muted-light text-xs">No field changes recorded</span>
 
   return (
     <div className="space-y-0.5">
       {changed.map(k => (
         <p key={k} className="text-xs">
-          <span className="font-medium text-gray-700">{k}:</span>{' '}
+          <span className="font-medium text-foreground">{k}:</span>{' '}
           {oldVals?.[k] !== undefined && (
-            <span className="text-red-500 line-through mr-1">{String(oldVals[k])}</span>
+            <span className="text-primary line-through mr-1">{String(oldVals[k])}</span>
           )}
           {newVals?.[k] !== undefined && (
-            <span className="text-green-600">{String(newVals[k])}</span>
+            <span className="text-green-600 dark:text-green-400">{String(newVals[k])}</span>
           )}
         </p>
       ))}
@@ -59,20 +59,20 @@ function ChangesCell({ log }: { log: AuditLog }) {
   const [expanded, setExpanded] = useState(false)
   const hasDiff = log.oldValues || log.newValues
 
-  if (!hasDiff) return <span className="text-gray-400 text-xs">—</span>
+  if (!hasDiff) return <span className="text-brand-muted-light text-xs">—</span>
 
   return (
     <div>
       <button
         type="button"
         onClick={() => setExpanded(e => !e)}
-        className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800"
+        className="flex items-center gap-1 text-xs text-primary hover:text-brand-red-dark"
       >
-        {expanded ? <FaChevronDown className="h-3 w-3" /> : <FaChevronRight className="h-3 w-3" />}
+        {expanded ? <ChevronDownRegular className="h-3 w-3" /> : <ChevronRightRegular className="h-3 w-3" />}
         {expanded ? 'Hide' : 'Show'} changes
       </button>
       {expanded && (
-        <div className="mt-1.5 bg-gray-50 rounded p-2">
+        <div className="mt-1.5 bg-muted/50 rounded p-2">
           <DiffRow old={log.oldValues} next={log.newValues} />
         </div>
       )}
@@ -157,7 +157,7 @@ export default function AuditTrailPage() {
         <select
           value={filterUser}
           onChange={e => setFilterUser(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#CC0000]"
+          className="text-sm border border-border rounded-lg px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label="Filter by user"
         >
           <option value="">All Users</option>
@@ -167,7 +167,7 @@ export default function AuditTrailPage() {
         <select
           value={filterModule}
           onChange={e => setFilterModule(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#CC0000]"
+          className="text-sm border border-border rounded-lg px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label="Filter by module"
         >
           <option value="">All Modules</option>
@@ -177,7 +177,7 @@ export default function AuditTrailPage() {
         <select
           value={filterAction}
           onChange={e => setFilterAction(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#CC0000]"
+          className="text-sm border border-border rounded-lg px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label="Filter by action"
         >
           <option value="">All Actions</option>
@@ -188,14 +188,14 @@ export default function AuditTrailPage() {
           type="date"
           value={dateFrom}
           onChange={e => setDateFrom(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#CC0000]"
+          className="text-sm border border-border rounded-lg px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label="Date from"
         />
         <input
           type="date"
           value={dateTo}
           onChange={e => setDateTo(e.target.value)}
-          className="text-sm border border-gray-300 rounded-lg px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-[#CC0000]"
+          className="text-sm border border-border rounded-lg px-3 py-2 bg-card focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label="Date to"
         />
 
@@ -203,50 +203,50 @@ export default function AuditTrailPage() {
           type="button"
           onClick={exportCSV}
           disabled={logs.length === 0}
-          className="ml-auto flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 disabled:opacity-40"
+          className="ml-auto flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-border hover:bg-muted/50 disabled:opacity-40"
         >
-          <FaDownload className="h-4 w-4" /> Export CSV
+          <ArrowDownloadRegular className="h-4 w-4" /> Export CSV
         </button>
       </div>
 
       {/* Table */}
-      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+      <div className="bg-card rounded-lg border border-border overflow-hidden">
         {loading ? (
           <div className="py-12 flex justify-center">
-            <div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" />
+            <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         ) : logs.length === 0 ? (
           <div className="py-16 text-center">
-            <FaShieldAlt className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-            <p className="text-sm text-gray-400">No audit records found</p>
+            <ShieldRegular className="h-10 w-10 text-brand-muted-light mx-auto mb-3" />
+            <p className="text-sm text-brand-muted-light">No audit records found</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600 whitespace-nowrap">Timestamp</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">User</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Action</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Module</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Record</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600 min-w-[160px]">Changes</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground whitespace-nowrap">Timestamp</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">User</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Action</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Module</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Record</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground min-w-[160px]">Changes</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {logs.map(log => (
-                  <tr key={log.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                  <tr key={log.id} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                       {formatDateTime(log.createdAt)}
                     </td>
-                    <td className="px-4 py-3 font-medium text-[#0D1B2A]">{log.userName}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{log.userName}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${ACTION_COLORS[log.action] ?? 'bg-gray-100 text-gray-600'}`}>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${ACTION_COLORS[log.action] ?? 'bg-muted text-muted-foreground'}`}>
                         {log.action}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600">{log.module}</td>
-                    <td className="px-4 py-3 text-xs text-gray-400 font-mono truncate max-w-[120px]">
+                    <td className="px-4 py-3 text-muted-foreground">{log.module}</td>
+                    <td className="px-4 py-3 text-xs text-brand-muted-light font-mono truncate max-w-[120px]">
                       {log.recordId ?? '—'}
                     </td>
                     <td className="px-4 py-3">
@@ -262,7 +262,7 @@ export default function AuditTrailPage() {
 
       {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 text-sm text-gray-500">
+        <div className="flex items-center justify-between mt-4 text-sm text-muted-foreground">
           <span>
             Showing {(page - 1) * 50 + 1}–{Math.min(page * 50, total)} of {total}
           </span>
@@ -271,7 +271,7 @@ export default function AuditTrailPage() {
               type="button"
               onClick={() => fetchLogs(page - 1)}
               disabled={page === 1}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+              className="px-3 py-1.5 border border-border rounded-lg disabled:opacity-40 hover:bg-muted/50"
             >
               Previous
             </button>
@@ -279,7 +279,7 @@ export default function AuditTrailPage() {
               type="button"
               onClick={() => fetchLogs(page + 1)}
               disabled={page >= totalPages}
-              className="px-3 py-1.5 border border-gray-300 rounded-lg disabled:opacity-40 hover:bg-gray-50"
+              className="px-3 py-1.5 border border-border rounded-lg disabled:opacity-40 hover:bg-muted/50"
             >
               Next
             </button>

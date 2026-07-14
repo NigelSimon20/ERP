@@ -3,8 +3,7 @@
 import React from 'react'
 import { useGreeting } from '@/hooks/useGreeting'
 import { useClock } from '@/hooks/useClock'
-import { FiSun, FiCloud, FiMoon, FiClock } from 'react-icons/fi'
-
+import { ClockRegular, CloudRegular, WeatherMoonRegular, WeatherSunnyRegular } from '@fluentui/react-icons';
 interface GreetingHeaderProps {
   userName?: string
   showGreetingIcon?: boolean
@@ -41,10 +40,10 @@ export function GreetingHeader({
   const { timeString, dateString, dateShort } = useClock()
 
   const phaseIcons: Record<string, React.ReactNode> = {
-    morning: <FiSun className="w-5 h-5 text-amber-500" />,
-    afternoon: <FiCloud className="w-5 h-5 text-blue-400" />,
-    evening: <FiCloud className="w-5 h-5 text-orange-400" />,
-    night: <FiMoon className="w-5 h-5 text-indigo-500" />
+    morning: <WeatherSunnyRegular className="w-5 h-5 text-primary" />,
+    afternoon: <CloudRegular className="w-5 h-5 text-muted-foreground" />,
+    evening: <CloudRegular className="w-5 h-5 text-muted-foreground" />,
+    night: <WeatherMoonRegular className="w-5 h-5 text-muted-foreground" />
   }
 
   const isHorizontal = layout === 'horizontal'
@@ -65,18 +64,18 @@ export function GreetingHeader({
         
         <div className="flex-1">
           <h1
-            className={`font-bold text-gray-900 ${
+            className={`font-bold text-foreground ${
               compact ? 'text-lg' : 'text-2xl'
             }`}
           >
             {phrase}
             {userName && (
-              <span className="text-premium-primary ml-1">{userName}</span>
+              <span className="text-primary ml-1">{userName}</span>
             )}
           </h1>
           
           {!compact && (
-            <p className="text-sm text-gray-600 mt-0.5">
+            <p className="text-sm text-muted-foreground mt-0.5">
               {subMessage}
             </p>
           )}
@@ -86,14 +85,14 @@ export function GreetingHeader({
       {/* Clock Section */}
       <div className={`flex items-center ${compact ? 'gap-2' : 'gap-3'}`}>
         {showClockIcon && (
-          <FiClock className={`flex-shrink-0 text-blue-600 ${
+          <ClockRegular className={`flex-shrink-0 text-blue-600 ${
             compact ? 'w-4 h-4' : 'w-5 h-5'
           }`} />
         )}
         
         <div className="text-right">
           <div
-            className={`font-mono font-semibold tracking-wider text-gray-900 ${
+            className={`font-mono font-semibold tracking-wider text-foreground ${
               compact ? 'text-sm' : 'text-lg'
             }`}
           >
@@ -101,13 +100,13 @@ export function GreetingHeader({
           </div>
           
           {!compact && (
-            <div className="text-xs text-gray-600 mt-0.5">
+            <div className="text-xs text-muted-foreground mt-0.5">
               {dateString}
             </div>
           )}
           
           {compact && (
-            <div className="text-xs text-gray-600">
+            <div className="text-xs text-muted-foreground">
               {dateShort}
             </div>
           )}

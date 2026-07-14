@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaUsers, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,13 +12,14 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, CheckmarkCircleRegular, DismissCircleRegular, PeopleRegular } from '@fluentui/react-icons';
 
 interface CoverageRequest { id: string; reason: string; guardsNeeded: number; startDate: string; endDate: string | null; status: string; rejectionReason: string | null; createdAt: string; site: { id: string; name: string }; requestedByUser: { id: string; name: string }; approvedByUser: { name: string } | null }
 interface Site { id: string; name: string }
 type FormValues = { siteId: string; reason: string; guardsNeeded: string; startDate: string; endDate: string }
 type RejectForm = { rejectionReason: string }
 
-const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-amber-100 text-amber-700', APPROVED: 'bg-green-100 text-green-700', REJECTED: 'bg-red-100 text-red-600', FULFILLED: 'bg-blue-100 text-blue-700' }
+const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', FULFILLED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' }
 
 export default function CoverageRequestsPage() {
   const [requests, setRequests] = useState<CoverageRequest[]>([])
@@ -97,7 +97,7 @@ export default function CoverageRequestsPage() {
 
   return (
     <div>
-      <PageHeader title="Coverage Requests" description="Manage requests for additional guard coverage" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> New Request</Button>} />
+      <PageHeader title="Coverage Requests" description="Manage requests for additional guard coverage" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} />
 
       <div className="mt-4 flex items-center gap-3">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -112,50 +112,50 @@ export default function CoverageRequestsPage() {
         </Select>
       </div>
 
-      <div className="mt-3 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-3 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : requests.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaUsers} title="No coverage requests" description="Create a request when additional guards are needed at a site" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> New Request</Button>} /></div>
+          <div className="py-16"><EmptyState icon={PeopleRegular} title="No coverage requests" description="Create a request when additional guards are needed at a site" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Site</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Reason</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Guards</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Start</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">End</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Requested By</th>
-                  <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Site</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Reason</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Guards</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Start</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">End</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Requested By</th>
+                  <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {requests.map((req) => (
-                  <tr key={req.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-[#0D1B2A]">{req.site?.name}</td>
-                    <td className="px-4 py-3 text-gray-600 max-w-[200px]">
+                  <tr key={req.id} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 font-medium text-foreground">{req.site?.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground max-w-[200px]">
                       <p className="truncate">{req.reason}</p>
-                      {req.rejectionReason && <p className="text-xs text-red-500 mt-0.5">Rejected: {req.rejectionReason}</p>}
+                      {req.rejectionReason && <p className="text-xs text-primary mt-0.5">Rejected: {req.rejectionReason}</p>}
                     </td>
                     <td className="px-4 py-3 text-right font-medium">{req.guardsNeeded}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{formatDate(new Date(req.startDate))}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{req.endDate ? formatDate(new Date(req.endDate)) : <span className="text-gray-400">Open</span>}</td>
-                    <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[req.status] ?? 'bg-gray-100 text-gray-600'}`}>{req.status}</span></td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(new Date(req.startDate))}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{req.endDate ? formatDate(new Date(req.endDate)) : <span className="text-brand-muted-light">Open</span>}</td>
+                    <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[req.status] ?? 'bg-muted text-muted-foreground'}`}>{req.status}</span></td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
                       <p>{req.requestedByUser?.name}</p>
-                      {req.approvedByUser && <p className="text-gray-400">(by {req.approvedByUser.name})</p>}
+                      {req.approvedByUser && <p className="text-brand-muted-light">(by {req.approvedByUser.name})</p>}
                     </td>
                     <td className="px-4 py-3">
                       {req.status === 'PENDING' && (
                         <div className="flex items-center gap-2">
-                          <button type="button" onClick={() => approve(req)} disabled={processingId === req.id} className="p-1 rounded hover:bg-green-50 text-gray-400 hover:text-green-600 disabled:opacity-40" aria-label="Approve request">
-                            <FaCheckCircle className="h-4 w-4" />
+                          <button type="button" onClick={() => approve(req)} disabled={processingId === req.id} className="p-1 rounded hover:bg-green-50 text-brand-muted-light hover:text-green-600 disabled:opacity-40" aria-label="Approve request">
+                            <CheckmarkCircleRegular className="h-4 w-4" />
                           </button>
-                          <button type="button" onClick={() => openReject(req)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500" aria-label="Reject request">
-                            <FaTimesCircle className="h-4 w-4" />
+                          <button type="button" onClick={() => openReject(req)} className="p-1 rounded hover:bg-primary/10 text-brand-muted-light hover:text-primary" aria-label="Reject request">
+                            <DismissCircleRegular className="h-4 w-4" />
                           </button>
                         </div>
                       )}
@@ -190,7 +190,7 @@ export default function CoverageRequestsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -207,7 +207,7 @@ export default function CoverageRequestsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setRejectTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={rSubmitting} className="bg-red-600 hover:bg-red-700 text-white">{rSubmitting ? 'Rejecting…' : 'Reject Request'}</Button>
+              <Button type="submit" disabled={rSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{rSubmitting ? 'Rejecting…' : 'Reject Request'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

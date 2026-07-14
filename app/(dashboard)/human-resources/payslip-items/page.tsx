@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, useWatch, Controller } from 'react-hook-form'
-import { FaPlus } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/PageHeader'
 import toast from 'react-hot-toast'
+import { AddRegular } from '@fluentui/react-icons';
 
 interface PayslipItem { id: string; name: string; type: string; calculationMethod: string; fixedAmount: number | null; percentage: number | null; taxable: boolean; active: boolean }
 type FormValues = { name: string; type: string; calculationMethod: string; fixedAmount: string; percentage: string; taxable: boolean }
@@ -22,20 +22,20 @@ function ItemCard({ item, onToggle, onEdit }: { item: PayslipItem; onToggle: (id
     : `${Number(item.percentage).toFixed(2)}% (${METHOD_LABELS[item.calculationMethod]})`
 
   return (
-    <div className={`flex items-center justify-between rounded-lg border px-4 py-3 ${item.active ? 'border-gray-200 bg-white' : 'border-dashed border-gray-200 bg-gray-50'}`}>
+    <div className={`flex items-center justify-between rounded-lg border px-4 py-3 ${item.active ? 'border-border bg-card' : 'border-dashed border-border bg-muted/50'}`}>
       <div className="min-w-0">
-        <p className={`font-medium text-sm ${item.active ? 'text-[#0D1B2A]' : 'text-gray-400'}`}>{item.name}</p>
-        <p className="text-xs text-gray-400 mt-0.5">{valueLabel}{item.taxable ? ' · Taxable' : ''}</p>
+        <p className={`font-medium text-sm ${item.active ? 'text-foreground' : 'text-brand-muted-light'}`}>{item.name}</p>
+        <p className="text-xs text-brand-muted-light mt-0.5">{valueLabel}{item.taxable ? ' · Taxable' : ''}</p>
       </div>
       <div className="flex items-center gap-3 ml-4 shrink-0">
-        <button type="button" onClick={() => onEdit(item)} className="text-xs text-gray-400 hover:text-gray-700 hover:underline" aria-label="Edit item">Edit</button>
+        <button type="button" onClick={() => onEdit(item)} className="text-xs text-brand-muted-light hover:text-foreground hover:underline" aria-label="Edit item">Edit</button>
         <button
           type="button"
           onClick={() => onToggle(item.id)}
-          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${item.active ? 'bg-green-500' : 'bg-gray-300'}`}
+          className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${item.active ? 'bg-green-500' : 'bg-muted'}`}
           aria-label={item.active ? 'Deactivate item' : 'Activate item'}
         >
-          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${item.active ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
+          <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-card shadow transition-transform ${item.active ? 'translate-x-[18px]' : 'translate-x-[2px]'}`} />
         </button>
       </div>
     </div>
@@ -108,14 +108,14 @@ export default function PayslipItemsPage() {
 
   function Section({ title, items, type }: { title: string; items: PayslipItem[]; type: 'EARNING' | 'DEDUCTION' }) {
     return (
-      <div className="rounded-lg border border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white rounded-t-lg">
-          <h2 className="font-semibold text-[#0D1B2A]">{title}</h2>
-          <Button type="button" size="sm" variant="outline" onClick={() => openCreate(type)}><FaPlus className="h-3.5 w-3.5 mr-1" /> Add</Button>
+      <div className="rounded-lg border border-border bg-muted/50">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card rounded-t-lg">
+          <h2 className="font-semibold text-foreground">{title}</h2>
+          <Button type="button" size="sm" variant="outline" onClick={() => openCreate(type)}><AddRegular className="h-3.5 w-3.5 mr-1" /> Add</Button>
         </div>
         <div className="p-3 space-y-2">
           {items.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-6">No {title.toLowerCase()} configured yet</p>
+            <p className="text-sm text-brand-muted-light text-center py-6">No {title.toLowerCase()} configured yet</p>
           ) : (
             items.map((item) => <ItemCard key={item.id} item={item} onToggle={onToggle} onEdit={openEdit} />)
           )}
@@ -175,7 +175,7 @@ export default function PayslipItemsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Item'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Item'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

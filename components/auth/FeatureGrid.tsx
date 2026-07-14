@@ -1,8 +1,7 @@
 'use client'
 
 import React from 'react'
-import { LuShield as Shield, LuTrendingUp as BarChart3, LuUsers as Users, LuZap as Zap } from 'react-icons/lu'
-
+import { ArrowTrendingRegular as BarChart3, FlashRegular as Zap, PeopleRegular as Users, ShieldRegular as Shield } from '@fluentui/react-icons';
 interface Feature {
   icon: React.ReactNode
   label: string

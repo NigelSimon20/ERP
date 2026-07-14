@@ -1,27 +1,43 @@
-// Central theme colors for charts and UI (red/white focused)
-export const PRIMARY = '#D12F36'
-export const PRIMARY_DARK = '#9F262C'
-export const PRIMARY_LIGHT = '#F48A92'
-export const PRIMARY_BG = '#F8E2E5'
+// Central theme colors for charts and UI (Ravenshield red/neutral enterprise palette).
+// Flat, enterprise styling: series colors are limited to red + grayscale only.
+export const PRIMARY = '#DC2626'
+export const PRIMARY_DARK = '#B91C1C'
+export const PRIMARY_LIGHT = '#FEE2E2'
+export const PRIMARY_BG = '#FEF2F2'
 export const WHITE = '#FFFFFF'
 
-export const CHART_PALETTE = [PRIMARY, PRIMARY_LIGHT, PRIMARY_DARK, '#FFFFFF']
+// Grayscale tones for chart gridlines/axes/neutral series segments
+export const GRAY_DARK = '#374151'
+export const GRAY = '#9CA3AF'
+export const GRAY_LIGHT = '#E5E7EB'
 
-export const STAGE_COLORS: Record<string, string> = {
-  INQUIRY: PRIMARY_LIGHT,
-  QUALIFIED: PRIMARY,
-  PROPOSAL: PRIMARY_DARK,
-  NEGOTIATION: '#D6453B',
-  WON: '#FFB4B4',
-  LOST: PRIMARY_DARK,
-  ON_HOLD: '#F3CFCF',
+// Subtle gridlines + muted axis labels for recharts <CartesianGrid>/<XAxis>/<YAxis>
+export const CHART_GRID_STROKE = GRAY_LIGHT
+export const CHART_AXIS_TICK = { fontSize: 11, fill: GRAY }
+export const CHART_TOOLTIP_STYLE = {
+  fontSize: 12,
+  borderRadius: 10,
+  border: `1px solid ${GRAY_LIGHT}`,
+  boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
 }
 
-export const PIE_COLORS = [PRIMARY, PRIMARY_LIGHT]
+export const CHART_PALETTE = [PRIMARY, GRAY_DARK, GRAY, GRAY_LIGHT]
+
+export const STAGE_COLORS: Record<string, string> = {
+  INQUIRY: GRAY_LIGHT,
+  QUALIFIED: GRAY,
+  PROPOSAL: PRIMARY_LIGHT,
+  NEGOTIATION: PRIMARY,
+  WON: GRAY_DARK,
+  LOST: GRAY,
+  ON_HOLD: GRAY_LIGHT,
+}
+
+export const PIE_COLORS = [PRIMARY, GRAY_LIGHT]
 
 export const SEVERITY_COLORS: Record<string, string> = {
-  LOW: '#FFECEC',
-  MEDIUM: '#FFBFBF',
+  LOW: GRAY_LIGHT,
+  MEDIUM: GRAY,
   HIGH: PRIMARY,
   CRITICAL: PRIMARY_DARK,
 }
@@ -32,6 +48,12 @@ export default {
   PRIMARY_LIGHT,
   PRIMARY_BG,
   WHITE,
+  GRAY_DARK,
+  GRAY,
+  GRAY_LIGHT,
+  CHART_GRID_STROKE,
+  CHART_AXIS_TICK,
+  CHART_TOOLTIP_STYLE,
   CHART_PALETTE,
   STAGE_COLORS,
   PIE_COLORS,

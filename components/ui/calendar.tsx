@@ -3,8 +3,7 @@ import * as React from 'react'
 import { DayPicker } from 'react-day-picker'
 import { cn } from '@/lib/utils'
 import { buttonVariants } from '@/components/ui/button'
-import { LuChevronLeft as ChevronLeft, LuChevronRight as ChevronRight } from 'react-icons/lu'
-
+import { ChevronLeftRegular as ChevronLeft, ChevronRightRegular as ChevronRight } from '@fluentui/react-icons';
 export type CalendarProps = React.ComponentProps<typeof DayPicker>
 
 function Calendar({ className, classNames, showOutsideDays = true, ...props }: CalendarProps) {

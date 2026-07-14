@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaWhatsapp, FaPlus, FaCheckCircle, FaTimesCircle, FaInbox } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,14 +13,15 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { WhatsAppReminderToggle } from '@/components/tasks/WhatsAppReminderToggle'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, ChatRegular, CheckmarkCircleRegular, DismissCircleRegular, MailInboxRegular } from '@fluentui/react-icons';
 
 interface User { id: string; name: string; whatsapp: string | null }
 interface Request { id: string; requestType: string; title: string; description: string; requestedBy: string; assignedTo: string | null; priority: string; status: string; approvalNote: string | null; whatsappReminder: boolean; createdAt: string; requestedByUser: User | null; assignedToUser: User | null }
 type FormValues = { requestType: string; title: string; description: string; assignedTo: string; priority: string }
 
 const REQUEST_TYPES = ['Leave', 'Equipment', 'Training', 'IT Support', 'Maintenance', 'Finance', 'HR', 'Procurement', 'Other']
-const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-gray-100 text-gray-600', IN_REVIEW: 'bg-blue-100 text-blue-700', APPROVED: 'bg-green-100 text-green-700', REJECTED: 'bg-red-100 text-red-600', COMPLETED: 'bg-purple-100 text-purple-700' }
-const PRIORITY_BADGE: Record<string, string> = { LOW: 'bg-gray-100 text-gray-600', MEDIUM: 'bg-blue-100 text-blue-700', HIGH: 'bg-amber-100 text-amber-700', URGENT: 'bg-red-100 text-red-700' }
+const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-muted text-muted-foreground', IN_REVIEW: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', COMPLETED: 'bg-brand-navy text-white' }
+const PRIORITY_BADGE: Record<string, string> = { LOW: 'bg-muted text-muted-foreground', MEDIUM: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', HIGH: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', URGENT: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
 
 export default function RequestsPage() {
   const [requests, setRequests] = useState<Request[]>([])
@@ -107,58 +107,58 @@ export default function RequestsPage() {
   return (
     <div>
       <PageHeader title="Requests" description="Submit and manage staff requests" action={
-        <Button type="button" onClick={() => { reset(); setWaReminder(false); setReminderTime(null); setShowCreate(true) }} className="bg-brand-red hover:bg-brand-red-dark text-white"><FaPlus className="h-4 w-4 mr-1" /> Submit Request</Button>
+        <Button type="button" onClick={() => { reset(); setWaReminder(false); setReminderTime(null); setShowCreate(true) }} className="bg-brand-red hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Submit Request</Button>
       } />
 
       <div className="mt-4 flex items-center gap-3 flex-wrap">
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 px-2 text-sm" aria-label="Filter by type">
+        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value)} className="h-9 rounded-md border border-border px-2 text-sm" aria-label="Filter by type">
           <option value="">All Types</option>
           {REQUEST_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 px-2 text-sm" aria-label="Filter by status">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-9 rounded-md border border-border px-2 text-sm" aria-label="Filter by status">
           <option value="">All Statuses</option>
           {['PENDING', 'IN_REVIEW', 'APPROVED', 'REJECTED', 'COMPLETED'].map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <Button type="button" size="sm" variant="outline" onClick={fetchRequests}>Apply</Button>
       </div>
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : filtered.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaInbox} title="No requests" description="Submit a request to get started" action={<Button type="button" onClick={() => setShowCreate(true)} className="bg-brand-red hover:bg-brand-red-dark text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Submit Request</Button>} /></div>
+          <div className="py-16"><EmptyState icon={MailInboxRegular} title="No requests" description="Submit a request to get started" action={<Button type="button" onClick={() => setShowCreate(true)} className="bg-brand-red hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Submit Request</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Type</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Title</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Requested By</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Priority</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                <th className="text-center px-4 py-2.5 font-medium text-gray-600">WA</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Created</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Actions</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Type</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Title</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Requested By</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Priority</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                <th className="text-center px-4 py-2.5 font-medium text-muted-foreground">WA</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Created</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {filtered.map((req) => (
-                <tr key={req.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-xs text-gray-500">{req.requestType}</td>
+                <tr key={req.id} className="hover:bg-muted/50">
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{req.requestType}</td>
                   <td className="px-4 py-3">
-                    <p className="font-medium text-[#0D1B2A]">{req.title}</p>
-                    {req.approvalNote && <p className="text-xs text-gray-400 truncate max-w-xs">{req.approvalNote}</p>}
+                    <p className="font-medium text-foreground">{req.title}</p>
+                    {req.approvalNote && <p className="text-xs text-brand-muted-light truncate max-w-xs">{req.approvalNote}</p>}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-600">{req.requestedByUser?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{req.requestedByUser?.name ?? '—'}</td>
                   <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${PRIORITY_BADGE[req.priority] ?? ''}`}>{req.priority}</span></td>
                   <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[req.status] ?? ''}`}>{req.status}</span></td>
-                  <td className="px-4 py-3 text-center">{req.whatsappReminder && <FaWhatsapp size={14} className="text-[#25D366] mx-auto" />}</td>
-                  <td className="px-4 py-3 text-xs text-gray-400">{formatDate(req.createdAt)}</td>
+                  <td className="px-4 py-3 text-center">{req.whatsappReminder && <ChatRegular fontSize={14} className="text-[#25D366] mx-auto" />}</td>
+                  <td className="px-4 py-3 text-xs text-brand-muted-light">{formatDate(req.createdAt)}</td>
                   <td className="px-4 py-3">
                     {req.status === 'PENDING' && (
                       <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => handleApprove(req)} disabled={processing === req.id} className="p-1 rounded hover:bg-green-50 text-gray-400 hover:text-green-600 disabled:opacity-50" aria-label="Approve"><FaCheckCircle className="h-4 w-4" /></button>
-                        <button type="button" onClick={() => { setRejectTarget(req); setRejectNote('') }} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500" aria-label="Reject"><FaTimesCircle className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => handleApprove(req)} disabled={processing === req.id} className="p-1 rounded hover:bg-green-50 text-brand-muted-light hover:text-green-600 disabled:opacity-50" aria-label="Approve"><CheckmarkCircleRegular className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => { setRejectTarget(req); setRejectNote('') }} className="p-1 rounded hover:bg-primary/10 text-brand-muted-light hover:text-primary" aria-label="Reject"><DismissCircleRegular className="h-4 w-4" /></button>
                       </div>
                     )}
                   </td>
@@ -205,7 +205,7 @@ export default function RequestsPage() {
                 )} />
               </div>
             </div>
-            <div className="rounded-lg border border-gray-200 p-3">
+            <div className="rounded-lg border border-border p-3">
               <WhatsAppReminderToggle value={waReminder} reminderTime={reminderTime} onToggle={setWaReminder} onTimeChange={setReminderTime} assigneeWhatsApp={assigneeWa} />
             </div>
             <DialogFooter>
@@ -221,12 +221,12 @@ export default function RequestsPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Reject Request</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">Provide a reason for rejecting <strong>{rejectTarget?.title}</strong>.</p>
+            <p className="text-sm text-muted-foreground">Provide a reason for rejecting <strong>{rejectTarget?.title}</strong>.</p>
             <Textarea value={rejectNote} onChange={e => setRejectNote(e.target.value)} rows={3} placeholder="Reason for rejection…" />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setRejectTarget(null)}>Cancel</Button>
-            <Button type="button" onClick={handleReject} className="bg-red-600 hover:bg-red-700 text-white">Reject</Button>
+            <Button type="button" onClick={handleReject} className="bg-primary hover:bg-brand-red-dark text-white">Reject</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

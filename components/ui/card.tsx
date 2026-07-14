@@ -3,9 +3,8 @@ import { cn } from '@/lib/utils'
 
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => {
-    // Use explicit white background to avoid transparent or theme-variable issues
     return (
-      <div ref={ref} className={cn('rounded-lg border bg-white text-card-foreground shadow-sm', className)} {...props} />
+      <div ref={ref} className={cn('rounded-card border border-border bg-card text-card-foreground shadow-card', className)} {...props} />
     )
   }
 )

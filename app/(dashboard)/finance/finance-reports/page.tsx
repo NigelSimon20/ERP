@@ -1,13 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import { FaChartBar, FaDownload } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { ArrowDownloadRegular, DataBarVerticalRegular } from '@fluentui/react-icons';
 
 type ReportType = 'income-statement' | 'balance-sheet' | 'trial-balance' | 'aged-receivables' | 'aged-payables'
 
@@ -50,21 +50,21 @@ type ReportData = IncomeStatement | BalanceSheet | TrialBalance | AgedReceivable
 function AgingHeader() {
   return (
     <tr>
-      <th className="text-left px-3 py-2 font-medium text-gray-600">Name</th>
-      <th className="text-right px-3 py-2 font-medium text-gray-600">Current</th>
-      <th className="text-right px-3 py-2 font-medium text-gray-600">1–30 days</th>
-      <th className="text-right px-3 py-2 font-medium text-gray-600">31–60 days</th>
-      <th className="text-right px-3 py-2 font-medium text-gray-600">61–90 days</th>
-      <th className="text-right px-3 py-2 font-medium text-gray-600">90+ days</th>
-      <th className="text-right px-3 py-2 font-medium text-gray-600">Total</th>
+      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Name</th>
+      <th className="text-right px-3 py-2 font-medium text-muted-foreground">Current</th>
+      <th className="text-right px-3 py-2 font-medium text-muted-foreground">1–30 days</th>
+      <th className="text-right px-3 py-2 font-medium text-muted-foreground">31–60 days</th>
+      <th className="text-right px-3 py-2 font-medium text-muted-foreground">61–90 days</th>
+      <th className="text-right px-3 py-2 font-medium text-muted-foreground">90+ days</th>
+      <th className="text-right px-3 py-2 font-medium text-muted-foreground">Total</th>
     </tr>
   )
 }
 
 function AgingRow({ name, row }: { name: string; row: AgedRow }) {
   return (
-    <tr className="hover:bg-gray-50 border-t border-gray-100">
-      <td className="px-3 py-2.5 font-medium text-[#0D1B2A]">{name}</td>
+    <tr className="hover:bg-muted/50 border-t border-border">
+      <td className="px-3 py-2.5 font-medium text-foreground">{name}</td>
       <td className="px-3 py-2.5 text-right">{formatCurrency(row.current)}</td>
       <td className="px-3 py-2.5 text-right">{formatCurrency(row.days1_30)}</td>
       <td className="px-3 py-2.5 text-right">{formatCurrency(row.days31_60)}</td>
@@ -78,8 +78,8 @@ function AgingRow({ name, row }: { name: string; row: AgedRow }) {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <h3 className="text-sm font-semibold text-[#0D1B2A] uppercase tracking-wide mb-2">{title}</h3>
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">{children}</div>
+      <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-2">{title}</h3>
+      <div className="rounded-lg border border-border bg-card overflow-hidden">{children}</div>
     </div>
   )
 }
@@ -147,13 +147,13 @@ export default function FinanceReportsPage() {
       />
 
       {/* Tabs */}
-      <div className="mt-5 flex gap-1 border-b border-gray-200 overflow-x-auto">
+      <div className="mt-5 flex gap-1 border-b border-border overflow-x-auto">
         {REPORT_TABS.map((tab) => (
           <button
             type="button"
             key={tab.key}
             onClick={() => { setActiveTab(tab.key); setReport(null) }}
-            className={`px-3 py-2 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === tab.key ? 'border-[#CC0000] text-[#CC0000]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+            className={`px-3 py-2 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === tab.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}
           >
             {tab.label}
           </button>
@@ -180,12 +180,12 @@ export default function FinanceReportsPage() {
             <Input type="date" value={asAt} onChange={(e) => setAsAt(e.target.value)} className="w-36 h-9 text-sm" />
           </div>
         )}
-        <Button type="button" onClick={generate} disabled={loading} className="bg-[#CC0000] hover:bg-[#AA0000] text-white h-9">
+        <Button type="button" onClick={generate} disabled={loading} className="bg-primary hover:bg-brand-red-dark text-white h-9">
           {loading ? 'Generating…' : 'Generate Report'}
         </Button>
         {report && (
           <Button type="button" variant="outline" onClick={exportPdf} className="h-9 gap-1.5">
-            <FaDownload className="h-3.5 w-3.5" /> Export PDF
+            <ArrowDownloadRegular className="h-3.5 w-3.5" /> Export PDF
           </Button>
         )}
       </div>
@@ -193,15 +193,15 @@ export default function FinanceReportsPage() {
       {/* Spinner */}
       {loading && (
         <div className="mt-8 flex justify-center">
-          <div className="h-8 w-8 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" />
+          <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       )}
 
       {/* Empty prompt */}
       {!loading && !report && (
         <div className="mt-12 text-center">
-          <FaChartBar className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-sm text-gray-400">Configure the date range above and click Generate Report</p>
+          <DataBarVerticalRegular className="h-10 w-10 text-brand-muted-light mx-auto mb-3" />
+          <p className="text-sm text-brand-muted-light">Configure the date range above and click Generate Report</p>
         </div>
       )}
 
@@ -214,23 +214,23 @@ export default function FinanceReportsPage() {
             <>
               <Section title="Revenue">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-muted/50 border-b border-border">
                     <tr>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Code</th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Account</th>
-                      <th className="text-right px-3 py-2 font-medium text-gray-600">Amount</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Code</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Account</th>
+                      <th className="text-right px-3 py-2 font-medium text-muted-foreground">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {report.revenueRows.map((r) => (
-                      <tr key={r.accountCode} className="border-t border-gray-100 hover:bg-gray-50">
-                        <td className="px-3 py-2.5 font-mono text-xs text-gray-500">{r.accountCode}</td>
-                        <td className="px-3 py-2.5 text-gray-700">{r.name}</td>
+                      <tr key={r.accountCode} className="border-t border-border hover:bg-muted/50">
+                        <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{r.accountCode}</td>
+                        <td className="px-3 py-2.5 text-foreground">{r.name}</td>
                         <td className="px-3 py-2.5 text-right font-medium text-green-600">{formatCurrency(r.amount)}</td>
                       </tr>
                     ))}
-                    <tr className="border-t-2 border-gray-300 bg-gray-50">
-                      <td colSpan={2} className="px-3 py-2.5 font-bold text-[#0D1B2A]">Total Revenue</td>
+                    <tr className="border-t-2 border-border bg-muted/50">
+                      <td colSpan={2} className="px-3 py-2.5 font-bold text-foreground">Total Revenue</td>
                       <td className="px-3 py-2.5 text-right font-bold text-green-600">{formatCurrency(report.totalRevenue)}</td>
                     </tr>
                   </tbody>
@@ -238,30 +238,30 @@ export default function FinanceReportsPage() {
               </Section>
               <Section title="Expenses">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-muted/50 border-b border-border">
                     <tr>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Code</th>
-                      <th className="text-left px-3 py-2 font-medium text-gray-600">Account</th>
-                      <th className="text-right px-3 py-2 font-medium text-gray-600">Amount</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Code</th>
+                      <th className="text-left px-3 py-2 font-medium text-muted-foreground">Account</th>
+                      <th className="text-right px-3 py-2 font-medium text-muted-foreground">Amount</th>
                     </tr>
                   </thead>
                   <tbody>
                     {report.expenseRows.map((r) => (
-                      <tr key={r.accountCode} className="border-t border-gray-100 hover:bg-gray-50">
-                        <td className="px-3 py-2.5 font-mono text-xs text-gray-500">{r.accountCode}</td>
-                        <td className="px-3 py-2.5 text-gray-700">{r.name}</td>
+                      <tr key={r.accountCode} className="border-t border-border hover:bg-muted/50">
+                        <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{r.accountCode}</td>
+                        <td className="px-3 py-2.5 text-foreground">{r.name}</td>
                         <td className="px-3 py-2.5 text-right font-medium text-red-600">{formatCurrency(r.amount)}</td>
                       </tr>
                     ))}
-                    <tr className="border-t-2 border-gray-300 bg-gray-50">
-                      <td colSpan={2} className="px-3 py-2.5 font-bold text-[#0D1B2A]">Total Expenses</td>
+                    <tr className="border-t-2 border-border bg-muted/50">
+                      <td colSpan={2} className="px-3 py-2.5 font-bold text-foreground">Total Expenses</td>
                       <td className="px-3 py-2.5 text-right font-bold text-red-600">{formatCurrency(report.totalExpenses)}</td>
                     </tr>
                   </tbody>
                 </table>
               </Section>
               <div className={`rounded-lg border p-4 flex justify-between items-center ${report.netProfit >= 0 ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                <span className="font-bold text-[#0D1B2A] text-base">Net {report.netProfit >= 0 ? 'Profit' : 'Loss'}</span>
+                <span className="font-bold text-foreground text-base">Net {report.netProfit >= 0 ? 'Profit' : 'Loss'}</span>
                 <span className={`text-xl font-bold ${report.netProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(Math.abs(report.netProfit))}
                 </span>
@@ -279,23 +279,23 @@ export default function FinanceReportsPage() {
                 return (
                   <Section key={t} title={sectionTitle}>
                     <table className="w-full text-sm">
-                      <thead className="bg-gray-50 border-b border-gray-200">
+                      <thead className="bg-muted/50 border-b border-border">
                         <tr>
-                          <th className="text-left px-3 py-2 font-medium text-gray-600">Code</th>
-                          <th className="text-left px-3 py-2 font-medium text-gray-600">Account</th>
-                          <th className="text-right px-3 py-2 font-medium text-gray-600">Balance</th>
+                          <th className="text-left px-3 py-2 font-medium text-muted-foreground">Code</th>
+                          <th className="text-left px-3 py-2 font-medium text-muted-foreground">Account</th>
+                          <th className="text-right px-3 py-2 font-medium text-muted-foreground">Balance</th>
                         </tr>
                       </thead>
                       <tbody>
                         {rows.map((r) => (
-                          <tr key={r.accountCode} className="border-t border-gray-100 hover:bg-gray-50">
-                            <td className="px-3 py-2.5 font-mono text-xs text-gray-500">{r.accountCode}</td>
-                            <td className="px-3 py-2.5 text-gray-700">{r.name}</td>
+                          <tr key={r.accountCode} className="border-t border-border hover:bg-muted/50">
+                            <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{r.accountCode}</td>
+                            <td className="px-3 py-2.5 text-foreground">{r.name}</td>
                             <td className="px-3 py-2.5 text-right font-medium">{formatCurrency(r.balance)}</td>
                           </tr>
                         ))}
-                        <tr className="border-t-2 border-gray-300 bg-gray-50">
-                          <td colSpan={2} className="px-3 py-2.5 font-bold text-[#0D1B2A]">Total {sectionTitle}</td>
+                        <tr className="border-t-2 border-border bg-muted/50">
+                          <td colSpan={2} className="px-3 py-2.5 font-bold text-foreground">Total {sectionTitle}</td>
                           <td className="px-3 py-2.5 text-right font-bold">{formatCurrency(total)}</td>
                         </tr>
                       </tbody>
@@ -304,7 +304,7 @@ export default function FinanceReportsPage() {
                 )
               })}
               <div className={`rounded-lg border p-3 flex items-center justify-between text-sm ${report.balanced ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
-                <span className="font-medium text-[#0D1B2A]">Balance Check: Assets = Liabilities + Equity</span>
+                <span className="font-medium text-foreground">Balance Check: Assets = Liabilities + Equity</span>
                 <span className={`font-bold ${report.balanced ? 'text-green-600' : 'text-red-600'}`}>
                   {report.balanced ? '✓ Balanced' : '✗ Out of Balance'}
                 </span>
@@ -316,29 +316,29 @@ export default function FinanceReportsPage() {
           {isTrial(report) && (
             <Section title="Trial Balance">
               <table className="w-full text-sm">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-muted/50 border-b border-border">
                   <tr>
-                    <th className="text-left px-3 py-2 font-medium text-gray-600">Code</th>
-                    <th className="text-left px-3 py-2 font-medium text-gray-600">Account</th>
-                    <th className="text-left px-3 py-2 font-medium text-gray-600">Type</th>
-                    <th className="text-right px-3 py-2 font-medium text-gray-600">Debit</th>
-                    <th className="text-right px-3 py-2 font-medium text-gray-600">Credit</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Code</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Account</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Type</th>
+                    <th className="text-right px-3 py-2 font-medium text-muted-foreground">Debit</th>
+                    <th className="text-right px-3 py-2 font-medium text-muted-foreground">Credit</th>
                   </tr>
                 </thead>
                 <tbody>
                   {report.rows.map((r) => (
-                    <tr key={r.accountCode} className="border-t border-gray-100 hover:bg-gray-50">
-                      <td className="px-3 py-2.5 font-mono text-xs text-gray-500">{r.accountCode}</td>
-                      <td className="px-3 py-2.5 text-gray-700">{r.name}</td>
-                      <td className="px-3 py-2.5 text-gray-500 text-xs capitalize">{r.type.toLowerCase()}</td>
+                    <tr key={r.accountCode} className="border-t border-border hover:bg-muted/50">
+                      <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">{r.accountCode}</td>
+                      <td className="px-3 py-2.5 text-foreground">{r.name}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs capitalize">{r.type.toLowerCase()}</td>
                       <td className="px-3 py-2.5 text-right">{r.totalDebit > 0 ? formatCurrency(r.totalDebit) : '—'}</td>
                       <td className="px-3 py-2.5 text-right">{r.totalCredit > 0 ? formatCurrency(r.totalCredit) : '—'}</td>
                     </tr>
                   ))}
-                  <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold">
-                    <td colSpan={3} className="px-3 py-2.5 text-[#0D1B2A]">Totals</td>
-                    <td className="px-3 py-2.5 text-right text-[#0D1B2A]">{formatCurrency(report.grandDebit)}</td>
-                    <td className="px-3 py-2.5 text-right text-[#0D1B2A]">{formatCurrency(report.grandCredit)}</td>
+                  <tr className="border-t-2 border-border bg-muted/50 font-bold">
+                    <td colSpan={3} className="px-3 py-2.5 text-foreground">Totals</td>
+                    <td className="px-3 py-2.5 text-right text-foreground">{formatCurrency(report.grandDebit)}</td>
+                    <td className="px-3 py-2.5 text-right text-foreground">{formatCurrency(report.grandCredit)}</td>
                   </tr>
                 </tbody>
               </table>
@@ -354,15 +354,15 @@ export default function FinanceReportsPage() {
           {isReceivables() && 'rows' in report && (
             <Section title="Aged Receivables">
               {(report as AgedReceivables).rows.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-gray-400">No outstanding receivables</p>
+                <p className="px-3 py-4 text-sm text-brand-muted-light">No outstanding receivables</p>
               ) : (
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200"><AgingHeader /></thead>
+                  <thead className="bg-muted/50 border-b border-border"><AgingHeader /></thead>
                   <tbody>
                     {(report as AgedReceivables).rows.map((r) => (
                       <AgingRow key={r.customer} name={r.customer} row={r} />
                     ))}
-                    <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold text-[#0D1B2A]">
+                    <tr className="border-t-2 border-border bg-muted/50 font-bold text-foreground">
                       <td className="px-3 py-2.5">Total</td>
                       {(['current', 'days1_30', 'days31_60', 'days61_90', 'days90plus', 'total'] as const).map((k) => (
                         <td key={k} className="px-3 py-2.5 text-right">{formatCurrency((report as AgedReceivables).totals[k])}</td>
@@ -378,15 +378,15 @@ export default function FinanceReportsPage() {
           {isPayables() && 'rows' in report && (
             <Section title="Aged Payables">
               {(report as AgedPayables).rows.length === 0 ? (
-                <p className="px-3 py-4 text-sm text-gray-400">No outstanding payables</p>
+                <p className="px-3 py-4 text-sm text-brand-muted-light">No outstanding payables</p>
               ) : (
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200"><AgingHeader /></thead>
+                  <thead className="bg-muted/50 border-b border-border"><AgingHeader /></thead>
                   <tbody>
                     {(report as AgedPayables).rows.map((r) => (
                       <AgingRow key={r.supplier} name={r.supplier} row={r} />
                     ))}
-                    <tr className="border-t-2 border-gray-300 bg-gray-50 font-bold text-[#0D1B2A]">
+                    <tr className="border-t-2 border-border bg-muted/50 font-bold text-foreground">
                       <td className="px-3 py-2.5">Total</td>
                       {(['current', 'days1_30', 'days31_60', 'days61_90', 'days90plus', 'total'] as const).map((k) => (
                         <td key={k} className="px-3 py-2.5 text-right">{formatCurrency((report as AgedPayables).totals[k])}</td>

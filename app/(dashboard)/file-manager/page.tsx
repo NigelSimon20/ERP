@@ -1,8 +1,6 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { FaFilePdf, FaFileWord, FaFileExcel, FaFileImage, FaFolder, FaSearch, FaUpload, FaTh, FaList, FaDownload, FaLink, FaTrash, FaFileAlt } from 'react-icons/fa'
-import { MdClose } from 'react-icons/md'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -10,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { ArrowDownloadRegular, ArrowUploadRegular, DeleteRegular, DismissRegular, DocumentImageRegular, DocumentPdfRegular, DocumentRegular, DocumentTableRegular, FolderRegular, GridRegular, LinkRegular, ListRegular, SearchRegular } from '@fluentui/react-icons';
 
 interface FileRecord {
   id: string
@@ -56,10 +55,10 @@ function FileIcon({ mimeType, fileUrl, size = 40 }: { mimeType: string; fileUrl:
   if (mimeType.startsWith('image/')) {
     return <img src={fileUrl} alt="" className={imgCls} />
   }
-  if (mimeType === 'application/pdf') return <FaFilePdf size={size} className="text-red-500" />
-  if (mimeType.includes('wordprocessingml')) return <FaFileWord size={size} className="text-blue-500" />
-  if (mimeType.includes('spreadsheetml')) return <FaFileExcel size={size} className="text-green-600" />
-  return <FaFileImage size={size} className="text-gray-400" />
+  if (mimeType === 'application/pdf') return <DocumentPdfRegular fontSize={size} className="text-red-500" />
+  if (mimeType.includes('wordprocessingml')) return <DocumentRegular fontSize={size} className="text-blue-500" />
+  if (mimeType.includes('spreadsheetml')) return <DocumentTableRegular fontSize={size} className="text-green-600" />
+  return <DocumentImageRegular fontSize={size} className="text-brand-muted-light" />
 }
 
 export default function FileManagerPage() {
@@ -180,9 +179,9 @@ export default function FileManagerPage() {
   return (
     <div className="flex gap-0 h-full">
       {/* Left panel — folder tree */}
-      <aside className="w-56 shrink-0 border-r border-gray-200 bg-white rounded-l-lg overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Folders</p>
+      <aside className="w-56 shrink-0 border-r border-border bg-card rounded-l-lg overflow-hidden">
+        <div className="px-4 py-3 border-b border-border">
+          <p className="text-xs font-semibold text-brand-muted-light uppercase tracking-wider">Folders</p>
         </div>
         <nav className="py-2">
           {FOLDERS.map(folder => (
@@ -192,17 +191,17 @@ export default function FileManagerPage() {
               onClick={() => { setActiveFolder(folder.key); setSearch('') }}
               className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
                 activeFolder === folder.key
-                  ? 'bg-red-50 text-[#CC0000] font-medium'
-                  : 'text-gray-600 hover:bg-gray-50'
+                  ? 'bg-red-50 text-primary font-medium'
+                  : 'text-muted-foreground hover:bg-muted/50'
               }`}
             >
               <span className="flex items-center gap-2">
-                <FaFolder size={13} className={activeFolder === folder.key ? 'text-[#CC0000]' : 'text-gray-300'} />
+                <FolderRegular fontSize={13} className={activeFolder === folder.key ? 'text-primary' : 'text-brand-muted-light'} />
                 {folder.label}
               </span>
               {!!folderCounts[folder.key] && (
                 <span className={`text-xs rounded-full px-1.5 py-0.5 min-w-[20px] text-center ${
-                  activeFolder === folder.key ? 'bg-[#CC0000] text-white' : 'bg-gray-100 text-gray-500'
+                  activeFolder === folder.key ? 'bg-primary text-white' : 'bg-muted text-muted-foreground'
                 }`}>{folderCounts[folder.key]}</span>
               )}
             </button>
@@ -211,12 +210,12 @@ export default function FileManagerPage() {
       </aside>
 
       {/* Right panel */}
-      <div className="flex-1 min-w-0 flex flex-col bg-white rounded-r-lg border-t border-r border-b border-gray-200">
+      <div className="flex-1 min-w-0 flex flex-col bg-card rounded-r-lg border-t border-r border-b border-border">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 flex-wrap">
-          <h2 className="font-semibold text-[#0D1B2A] text-sm shrink-0">{activeFolderLabel}</h2>
+        <div className="flex items-center gap-3 px-4 py-3 border-b border-border flex-wrap">
+          <h2 className="font-semibold text-foreground text-sm shrink-0">{activeFolderLabel}</h2>
           <div className="relative flex-1 min-w-[160px] max-w-xs">
-            <FaSearch className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <SearchRegular className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-brand-muted-light" />
             <Input
               value={search}
               onChange={e => setSearch(e.target.value)}
@@ -226,15 +225,15 @@ export default function FileManagerPage() {
             />
           </div>
           <div className="flex items-center gap-1 ml-auto">
-            <button type="button" onClick={() => setView('grid')} className={`p-1.5 rounded ${view === 'grid' ? 'bg-gray-100' : 'hover:bg-gray-50'}`} aria-label="Grid view"><FaTh className="h-4 w-4 text-gray-500" /></button>
-            <button type="button" onClick={() => setView('list')} className={`p-1.5 rounded ${view === 'list' ? 'bg-gray-100' : 'hover:bg-gray-50'}`} aria-label="List view"><FaList className="h-4 w-4 text-gray-500" /></button>
+            <button type="button" onClick={() => setView('grid')} className={`p-1.5 rounded ${view === 'grid' ? 'bg-muted' : 'hover:bg-muted/50'}`} aria-label="Grid view"><GridRegular className="h-4 w-4 text-muted-foreground" /></button>
+            <button type="button" onClick={() => setView('list')} className={`p-1.5 rounded ${view === 'list' ? 'bg-muted' : 'hover:bg-muted/50'}`} aria-label="List view"><ListRegular className="h-4 w-4 text-muted-foreground" /></button>
             <Button
               type="button"
               size="sm"
-              className="ml-2 bg-[#CC0000] hover:bg-[#AA0000] text-white h-8"
+              className="ml-2 bg-primary hover:bg-brand-red-dark text-white h-8"
               onClick={() => fileInputRef.current?.click()}
             >
-              <FaUpload className="h-3.5 w-3.5 mr-1" /> Upload
+              <ArrowUploadRegular className="h-3.5 w-3.5 mr-1" /> Upload
             </Button>
             <input
               ref={fileInputRef}
@@ -253,21 +252,21 @@ export default function FileManagerPage() {
           onDragLeave={() => setIsDragging(false)}
           onDrop={onDrop}
           className={`mx-4 mt-3 rounded-lg border-2 border-dashed transition-colors text-center py-4 ${
-            isDragging ? 'border-[#CC0000] bg-red-50' : 'border-gray-200 bg-gray-50'
+            isDragging ? 'border-primary bg-red-50' : 'border-border bg-muted/50'
           }`}
         >
           {uploading ? (
             <div className="px-6">
-              <p className="text-xs text-gray-500 mb-2">Uploading… {uploadProgress}%</p>
+              <p className="text-xs text-muted-foreground mb-2">Uploading… {uploadProgress}%</p>
               <svg width="100%" height="6" className="rounded-full overflow-hidden">
                 <rect x="0" y="0" width="100%" height="6" fill="#E5E7EB" rx="3" />
-                <rect x="0" y="0" width={`${uploadProgress}%`} height="6" fill="#CC0000" rx="3" />
+                <rect x="0" y="0" width={`${uploadProgress}%`} height="6" fill="#DC2626" rx="3" />
               </svg>
             </div>
           ) : (
-            <p className="text-xs text-gray-400">
-              <span className="font-medium text-gray-600">Drag &amp; drop</span> a file here, or{' '}
-              <button type="button" onClick={() => fileInputRef.current?.click()} className="text-[#CC0000] underline">browse</button>
+            <p className="text-xs text-brand-muted-light">
+              <span className="font-medium text-muted-foreground">Drag &amp; drop</span> a file here, or{' '}
+              <button type="button" onClick={() => fileInputRef.current?.click()} className="text-primary underline">browse</button>
               <br />PDF, DOCX, XLSX, JPG, PNG · Max 10 MB
             </p>
           )}
@@ -276,63 +275,63 @@ export default function FileManagerPage() {
         {/* File content */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="flex justify-center py-12"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+            <div className="flex justify-center py-12"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
           ) : filteredFiles.length === 0 ? (
-            <EmptyState icon={FaFileAlt} title="No files" description={`Upload files to the ${activeFolderLabel} folder`} action={{ label: 'Upload File', onClick: () => fileInputRef.current?.click() }} />
+            <EmptyState icon={DocumentRegular} title="No files" description={`Upload files to the ${activeFolderLabel} folder`} action={{ label: 'Upload File', onClick: () => fileInputRef.current?.click() }} />
           ) : view === 'grid' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
               {filteredFiles.map(file => (
-                <div key={file.id} className="relative group rounded-lg border border-gray-200 bg-white p-3 hover:shadow-md transition-shadow flex flex-col gap-2">
+                <div key={file.id} className="relative group rounded-lg border border-border bg-card p-3 hover:shadow-md transition-shadow flex flex-col gap-2">
                   <div className="flex items-center justify-center h-12">
                     <FileIcon mimeType={file.mimeType} fileUrl={file.fileUrl} size={36} />
                   </div>
-                  <p className="text-xs font-medium text-[#0D1B2A] truncate text-center" title={file.originalName}>{file.originalName}</p>
-                  <p className="text-xs text-gray-400 text-center">{formatBytes(file.fileSize)}</p>
+                  <p className="text-xs font-medium text-foreground truncate text-center" title={file.originalName}>{file.originalName}</p>
+                  <p className="text-xs text-brand-muted-light text-center">{formatBytes(file.fileSize)}</p>
                   {/* Actions */}
-                  <div className="absolute top-1.5 right-1.5 hidden group-hover:flex items-center gap-0.5 bg-white border border-gray-200 rounded-md shadow-sm">
-                    <a href={file.fileUrl} download={file.originalName} className="p-1 hover:bg-gray-50 rounded-l-md" aria-label="Download"><FaDownload className="h-3 w-3 text-gray-500" /></a>
-                    <button type="button" onClick={() => { setLinkTarget(file); setLinkModule(''); setLinkSearch('') }} className="p-1 hover:bg-gray-50" aria-label="Link to record"><FaLink className="h-3 w-3 text-gray-500" /></button>
-                    <button type="button" onClick={() => setDeleteTarget(file)} className="p-1 hover:bg-red-50 rounded-r-md" aria-label="Delete"><FaTrash className="h-3 w-3 text-red-400" /></button>
+                  <div className="absolute top-1.5 right-1.5 hidden group-hover:flex items-center gap-0.5 bg-card border border-border rounded-md shadow-sm">
+                    <a href={file.fileUrl} download={file.originalName} className="p-1 hover:bg-muted/50 rounded-l-md" aria-label="Download"><ArrowDownloadRegular className="h-3 w-3 text-muted-foreground" /></a>
+                    <button type="button" onClick={() => { setLinkTarget(file); setLinkModule(''); setLinkSearch('') }} className="p-1 hover:bg-muted/50" aria-label="Link to record"><LinkRegular className="h-3 w-3 text-muted-foreground" /></button>
+                    <button type="button" onClick={() => setDeleteTarget(file)} className="p-1 hover:bg-red-50 rounded-r-md" aria-label="Delete"><DeleteRegular className="h-3 w-3 text-red-400" /></button>
                   </div>
                 </div>
               ))}
             </div>
           ) : (
             <table className="w-full text-sm">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 text-xs">Name</th>
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 text-xs">Type</th>
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 text-xs">Size</th>
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 text-xs">Folder</th>
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 text-xs">Linked To</th>
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 text-xs">Uploaded By</th>
-                  <th className="text-left px-3 py-2 font-medium text-gray-600 text-xs">Date</th>
-                  <th className="px-3 py-2 font-medium text-gray-600 text-xs">Actions</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Name</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Type</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Size</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Folder</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Linked To</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Uploaded By</th>
+                  <th className="text-left px-3 py-2 font-medium text-muted-foreground text-xs">Date</th>
+                  <th className="px-3 py-2 font-medium text-muted-foreground text-xs">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {filteredFiles.map(file => (
-                  <tr key={file.id} className="hover:bg-gray-50">
+                  <tr key={file.id} className="hover:bg-muted/50">
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <FileIcon mimeType={file.mimeType} fileUrl={file.fileUrl} size={18} />
-                        <span className="text-xs font-medium text-[#0D1B2A] max-w-[160px] truncate" title={file.originalName}>{file.originalName}</span>
+                        <span className="text-xs font-medium text-foreground max-w-[160px] truncate" title={file.originalName}>{file.originalName}</span>
                       </div>
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">
+                    <td className="px-3 py-2.5 text-xs text-brand-muted-light">
                       {file.mimeType.includes('pdf') ? 'PDF' : file.mimeType.includes('word') ? 'DOCX' : file.mimeType.includes('sheet') ? 'XLSX' : file.mimeType.startsWith('image/') ? 'Image' : 'File'}
                     </td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">{formatBytes(file.fileSize)}</td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">{FOLDERS.find(f => f.key === file.folder)?.label ?? file.folder}</td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">{file.linkedModule ? `${file.linkedModule} #${file.linkedId?.slice(0, 8)}` : '—'}</td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">{file.uploaderName}</td>
-                    <td className="px-3 py-2.5 text-xs text-gray-400">{formatDate(file.createdAt)}</td>
+                    <td className="px-3 py-2.5 text-xs text-brand-muted-light">{formatBytes(file.fileSize)}</td>
+                    <td className="px-3 py-2.5 text-xs text-brand-muted-light">{FOLDERS.find(f => f.key === file.folder)?.label ?? file.folder}</td>
+                    <td className="px-3 py-2.5 text-xs text-brand-muted-light">{file.linkedModule ? `${file.linkedModule} #${file.linkedId?.slice(0, 8)}` : '—'}</td>
+                    <td className="px-3 py-2.5 text-xs text-brand-muted-light">{file.uploaderName}</td>
+                    <td className="px-3 py-2.5 text-xs text-brand-muted-light">{formatDate(file.createdAt)}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-1">
-                        <a href={file.fileUrl} download={file.originalName} className="p-1 rounded hover:bg-gray-100" aria-label="Download"><FaDownload className="h-3.5 w-3.5 text-gray-400" /></a>
-                        <button type="button" onClick={() => { setLinkTarget(file); setLinkModule(''); setLinkSearch('') }} className="p-1 rounded hover:bg-gray-100" aria-label="Link"><FaLink className="h-3.5 w-3.5 text-gray-400" /></button>
-                        <button type="button" onClick={() => setDeleteTarget(file)} className="p-1 rounded hover:bg-red-50" aria-label="Delete"><FaTrash className="h-3.5 w-3.5 text-red-400" /></button>
+                        <a href={file.fileUrl} download={file.originalName} className="p-1 rounded hover:bg-muted" aria-label="Download"><ArrowDownloadRegular className="h-3.5 w-3.5 text-brand-muted-light" /></a>
+                        <button type="button" onClick={() => { setLinkTarget(file); setLinkModule(''); setLinkSearch('') }} className="p-1 rounded hover:bg-muted" aria-label="Link"><LinkRegular className="h-3.5 w-3.5 text-brand-muted-light" /></button>
+                        <button type="button" onClick={() => setDeleteTarget(file)} className="p-1 rounded hover:bg-red-50" aria-label="Delete"><DeleteRegular className="h-3.5 w-3.5 text-red-400" /></button>
                       </div>
                     </td>
                   </tr>
@@ -347,10 +346,10 @@ export default function FileManagerPage() {
       <Dialog open={!!deleteTarget} onOpenChange={o => !o && setDeleteTarget(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Delete File</DialogTitle></DialogHeader>
-          <p className="text-sm text-gray-600">Are you sure you want to delete <strong>{deleteTarget?.originalName}</strong>? This cannot be undone.</p>
+          <p className="text-sm text-muted-foreground">Are you sure you want to delete <strong>{deleteTarget?.originalName}</strong>? This cannot be undone.</p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-            <Button type="button" onClick={deleteFile} className="bg-red-600 hover:bg-red-700 text-white">Delete</Button>
+            <Button type="button" onClick={deleteFile} className="bg-primary hover:bg-brand-red-dark text-white">Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -360,13 +359,13 @@ export default function FileManagerPage() {
         <DialogContent className="max-w-md">
           <DialogHeader><DialogTitle>Link to Record</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <p className="text-sm text-gray-500">Linking <strong>{linkTarget?.originalName}</strong> to a record.</p>
+            <p className="text-sm text-muted-foreground">Linking <strong>{linkTarget?.originalName}</strong> to a record.</p>
             <div className="space-y-1.5">
               <Label>Module</Label>
               <select
                 value={linkModule}
                 onChange={e => { setLinkModule(e.target.value); setLinkSearch(''); setLinkRecords([]) }}
-                className="w-full h-9 rounded-md border border-gray-300 px-2 text-sm"
+                className="w-full h-9 rounded-md border border-border px-2 text-sm"
                 aria-label="Select module"
               >
                 <option value="">Select module…</option>
@@ -381,15 +380,15 @@ export default function FileManagerPage() {
                   onChange={e => setLinkSearch(e.target.value)}
                   placeholder="Type to search…"
                 />
-                {linkFetching && <p className="text-xs text-gray-400">Searching…</p>}
+                {linkFetching && <p className="text-xs text-brand-muted-light">Searching…</p>}
                 {linkRecords.length > 0 && (
-                  <div className="max-h-48 overflow-y-auto border border-gray-200 rounded-md divide-y">
+                  <div className="max-h-48 overflow-y-auto border border-border rounded-md divide-y">
                     {linkRecords.map(r => (
                       <button
                         key={r.id}
                         type="button"
                         onClick={() => saveLink(r.id)}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50"
                       >
                         {r.label}
                       </button>
@@ -397,19 +396,19 @@ export default function FileManagerPage() {
                   </div>
                 )}
                 {!linkFetching && linkSearch && linkRecords.length === 0 && (
-                  <p className="text-xs text-gray-400">No results found</p>
+                  <p className="text-xs text-brand-muted-light">No results found</p>
                 )}
               </div>
             )}
             {linkTarget?.linkedModule && (
-              <div className="flex items-center justify-between text-xs text-gray-500 bg-gray-50 rounded-md px-3 py-2">
+              <div className="flex items-center justify-between text-xs text-muted-foreground bg-muted/50 rounded-md px-3 py-2">
                 <span>Currently linked to: <strong>{linkTarget.linkedModule}</strong></span>
                 <button
                   type="button"
                   onClick={async () => { await saveLink(''); setLinkTarget(null) }}
                   className="flex items-center gap-1 text-red-500 hover:text-red-700"
                 >
-                  <MdClose className="h-3 w-3" /> Remove link
+                  <DismissRegular className="h-3 w-3" /> Remove link
                 </button>
               </div>
             )}

@@ -1,10 +1,9 @@
 'use client'
 
 import { KPICard } from './KPICard'
-import { FaUsers, FaBuilding, FaExclamationTriangle, FaClock, FaCheckSquare, FaFileAlt, FaShieldAlt } from 'react-icons/fa'
-import { MdShowChart } from 'react-icons/md'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { formatDistanceToNow } from 'date-fns'
+import { ArrowTrendingRegular, BuildingRegular, ClockRegular, DocumentRegular, PeopleRegular, ShieldRegular, TaskListSquareLtrRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface Stats {
   guardCount: number
@@ -45,62 +44,62 @@ export function DashboardStats({
           title="Total Guards"
           value={stats.guardCount}
           subtitle={`${stats.activeGuards} active`}
-          icon={FaShieldAlt}
+          icon={ShieldRegular}
           color="navy"
         />
         <KPICard
           title="Sites"
           value={stats.siteCount}
           subtitle={`${stats.activeSites} active`}
-          icon={FaBuilding}
+          icon={BuildingRegular}
           color="blue"
         />
         <KPICard
           title="Open Incidents"
           value={stats.openIncidents}
           subtitle="Needs attention"
-          icon={FaExclamationTriangle}
+          icon={WarningRegular}
           color={stats.openIncidents > 0 ? 'red' : 'green'}
         />
         <KPICard
           title="Pending Leave"
           value={stats.pendingLeave}
           subtitle="Awaiting approval"
-          icon={FaClock}
+          icon={ClockRegular}
           color="amber"
         />
         <KPICard
           title="My Tasks"
           value={stats.pendingTasks}
           subtitle="In progress / pending"
-          icon={FaCheckSquare}
+          icon={TaskListSquareLtrRegular}
           color="blue"
         />
         <KPICard
           title="Overdue Invoices"
           value={stats.overdueInvoices}
           subtitle="Action required"
-          icon={FaFileAlt}
+          icon={DocumentRegular}
           color={stats.overdueInvoices > 0 ? 'red' : 'green'}
         />
         <KPICard
           title="Guard Utilisation"
           value={stats.guardCount > 0 ? `${Math.round((stats.activeGuards / stats.guardCount) * 100)}%` : '—'}
           subtitle="Active / total"
-          icon={FaUsers}
+          icon={PeopleRegular}
           color="navy"
         />
         <KPICard
           title="Site Utilisation"
           value={stats.siteCount > 0 ? `${Math.round((stats.activeSites / stats.siteCount) * 100)}%` : '—'}
           subtitle="Active / total"
-          icon={MdShowChart}
+          icon={ArrowTrendingRegular}
           color="green"
         />
       </div>
 
       {/* Recent Activity */}
-      <Card className="bg-white border border-brand-border shadow-sm">
+      <Card className="bg-card border border-brand-border shadow-sm">
         <CardHeader className="pb-3">
           <h2 className="text-sm font-semibold text-brand-navy">Recent Activity</h2>
         </CardHeader>

@@ -2,8 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
-import { FaUserShield, FaUserClock, FaIdCard, FaCalendarAlt, FaBell, FaUserCheck, FaMoneyCheckAlt, FaCheckCircle, FaTimesCircle, FaChartBar, FaUsers } from 'react-icons/fa'
-import { RiTeamLine } from 'react-icons/ri'
 import { DashboardPageShell } from '@/components/dashboard/DashboardPageShell'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { ChartCard } from '@/components/dashboard/ChartCard'
@@ -12,6 +10,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import { EmptyState } from '@/components/shared/EmptyState'
 import toast from 'react-hot-toast'
 import Link from 'next/link'
+import { AlertRegular, CalendarLtrRegular, CheckmarkCircleRegular, ContactCardRegular, DataBarVerticalRegular, DismissCircleRegular, PaymentRegular, PeopleRegular, PeopleTeamRegular, PersonAvailableRegular, PersonClockRegular, ShieldPersonRegular } from '@fluentui/react-icons';
 
 interface HRData {
   totalEmployees: number
@@ -30,7 +29,7 @@ interface HRData {
   upcomingBirthdays: { name: string; birthday: string; department: string }[]
 }
 
-const LEAVE_COLORS = ['#E74C5B', '#374151', '#F59E0B', '#22C55E', '#7C3AED', '#0891B2']
+const LEAVE_COLORS = ['#DC2626', '#374151', '#F59E0B', '#22C55E', '#9CA3AF', '#111827']
 const CT = { fontSize: 12, borderRadius: 10, border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }
 const TICK = { fontSize: 11, fill: '#9CA3AF' }
 const DASHBOARD_REFRESH_MS = 30_000
@@ -102,13 +101,13 @@ export default function HRDashboardPage() {
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-2">
           {[
-            { label: 'Add Employee', href: '/human-resources/employees', Icon: FaIdCard },
-            { label: 'Review Leave', href: '/human-resources/leave-requests', Icon: FaCalendarAlt },
-            { label: 'Run Payroll', href: '/human-resources/payroll', Icon: FaMoneyCheckAlt },
-            { label: 'Attendance', href: '/operations/attendance', Icon: FaUserCheck },
+            { label: 'Add Employee', href: '/human-resources/employees', Icon: ContactCardRegular },
+            { label: 'Review Leave', href: '/human-resources/leave-requests', Icon: CalendarLtrRegular },
+            { label: 'Run Payroll', href: '/human-resources/payroll', Icon: PaymentRegular },
+            { label: 'Attendance', href: '/operations/attendance', Icon: PersonAvailableRegular },
           ].map(({ label, href, Icon }) => (
             <Link key={href} href={href} className="flex items-center gap-1.5 px-3 py-1.5 erp-btn erp-btn-ghost erp-btn-sm">
-              <Icon size={13} /> {label}
+              <Icon fontSize={13} /> {label}
             </Link>
           ))}
         </div>
@@ -116,41 +115,41 @@ export default function HRDashboardPage() {
         {/* Row 1 — Headcount */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {loading ? [1,2,3,4].map(i => <div key={i} className="erp-card !p-5 animate-pulse h-28" />) : <>
-            <KPICard title="Total Employees" value={data!.totalEmployees} icon={RiTeamLine} color="navy" />
-            <KPICard title="Active" value={data!.activeEmployees} icon={FaUserShield} color="green" />
-            <KPICard title="Suspended" value={data!.suspendedEmployees} icon={FaUserClock} color={data!.suspendedEmployees > 0 ? 'amber' : 'white'} />
-            <KPICard title="New Hires" subtitle="This month" value={data!.newHiresThisMonth} icon={FaIdCard} color="white" />
+            <KPICard title="Total Employees" value={data!.totalEmployees} icon={PeopleTeamRegular} color="navy" />
+            <KPICard title="Active" value={data!.activeEmployees} icon={ShieldPersonRegular} color="green" />
+            <KPICard title="Suspended" value={data!.suspendedEmployees} icon={PersonClockRegular} color={data!.suspendedEmployees > 0 ? 'amber' : 'white'} />
+            <KPICard title="New Hires" subtitle="This month" value={data!.newHiresThisMonth} icon={ContactCardRegular} color="white" />
           </>}
         </div>
 
         {/* Row 2 — Leave & Attendance */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {loading ? [1,2,3,4].map(i => <div key={i} className="erp-card !p-5 animate-pulse h-28" />) : <>
-            <KPICard title="Pending Leave" value={data!.pendingLeave} icon={FaCalendarAlt} color={data!.pendingLeave > 0 ? 'amber' : 'white'} />
-            <KPICard title="On Leave Today" value={data!.onLeaveToday} icon={FaBell} color="white" />
-            <KPICard title="Attendance Rate" subtitle="This month" value={`${data!.attendanceRate}%`} icon={FaUserCheck} color={data!.attendanceRate >= 90 ? 'green' : 'amber'} />
-            <KPICard title="Overtime Hours" value={`${data!.overtimeHours.toFixed(1)} h`} icon={FaUserClock} color="white" />
+            <KPICard title="Pending Leave" value={data!.pendingLeave} icon={CalendarLtrRegular} color={data!.pendingLeave > 0 ? 'amber' : 'white'} />
+            <KPICard title="On Leave Today" value={data!.onLeaveToday} icon={AlertRegular} color="white" />
+            <KPICard title="Attendance Rate" subtitle="This month" value={`${data!.attendanceRate}%`} icon={PersonAvailableRegular} color={data!.attendanceRate >= 90 ? 'green' : 'amber'} />
+            <KPICard title="Overtime Hours" value={`${data!.overtimeHours.toFixed(1)} h`} icon={PersonClockRegular} color="white" />
           </>}
         </div>
 
         {/* Payroll Summary */}
         {!loading && (
-          <div className="bg-white erp-card">
+          <div className="bg-card erp-card">
             <div className="flex items-center gap-2 mb-3">
-              <FaMoneyCheckAlt className="text-[#E74C5B]" size={16} />
-              <h3 className="text-sm font-semibold text-[#1F2937]">Latest Payroll Run</h3>
+              <PaymentRegular className="text-primary" fontSize={16} />
+              <h3 className="text-sm font-semibold text-foreground">Latest Payroll Run</h3>
             </div>
             {!data?.lastPayroll ? (
-              <p className="text-sm text-gray-400">No payroll runs recorded yet</p>
+              <p className="text-sm text-brand-muted-light">No payroll runs recorded yet</p>
             ) : (
               <div className="flex flex-wrap gap-6 text-sm">
-                <div><p className="text-xs text-gray-500">Period</p><p className="font-medium">{formatDate(data.lastPayroll.periodStart)} – {formatDate(data.lastPayroll.periodEnd)}</p></div>
-                <div><p className="text-xs text-gray-500">Gross</p><p className="font-medium">{formatCurrency(data.lastPayroll.totalGross)}</p></div>
-                <div><p className="text-xs text-gray-500">Net</p><p className="font-bold text-[#E74C5B]">{formatCurrency(data.lastPayroll.totalNet)}</p></div>
-                <div><p className="text-xs text-gray-500">Status</p>
+                <div><p className="text-xs text-muted-foreground">Period</p><p className="font-medium">{formatDate(data.lastPayroll.periodStart)} – {formatDate(data.lastPayroll.periodEnd)}</p></div>
+                <div><p className="text-xs text-muted-foreground">Gross</p><p className="font-medium">{formatCurrency(data.lastPayroll.totalGross)}</p></div>
+                <div><p className="text-xs text-muted-foreground">Net</p><p className="font-bold text-primary">{formatCurrency(data.lastPayroll.totalNet)}</p></div>
+                <div><p className="text-xs text-muted-foreground">Status</p>
                   <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${data.lastPayroll.status === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{data.lastPayroll.status}</span>
                 </div>
-                <Link href="/human-resources/payslips" className="text-xs text-[#E74C5B] hover:underline font-medium self-center">View Payslips →</Link>
+                <Link href="/human-resources/payslips" className="text-xs text-primary hover:underline font-medium self-center">View Payslips →</Link>
               </div>
             )}
           </div>
@@ -158,11 +157,11 @@ export default function HRDashboardPage() {
 
         {/* Row 3 — Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white erp-card">
-            <h3 className="text-sm font-semibold text-[#1F2937] mb-4">Department Headcount</h3>
-            {loading ? <div className="h-52 bg-[#F3F4F6] rounded-xl animate-pulse" /> :
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-4">Department Headcount</h3>
+            {loading ? <div className="h-52 bg-border rounded-xl animate-pulse" /> :
               !data?.departmentHeadcount.length ?
-              <EmptyState icon={FaChartBar} title="No department data" description="Assign departments to employees" /> :
+              <EmptyState icon={DataBarVerticalRegular} title="No department data" description="Assign departments to employees" /> :
               <ResponsiveContainer width="100%" height={208}>
                 <BarChart data={data!.departmentHeadcount} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />
@@ -175,11 +174,11 @@ export default function HRDashboardPage() {
             }
           </div>
 
-          <div className="bg-white erp-card">
-            <h3 className="text-sm font-semibold text-[#1F2937] mb-4">Leave by Type</h3>
-            {loading ? <div className="h-52 bg-[#F3F4F6] rounded-xl animate-pulse" /> :
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-4">Leave by Type</h3>
+            {loading ? <div className="h-52 bg-border rounded-xl animate-pulse" /> :
               !data?.leaveByType.length ?
-              <EmptyState icon={FaCalendarAlt} title="No leave data" description="Leave requests will appear here" /> :
+              <EmptyState icon={CalendarLtrRegular} title="No leave data" description="Leave requests will appear here" /> :
               <ResponsiveContainer width="100%" height={208}>
                 <PieChart>
                   <Pie data={data!.leaveByType} dataKey="count" nameKey="leaveType" cx="50%" cy="50%" outerRadius={80} paddingAngle={3}>
@@ -195,21 +194,21 @@ export default function HRDashboardPage() {
 
         {/* Row 4 — Tables */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white erp-card">
-            <h3 className="text-sm font-semibold text-[#1F2937] mb-3">Pending Leave Requests</h3>
-            {loading ? <div className="h-32 bg-[#F3F4F6] rounded-xl animate-pulse" /> :
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Pending Leave Requests</h3>
+            {loading ? <div className="h-32 bg-border rounded-xl animate-pulse" /> :
               !data?.recentLeaveRequests.length ?
-              <p className="text-sm text-gray-400 text-center py-6">No pending leave requests</p> :
+              <p className="text-sm text-brand-muted-light text-center py-6">No pending leave requests</p> :
               <div className="space-y-2">
                 {data!.recentLeaveRequests.map(l => (
-                  <div key={l.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                  <div key={l.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-gray-800">{l.guardName}</p>
-                      <p className="text-[10px] text-gray-500">{l.leaveType} · {formatDate(l.startDate)} – {formatDate(l.endDate)} ({l.daysRequested}d)</p>
+                      <p className="text-xs font-medium text-foreground">{l.guardName}</p>
+                      <p className="text-[10px] text-muted-foreground">{l.leaveType} · {formatDate(l.startDate)} – {formatDate(l.endDate)} ({l.daysRequested}d)</p>
                     </div>
                     <div className="flex gap-1 shrink-0">
-                      <button type="button" onClick={() => handleLeave(l.id, l.guardId, true)} className="p-1 text-green-600 hover:bg-green-50 rounded" title="Approve"><FaCheckCircle size={16} /></button>
-                      <button type="button" onClick={() => handleLeave(l.id, l.guardId, false)} className="p-1 text-red-500 hover:bg-red-50 rounded" title="Reject"><FaTimesCircle size={16} /></button>
+                      <button type="button" onClick={() => handleLeave(l.id, l.guardId, true)} className="p-1 text-green-600 hover:bg-green-50 rounded" title="Approve"><CheckmarkCircleRegular fontSize={16} /></button>
+                      <button type="button" onClick={() => handleLeave(l.id, l.guardId, false)} className="p-1 text-red-500 hover:bg-red-50 rounded" title="Reject"><DismissCircleRegular fontSize={16} /></button>
                     </div>
                   </div>
                 ))}
@@ -217,20 +216,20 @@ export default function HRDashboardPage() {
             }
           </div>
 
-          <div className="bg-white erp-card">
-            <h3 className="text-sm font-semibold text-[#1F2937] mb-3">Upcoming Birthdays</h3>
-            {loading ? <div className="h-32 bg-[#F3F4F6] rounded-xl animate-pulse" /> :
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Upcoming Birthdays</h3>
+            {loading ? <div className="h-32 bg-border rounded-xl animate-pulse" /> :
               !data?.upcomingBirthdays.length ?
-              <EmptyState icon={FaUsers} title="No upcoming birthdays" description="No birthdays in the next 7 days" /> :
+              <EmptyState icon={PeopleRegular} title="No upcoming birthdays" description="No birthdays in the next 7 days" /> :
               <div className="space-y-2">
                 {data!.upcomingBirthdays.map((g, i) => (
-                  <div key={i} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                    <div className="h-8 w-8 rounded-full bg-[#E74C5B]/10 flex items-center justify-center text-[#E74C5B] font-bold text-xs shrink-0">
+                  <div key={i} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                    <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-xs shrink-0">
                       {g.name[0]}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-gray-800">{g.name}</p>
-                      <p className="text-[10px] text-gray-500">{g.department} · {new Date(g.birthday).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
+                      <p className="text-xs font-medium text-foreground">{g.name}</p>
+                      <p className="text-[10px] text-muted-foreground">{g.department} · {new Date(g.birthday).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
                     </div>
                   </div>
                 ))}

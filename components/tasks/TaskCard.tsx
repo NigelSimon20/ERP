@@ -1,11 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import {
-  FaCheckCircle, FaPen, FaTrash, FaEllipsisV,
-  FaWhatsapp, FaClock, FaExclamationTriangle, FaUser, FaMapMarkerAlt,
-} from 'react-icons/fa'
 import { formatDate } from '@/lib/utils'
+import { ChatRegular, CheckmarkCircleRegular, ClockRegular, DeleteRegular, EditRegular, LocationRegular, MoreVerticalRegular, PersonRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface User { id: string; name: string; whatsapp: string | null }
 interface Task {
@@ -52,16 +49,16 @@ export function TaskCard({ task, onEdit, onDelete, onComplete }: TaskCardProps) 
   const s = STATUS_CFG[task.status]
 
   return (
-    <div className={`erp-card relative flex flex-col gap-4 transition-all duration-200 ${overdue ? 'border-[#E74C5B]/30' : ''}`}>
+    <div className={`erp-card relative flex flex-col gap-4 transition-all duration-200 ${overdue ? 'border-primary/30' : ''}`}>
       {/* Top row: icon + title + menu */}
       <div className="flex items-start gap-3">
         <div className="erp-icon-box-md flex-shrink-0 mt-0.5">
-          <FaExclamationTriangle className={`h-4 w-4 ${overdue ? 'text-[#E74C5B]' : 'text-[#E74C5B]'}`} />
+          <WarningRegular className={`h-4 w-4 ${overdue ? 'text-primary' : 'text-primary'}`} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-bold text-[#1F2937] text-sm leading-snug">{task.title}</p>
+          <p className="font-bold text-foreground text-sm leading-snug">{task.title}</p>
           {task.description && (
-            <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed line-clamp-2">{task.description}</p>
+            <p className="text-xs text-brand-muted-light mt-1 leading-relaxed line-clamp-2">{task.description}</p>
           )}
         </div>
         {/* Three-dot menu */}
@@ -69,38 +66,38 @@ export function TaskCard({ task, onEdit, onDelete, onComplete }: TaskCardProps) 
           <button
             type="button"
             onClick={() => setMenuOpen(v => !v)}
-            className="p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#374151] transition-colors"
+            className="p-1.5 rounded-lg hover:bg-border text-brand-muted-light hover:text-foreground transition-colors"
             aria-label="Task actions"
           >
-            <FaEllipsisV className="h-3.5 w-3.5" />
+            <MoreVerticalRegular className="h-3.5 w-3.5" />
           </button>
           {menuOpen && (
             <div
-              className="absolute right-0 top-8 z-10 bg-white border border-[#E5E7EB] rounded-xl shadow-dropdown w-40 py-1"
+              className="absolute right-0 top-8 z-10 bg-card border border-border rounded-xl shadow-dropdown w-40 py-1"
               onBlur={() => setMenuOpen(false)}
             >
               {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && (
                 <button
                   type="button"
                   onClick={() => { setMenuOpen(false); onComplete(task) }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#374151] hover:bg-[#F9FAFB] transition-colors"
+                  className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
                 >
-                  <FaCheckCircle className="h-3.5 w-3.5 text-[#22C55E]" /> Mark Complete
+                  <CheckmarkCircleRegular className="h-3.5 w-3.5 text-green-600 dark:text-green-400" /> Mark Complete
                 </button>
               )}
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); onEdit(task) }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#374151] hover:bg-[#F9FAFB] transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
               >
-                <FaPen className="h-3 w-3 text-[#6B7280]" /> Edit Task
+                <EditRegular className="h-3 w-3 text-muted-foreground" /> Edit Task
               </button>
               <button
                 type="button"
                 onClick={() => { setMenuOpen(false); onDelete(task) }}
-                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#B91C1C] hover:bg-[#FEE2E2] transition-colors"
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-primary hover:bg-primary/10 transition-colors"
               >
-                <FaTrash className="h-3 w-3" /> Delete
+                <DeleteRegular className="h-3 w-3" /> Delete
               </button>
             </div>
           )}
@@ -111,20 +108,20 @@ export function TaskCard({ task, onEdit, onDelete, onComplete }: TaskCardProps) 
       <div className="flex flex-col gap-2">
         {task.assignedToUser && (
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-[#FDEDEE] flex items-center justify-center text-[#E74C5B] text-[9px] font-bold flex-shrink-0">
+            <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[9px] font-bold flex-shrink-0">
               {initials(task.assignedToUser.name)}
             </div>
-            <span className="text-xs text-[#6B7280] truncate">{task.assignedToUser.name}</span>
+            <span className="text-xs text-muted-foreground truncate">{task.assignedToUser.name}</span>
           </div>
         )}
         {task.site && (
           <div className="flex items-center gap-2">
-            <FaMapMarkerAlt className="h-3 w-3 text-[#9CA3AF] flex-shrink-0" />
-            <span className="text-xs text-[#6B7280] truncate">{task.site}</span>
+            <LocationRegular className="h-3 w-3 text-brand-muted-light flex-shrink-0" />
+            <span className="text-xs text-muted-foreground truncate">{task.site}</span>
           </div>
         )}
-        <div className={`flex items-center gap-2 ${overdue ? 'text-[#E74C5B]' : 'text-[#9CA3AF]'}`}>
-          <FaClock className="h-3 w-3 flex-shrink-0" />
+        <div className={`flex items-center gap-2 ${overdue ? 'text-primary' : 'text-brand-muted-light'}`}>
+          <ClockRegular className="h-3 w-3 flex-shrink-0" />
           <span className={`text-xs ${overdue ? 'font-semibold' : ''}`}>{formatDate(task.dueDate)}</span>
           {overdue && <span className="text-[10px] font-bold uppercase tracking-wide">· Overdue</span>}
         </div>
@@ -135,8 +132,8 @@ export function TaskCard({ task, onEdit, onDelete, onComplete }: TaskCardProps) 
         <span className={p?.cls ?? 'erp-badge erp-badge-muted'}>{p?.label ?? task.priority}</span>
         <span className={s?.cls ?? 'erp-badge erp-badge-muted'}>{s?.label ?? task.status.replace('_', ' ')}</span>
         {task.whatsappReminder && (
-          <span className="erp-badge bg-[#DCFCE7] text-[#15803D]">
-            <FaWhatsapp className="h-3 w-3" /> WA
+          <span className="erp-badge bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400">
+            <ChatRegular className="h-3 w-3" /> WA
           </span>
         )}
       </div>
@@ -145,13 +142,13 @@ export function TaskCard({ task, onEdit, onDelete, onComplete }: TaskCardProps) 
       {s && (
         <div>
           <div className="flex items-center justify-between mb-1">
-            <span className="text-[10px] font-semibold text-[#9CA3AF] uppercase tracking-wide">Progress</span>
-            <span className="text-[10px] font-bold text-[#6B7280]">{s.progress}%</span>
+            <span className="text-[10px] font-semibold text-brand-muted-light uppercase tracking-wide">Progress</span>
+            <span className="text-[10px] font-bold text-muted-foreground">{s.progress}%</span>
           </div>
-          <div className="h-1.5 bg-[#F3F4F6] rounded-full overflow-hidden">
+          <div className="h-1.5 bg-border rounded-full overflow-hidden">
           <div
               className={`h-full rounded-full transition-all duration-500 ${
-                s.progress === 100 ? 'bg-[#22C55E]' : s.progress > 0 ? 'bg-[#3B82F6]' : 'bg-[#E5E7EB]'
+                s.progress === 100 ? 'bg-green-500' : s.progress > 0 ? 'bg-blue-500' : 'bg-border'
               } [--pct:0%]`}
               data-progress={s.progress}
               ref={el => { if (el) el.style.setProperty('width', `${s.progress}%`) }}
@@ -167,7 +164,7 @@ export function TaskCard({ task, onEdit, onDelete, onComplete }: TaskCardProps) 
           onClick={() => onComplete(task)}
           className="erp-btn erp-btn-secondary w-full erp-btn-sm justify-center"
         >
-          <FaCheckCircle className="h-3.5 w-3.5" /> Mark Complete
+          <CheckmarkCircleRegular className="h-3.5 w-3.5" /> Mark Complete
         </button>
       )}
     </div>

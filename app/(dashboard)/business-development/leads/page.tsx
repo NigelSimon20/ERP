@@ -5,7 +5,7 @@ import {
   DndContext, DragEndEvent, DragOverlay, DragStartEvent,
   useDraggable, useDroppable, MouseSensor, TouchSensor, useSensor, useSensors,
 } from '@dnd-kit/core'
-import { FaPlus, FaList, FaTh } from 'react-icons/fa'
+import { AddRegular, GridRegular, ListRegular } from '@fluentui/react-icons';
 import { useForm, Controller } from 'react-hook-form'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,16 +23,16 @@ interface User { id: string; name: string }
 type CreateForm = { companyName: string; contactName: string; contactEmail: string; contactPhone: string; source: string; status: string; estimatedValue: string; probability: string; assignedUserId: string; notes: string }
 
 const STAGES = [
-  { id: 'INQUIRY', label: 'Inquiry', color: 'bg-indigo-100 border-indigo-200 text-indigo-700' },
-  { id: 'QUALIFIED', label: 'Qualified', color: 'bg-sky-100 border-sky-200 text-sky-700' },
-  { id: 'PROPOSAL', label: 'Proposal', color: 'bg-amber-100 border-amber-200 text-amber-700' },
-  { id: 'NEGOTIATION', label: 'Negotiation', color: 'bg-orange-100 border-orange-200 text-orange-700' },
-  { id: 'WON', label: 'Won', color: 'bg-green-100 border-green-200 text-green-700' },
-  { id: 'LOST', label: 'Lost', color: 'bg-red-100 border-red-200 text-red-700' },
-  { id: 'ON_HOLD', label: 'On Hold', color: 'bg-gray-100 border-gray-200 text-gray-600' },
+  { id: 'INQUIRY', label: 'Inquiry', color: 'bg-muted border-border text-muted-foreground' },
+  { id: 'QUALIFIED', label: 'Qualified', color: 'bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-500/15 dark:border-blue-500/30 dark:text-blue-400' },
+  { id: 'PROPOSAL', label: 'Proposal', color: 'bg-amber-100 border-amber-200 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-400' },
+  { id: 'NEGOTIATION', label: 'Negotiation', color: 'bg-orange-100 border-orange-200 text-orange-700 dark:bg-orange-500/15 dark:border-orange-500/30 dark:text-orange-400' },
+  { id: 'WON', label: 'Won', color: 'bg-green-100 border-green-200 text-green-700 dark:bg-green-500/15 dark:border-green-500/30 dark:text-green-400' },
+  { id: 'LOST', label: 'Lost', color: 'bg-primary/10 border-primary/20 text-primary dark:bg-primary/15 dark:text-red-300' },
+  { id: 'ON_HOLD', label: 'On Hold', color: 'bg-muted border-border text-muted-foreground' },
 ]
 
-const STAGE_BADGE: Record<string, string> = { INQUIRY: 'bg-indigo-100 text-indigo-700', QUALIFIED: 'bg-sky-100 text-sky-700', PROPOSAL: 'bg-amber-100 text-amber-700', NEGOTIATION: 'bg-orange-100 text-orange-700', WON: 'bg-green-100 text-green-700', LOST: 'bg-red-100 text-red-700', ON_HOLD: 'bg-gray-100 text-gray-600' }
+const STAGE_BADGE: Record<string, string> = { INQUIRY: 'bg-muted text-muted-foreground', QUALIFIED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PROPOSAL: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', NEGOTIATION: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', WON: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', LOST: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', ON_HOLD: 'bg-muted text-muted-foreground' }
 const SOURCES = ['Website', 'Referral', 'Cold Call', 'Email', 'Social Media', 'Event', 'Partner', 'Other']
 
 function DraggableCard({ lead }: { lead: Lead }) {
@@ -40,15 +40,15 @@ function DraggableCard({ lead }: { lead: Lead }) {
   return (
     <div
       ref={setNodeRef} {...attributes} {...listeners}
-      className={`bg-white border border-gray-200 rounded-lg p-3 cursor-grab shadow-sm hover:shadow-md transition-shadow ${isDragging ? 'invisible' : ''}`}
+      className={`bg-card border border-border rounded-lg p-3 cursor-grab shadow-sm hover:shadow-md transition-shadow ${isDragging ? 'invisible' : ''}`}
     >
-      <p className="font-medium text-sm text-[#0D1B2A] truncate">{lead.companyName}</p>
-      {lead.contactName && <p className="text-xs text-gray-400 mt-0.5 truncate">{lead.contactName}</p>}
+      <p className="font-medium text-sm text-foreground truncate">{lead.companyName}</p>
+      {lead.contactName && <p className="text-xs text-brand-muted-light mt-0.5 truncate">{lead.contactName}</p>}
       <div className="flex items-center justify-between mt-2">
-        {lead.estimatedValue != null && <span className="text-xs font-semibold text-green-700">{formatCurrency(Number(lead.estimatedValue))}</span>}
-        <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5 ml-auto">{lead.probability}%</span>
+        {lead.estimatedValue != null && <span className="text-xs font-semibold text-green-700 dark:text-green-400">{formatCurrency(Number(lead.estimatedValue))}</span>}
+        <span className="text-xs bg-muted text-muted-foreground rounded-full px-1.5 py-0.5 ml-auto">{lead.probability}%</span>
       </div>
-      {lead.assignedUser && <p className="text-xs text-gray-400 mt-1.5 truncate">{lead.assignedUser.name}</p>}
+      {lead.assignedUser && <p className="text-xs text-brand-muted-light mt-1.5 truncate">{lead.assignedUser.name}</p>}
     </div>
   )
 }
@@ -65,7 +65,7 @@ function DroppableColumn({ stage, leads }: { stage: typeof STAGES[0]; leads: Lea
         </div>
         {totalValue > 0 && <p className="text-xs mt-0.5 opacity-75">{formatCurrency(totalValue)}</p>}
       </div>
-      <div ref={setNodeRef} className={`flex-1 min-h-[200px] border border-t-0 border-gray-200 rounded-b-lg p-2 space-y-2 transition-colors ${isOver ? 'bg-blue-50' : 'bg-gray-50'}`}>
+      <div ref={setNodeRef} className={`flex-1 min-h-[200px] border border-t-0 border-border rounded-b-lg p-2 space-y-2 transition-colors ${isOver ? 'bg-primary/5' : 'bg-muted/50'}`}>
         {leads.map((lead) => <DraggableCard key={lead.id} lead={lead} />)}
       </div>
     </div>
@@ -162,28 +162,28 @@ export default function LeadsPage() {
     <div>
       <PageHeader title="Leads" description="Manage your sales pipeline" action={
         <div className="flex items-center gap-2">
-          <div className="flex items-center rounded-lg border border-gray-200 overflow-hidden">
-            <button type="button" onClick={() => setView('kanban')} className={`p-2 ${view === 'kanban' ? 'bg-[#0D1B2A] text-white' : 'text-gray-400 hover:text-gray-600'}`} aria-label="Kanban view"><FaTh className="h-4 w-4" /></button>
-            <button type="button" onClick={() => setView('list')} className={`p-2 ${view === 'list' ? 'bg-[#0D1B2A] text-white' : 'text-gray-400 hover:text-gray-600'}`} aria-label="List view"><FaList className="h-4 w-4" /></button>
+          <div className="flex items-center rounded-lg border border-border overflow-hidden">
+            <button type="button" onClick={() => setView('kanban')} className={`p-2 ${view === 'kanban' ? 'bg-brand-navy text-white' : 'text-brand-muted-light hover:text-foreground'}`} aria-label="Kanban view"><GridRegular className="h-4 w-4" /></button>
+            <button type="button" onClick={() => setView('list')} className={`p-2 ${view === 'list' ? 'bg-brand-navy text-white' : 'text-brand-muted-light hover:text-foreground'}`} aria-label="List view"><ListRegular className="h-4 w-4" /></button>
           </div>
-          <Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Add Lead</Button>
+          <Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Lead</Button>
         </div>
       } />
 
       {/* Pipeline Summary */}
-      <div className="mt-4 flex items-center gap-6 rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm">
-        <div><span className="text-gray-400 mr-2">Total Leads</span><span className="font-semibold text-[#0D1B2A]">{leads.length}</span></div>
-        <div className="h-4 w-px bg-gray-200" />
-        <div><span className="text-gray-400 mr-2">Pipeline</span><span className="font-semibold text-[#0D1B2A]">{formatCurrency(totalPipeline)}</span></div>
-        <div className="h-4 w-px bg-gray-200" />
-        <div><span className="text-gray-400 mr-2">Weighted</span><span className="font-semibold text-green-700">{formatCurrency(pipelineValue)}</span></div>
-        <div className="ml-auto text-xs text-gray-400">{activeLeads.length} active · {leads.filter(l => l.status === 'WON').length} won · {leads.filter(l => l.status === 'LOST').length} lost</div>
+      <div className="mt-4 flex items-center gap-6 rounded-lg border border-border bg-card px-5 py-3 text-sm">
+        <div><span className="text-brand-muted-light mr-2">Total Leads</span><span className="font-semibold text-foreground">{leads.length}</span></div>
+        <div className="h-4 w-px bg-muted" />
+        <div><span className="text-brand-muted-light mr-2">Pipeline</span><span className="font-semibold text-foreground">{formatCurrency(totalPipeline)}</span></div>
+        <div className="h-4 w-px bg-muted" />
+        <div><span className="text-brand-muted-light mr-2">Weighted</span><span className="font-semibold text-green-700 dark:text-green-400">{formatCurrency(pipelineValue)}</span></div>
+        <div className="ml-auto text-xs text-brand-muted-light">{activeLeads.length} active · {leads.filter(l => l.status === 'WON').length} won · {leads.filter(l => l.status === 'LOST').length} lost</div>
       </div>
 
       {loading ? (
-        <div className="mt-6 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+        <div className="mt-6 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
       ) : leads.length === 0 ? (
-        <div className="mt-8"><EmptyState icon={FaTh} title="No leads yet" description="Start building your pipeline by adding your first lead" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Add Lead</Button>} /></div>
+        <div className="mt-8"><EmptyState icon={GridRegular} title="No leads yet" description="Start building your pipeline by adding your first lead" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Lead</Button>} /></div>
       ) : view === 'kanban' ? (
         /* ── Kanban ── */
         <div className="mt-4 overflow-x-auto pb-4">
@@ -195,9 +195,9 @@ export default function LeadsPage() {
             </div>
             <DragOverlay>
               {activeLeadCard && (
-                <div className="bg-white border border-gray-300 rounded-lg p-3 shadow-xl w-52 opacity-90 cursor-grabbing">
-                  <p className="font-medium text-sm text-[#0D1B2A] truncate">{activeLeadCard.companyName}</p>
-                  {activeLeadCard.estimatedValue != null && <span className="text-xs font-semibold text-green-700">{formatCurrency(Number(activeLeadCard.estimatedValue))}</span>}
+                <div className="bg-card border border-border rounded-lg p-3 shadow-xl w-52 opacity-90 cursor-grabbing">
+                  <p className="font-medium text-sm text-foreground truncate">{activeLeadCard.companyName}</p>
+                  {activeLeadCard.estimatedValue != null && <span className="text-xs font-semibold text-green-700 dark:text-green-400">{formatCurrency(Number(activeLeadCard.estimatedValue))}</span>}
                 </div>
               )}
             </DragOverlay>
@@ -205,28 +205,28 @@ export default function LeadsPage() {
         </div>
       ) : (
         /* ── List ── */
-        <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Company</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Contact</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Phone</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Value</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Prob%</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Stage</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Assigned</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Created</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Company</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Contact</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Phone</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Value</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Prob%</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Stage</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Assigned</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Created</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {leads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-[#0D1B2A]">{lead.companyName}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{lead.contactName ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{lead.contactPhone ?? '—'}</td>
+                <tr key={lead.id} className="hover:bg-muted/50">
+                  <td className="px-4 py-3 font-medium text-foreground">{lead.companyName}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{lead.contactName ?? '—'}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{lead.contactPhone ?? '—'}</td>
                   <td className="px-4 py-3 text-right">{lead.estimatedValue != null ? formatCurrency(Number(lead.estimatedValue)) : '—'}</td>
-                  <td className="px-4 py-3 text-right text-gray-500">{lead.probability}%</td>
+                  <td className="px-4 py-3 text-right text-muted-foreground">{lead.probability}%</td>
                   <td className="px-4 py-3">
                     <select
                       value={lead.status}
@@ -241,8 +241,8 @@ export default function LeadsPage() {
                       {STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
                     </select>
                   </td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{lead.assignedUser?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{new Date(lead.createdAt).toLocaleDateString()}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{lead.assignedUser?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-brand-muted-light text-xs">{new Date(lead.createdAt).toLocaleDateString()}</td>
                 </tr>
               ))}
             </tbody>
@@ -297,7 +297,7 @@ export default function LeadsPage() {
             <div className="space-y-1.5"><Label>Notes</Label><Textarea rows={2} placeholder="Any notes about this lead…" {...register('notes')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Saving…' : 'Create Lead'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : 'Create Lead'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -308,7 +308,7 @@ export default function LeadsPage() {
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Mark as Lost — Reason Required</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">Please provide a reason why this lead was lost.</p>
+            <p className="text-sm text-muted-foreground">Please provide a reason why this lead was lost.</p>
             <div className="space-y-1.5">
               <Label>Lost Reason *</Label>
               <Textarea placeholder="e.g. Budget constraints, went with competitor…" rows={3} value={lostReason} onChange={e => setLostReason(e.target.value)} />
@@ -316,7 +316,7 @@ export default function LeadsPage() {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => { setLostTarget(null); setLostReason('') }}>Cancel</Button>
-            <Button type="button" onClick={confirmLost} className="bg-red-600 hover:bg-red-700 text-white">Mark as Lost</Button>
+            <Button type="button" onClick={confirmLost} className="bg-primary hover:bg-brand-red-dark text-white">Mark as Lost</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

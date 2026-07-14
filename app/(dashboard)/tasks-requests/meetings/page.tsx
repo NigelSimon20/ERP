@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaWhatsapp, FaPlus, FaCheckSquare, FaCalendarAlt } from 'react-icons/fa'
-import { MdClose } from 'react-icons/md'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,13 +12,14 @@ import { EmptyState } from '@/components/shared/EmptyState'
 import { WhatsAppReminderToggle } from '@/components/tasks/WhatsAppReminderToggle'
 import { formatDate, formatDateTime } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, CalendarLtrRegular, ChatRegular, DismissRegular, TaskListSquareLtrRegular } from '@fluentui/react-icons';
 
 interface User { id: string; name: string; whatsapp: string | null }
 interface AttendeeUser { id: string; userId: string; attendanceStatus: string; user: User | null }
 interface Meeting { id: string; title: string; description: string | null; location: string | null; meetingDate: string; startTime: string; endTime: string; status: string; notes: string | null; whatsappReminder: boolean; organizerId: string; organizerUser: User | null; attendeeUsers: AttendeeUser[] }
 type MeetingForm = { title: string; description: string; meetingDate: string; startTime: string; endTime: string; location: string }
 
-const STATUS_BADGE: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700', COMPLETED: 'bg-green-100 text-green-700', CANCELLED: 'bg-red-100 text-red-500' }
+const STATUS_BADGE: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
 
 export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([])
@@ -103,11 +102,11 @@ export default function MeetingsPage() {
   return (
     <div>
       <PageHeader title="Meetings" description="Schedule and manage team meetings" action={
-        <Button type="button" onClick={() => { reset(); setAttendeeIds([]); setWaReminder(false); setReminderTime(null); setShowCreate(true) }} className="bg-brand-red hover:bg-brand-red-dark text-white"><FaPlus className="h-4 w-4 mr-1" /> Schedule Meeting</Button>
+        <Button type="button" onClick={() => { reset(); setAttendeeIds([]); setWaReminder(false); setReminderTime(null); setShowCreate(true) }} className="bg-brand-red hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Schedule Meeting</Button>
       } />
 
       <div className="mt-4 flex items-center gap-3">
-        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-9 rounded-md border border-gray-300 px-2 text-sm" aria-label="Filter by status">
+        <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)} className="h-9 rounded-md border border-border px-2 text-sm" aria-label="Filter by status">
           <option value="">All Statuses</option>
           <option value="SCHEDULED">Scheduled</option>
           <option value="COMPLETED">Completed</option>
@@ -115,52 +114,52 @@ export default function MeetingsPage() {
         </select>
       </div>
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card shadow-sm hover:shadow-md overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : meetings.length === 0 ? (
-          <div className="py-16 bg-white"><EmptyState icon={FaCalendarAlt} title="No meetings" description="Schedule a meeting to get started" action={<Button type="button" onClick={() => setShowCreate(true)} className="bg-brand-red hover:bg-brand-red-dark text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Schedule Meeting</Button>} /></div>
+          <div className="py-16 bg-card"><EmptyState icon={CalendarLtrRegular} title="No meetings" description="Schedule a meeting to get started" action={<Button type="button" onClick={() => setShowCreate(true)} className="bg-brand-red hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Schedule Meeting</Button>} /></div>
         ) : (
-          <div className="overflow-x-auto bg-white">
-            <table className="w-full text-sm min-w-[800px] bg-white">
-            <thead className="bg-gray-50 border-b border-gray-200">
+          <div className="overflow-x-auto bg-card">
+            <table className="w-full text-sm min-w-[800px] bg-card">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Title</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Date</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Time</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Location</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Organizer</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Attendees</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                <th className="text-center px-4 py-2.5 font-medium text-gray-600">WA</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Actions</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Title</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Date</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Time</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Location</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Organizer</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Attendees</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                <th className="text-center px-4 py-2.5 font-medium text-muted-foreground">WA</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {meetings.map((m) => (
-                <tr key={m.id} className="hover:bg-gray-50">
+                <tr key={m.id} className="hover:bg-muted/50">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-[#0D1B2A]">{m.title}</p>
-                    {m.notes && <p className="text-xs text-gray-400 truncate max-w-[200px]">{m.notes}</p>}
+                    <p className="font-medium text-foreground">{m.title}</p>
+                    {m.notes && <p className="text-xs text-brand-muted-light truncate max-w-[200px]">{m.notes}</p>}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{formatDate(m.meetingDate)}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{formatDate(m.meetingDate)}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                     {new Date(m.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} – {new Date(m.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </td>
-                  <td className="px-4 py-3 text-xs text-gray-500">{m.location ?? '—'}</td>
-                  <td className="px-4 py-3 text-xs text-gray-600">{m.organizerUser?.name ?? '—'}</td>
-                  <td className="px-4 py-3 text-xs text-gray-500">
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{m.location ?? '—'}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">{m.organizerUser?.name ?? '—'}</td>
+                  <td className="px-4 py-3 text-xs text-muted-foreground">
                     <span title={m.attendeeUsers.map(a => a.user?.name).filter(Boolean).join(', ')} className="cursor-default">
                       {m.attendeeUsers.length} attendee{m.attendeeUsers.length !== 1 ? 's' : ''}
                     </span>
                   </td>
                   <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_BADGE[m.status] ?? ''}`}>{m.status}</span></td>
-                  <td className="px-4 py-3 text-center">{m.whatsappReminder && <FaWhatsapp size={14} className="text-[#25D366] mx-auto" />}</td>
+                  <td className="px-4 py-3 text-center">{m.whatsappReminder && <ChatRegular fontSize={14} className="text-[#25D366] mx-auto" />}</td>
                   <td className="px-4 py-3">
                     {m.status === 'SCHEDULED' && (
                       <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => { setCompleteTarget(m); setCompletionNotes('') }} className="p-1 rounded hover:bg-green-50 text-gray-400 hover:text-green-600" aria-label="Complete"><FaCheckSquare className="h-4 w-4" /></button>
-                        <button type="button" onClick={() => cancelMeeting(m)} disabled={processing === m.id} className="p-1 rounded hover:bg-brand-red/10 text-gray-400 hover:text-brand-red disabled:opacity-50" aria-label="Cancel"><MdClose className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => { setCompleteTarget(m); setCompletionNotes('') }} className="p-1 rounded hover:bg-green-50 text-brand-muted-light hover:text-green-600" aria-label="Complete"><TaskListSquareLtrRegular className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => cancelMeeting(m)} disabled={processing === m.id} className="p-1 rounded hover:bg-brand-red/10 text-brand-muted-light hover:text-brand-red disabled:opacity-50" aria-label="Cancel"><DismissRegular className="h-4 w-4" /></button>
                       </div>
                     )}
                   </td>
@@ -174,7 +173,7 @@ export default function MeetingsPage() {
 
       {/* Create Meeting Dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-white border border-gray-200 shadow-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto bg-card border border-border shadow-lg">
           <DialogHeader><DialogTitle>Schedule Meeting</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit(onCreate)} className="space-y-4">
             <div className="space-y-1.5"><Label>Title *</Label><Input placeholder="Meeting title" {...register('title', { required: true })} /></div>
@@ -189,19 +188,19 @@ export default function MeetingsPage() {
             {/* Attendees */}
             <div className="space-y-2">
               <Label>Attendees</Label>
-              <div className="max-h-40 overflow-y-auto border border-gray-200 rounded-md divide-y">
+              <div className="max-h-40 overflow-y-auto border border-border rounded-md divide-y">
                 {users.map(u => (
-                  <label key={u.id} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm">
-                    <input type="checkbox" checked={attendeeIds.includes(u.id)} onChange={() => toggleAttendee(u.id)} className="accent-[#CC0000]" />
+                  <label key={u.id} className="flex items-center gap-3 px-3 py-2 hover:bg-muted/50 cursor-pointer text-sm">
+                    <input type="checkbox" checked={attendeeIds.includes(u.id)} onChange={() => toggleAttendee(u.id)} className="accent-primary" />
                     <span>{u.name}</span>
-                    {u.whatsapp && <FaWhatsapp size={12} className="text-[#25D366] ml-auto" />}
+                    {u.whatsapp && <ChatRegular fontSize={12} className="text-[#25D366] ml-auto" />}
                   </label>
                 ))}
               </div>
-              <p className="text-xs text-gray-400">{attendeeIds.length} selected · You will be added automatically</p>
+              <p className="text-xs text-brand-muted-light">{attendeeIds.length} selected · You will be added automatically</p>
             </div>
 
-            <div className="rounded-lg border border-gray-200 p-3">
+            <div className="rounded-lg border border-border p-3">
               <WhatsAppReminderToggle value={waReminder} reminderTime={reminderTime} onToggle={setWaReminder} onTimeChange={setReminderTime} assigneeWhatsApp={null} />
             </div>
 
@@ -215,10 +214,10 @@ export default function MeetingsPage() {
 
       {/* Complete Meeting Dialog */}
       <Dialog open={!!completeTarget} onOpenChange={(o) => !o && setCompleteTarget(null)}>
-        <DialogContent className="max-w-sm bg-white border border-gray-200 shadow-lg">
+        <DialogContent className="max-w-sm bg-card border border-border shadow-lg">
           <DialogHeader><DialogTitle>Complete Meeting</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <p className="text-sm text-gray-600">Add meeting notes / minutes for <strong>{completeTarget?.title}</strong>.</p>
+            <p className="text-sm text-muted-foreground">Add meeting notes / minutes for <strong>{completeTarget?.title}</strong>.</p>
             <Textarea rows={4} placeholder="Minutes, decisions, action items…" value={completionNotes} onChange={e => setCompletionNotes(e.target.value)} />
           </div>
           <DialogFooter>

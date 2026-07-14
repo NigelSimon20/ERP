@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import Link from 'next/link'
-import { FaChevronRight } from 'react-icons/fa'
-
+import { ChevronRightRegular } from '@fluentui/react-icons';
 interface Breadcrumb {
   label: string
   href?: string
@@ -23,24 +22,24 @@ export function PageHeader({ title, description, breadcrumbs, action, badge }: P
           <nav className="flex items-center gap-1.5 mb-1.5">
             {breadcrumbs.map((crumb, i) => (
               <span key={i} className="flex items-center gap-1.5">
-                {i > 0 && <FaChevronRight className="h-2.5 w-2.5 text-[#D1D5DB]" />}
+                {i > 0 && <ChevronRightRegular className="h-2.5 w-2.5 text-border" />}
                 {crumb.href ? (
-                  <Link href={crumb.href} className="text-xs font-medium text-[#9CA3AF] hover:text-[#E74C5B] transition-colors">
+                  <Link href={crumb.href} className="text-xs font-medium text-brand-muted-light hover:text-primary transition-colors">
                     {crumb.label}
                   </Link>
                 ) : (
-                  <span className="text-xs font-medium text-[#6B7280]">{crumb.label}</span>
+                  <span className="text-xs font-medium text-muted-foreground">{crumb.label}</span>
                 )}
               </span>
             ))}
           </nav>
         )}
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-[#1F2937] leading-tight tracking-tight">{title}</h1>
+          <h1 className="text-2xl font-bold text-foreground leading-tight tracking-tight">{title}</h1>
           {badge && badge}
         </div>
         {description && (
-          <p className="text-sm text-[#6B7280] mt-0.5">{description}</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
         )}
       </div>
       {action && (

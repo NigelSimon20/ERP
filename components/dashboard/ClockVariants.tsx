@@ -2,8 +2,7 @@
 
 import React from 'react'
 import { useClock } from '@/hooks/useClock'
-import { FiClock, FiCalendar } from 'react-icons/fi'
-
+import { CalendarLtrRegular, ClockRegular } from '@fluentui/react-icons';
 interface TopNavigationClockProps {
   showDate?: boolean
   className?: string
@@ -28,13 +27,13 @@ export function TopNavigationClock({
 
   return (
     <div className={`flex items-center gap-2 ${className}`}>
-      <FiClock className="w-4 h-4 text-gray-600" />
+      <ClockRegular className="w-4 h-4 text-muted-foreground" />
       <div className="flex flex-col items-start text-xs">
-        <span className="font-mono font-semibold text-gray-900">
+        <span className="font-mono font-semibold text-foreground">
           {timeString}
         </span>
         {showDate && (
-          <span className="text-gray-500 text-xs">
+          <span className="text-muted-foreground text-xs">
             {dateShort}
           </span>
         )}
@@ -56,8 +55,8 @@ export function StatusBarClock({ className = '' }: { className?: string }) {
   const { timeString } = useClock()
 
   return (
-    <div className={`flex items-center gap-1 text-xs font-mono text-gray-700 ${className}`}>
-      <FiClock className="w-3 h-3" />
+    <div className={`flex items-center gap-1 text-xs font-mono text-foreground ${className}`}>
+      <ClockRegular className="w-3 h-3" />
       <span>{timeString}</span>
     </div>
   )
@@ -84,16 +83,16 @@ export function InlineGreetingClock({
   const { phrase } = useGreeting()
 
   return (
-    <div className={`space-y-2 p-3 bg-gray-50 rounded-lg border border-gray-200 ${className}`}>
-      <div className="text-sm font-semibold text-gray-900">
+    <div className={`space-y-2 p-3 bg-muted/50 rounded-lg border border-border ${className}`}>
+      <div className="text-sm font-semibold text-foreground">
         {phrase}
-        {userName && <span className="text-premium-primary ml-1">{userName}</span>}
+        {userName && <span className="text-primary ml-1">{userName}</span>}
       </div>
       
-      <div className="flex items-center gap-2 text-xs text-gray-600">
-        <FiClock className="w-3 h-3" />
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <ClockRegular className="w-3 h-3" />
         <span className="font-mono">{timeString}</span>
-        <FiCalendar className="w-3 h-3 ml-2" />
+        <CalendarLtrRegular className="w-3 h-3 ml-2" />
         <span>{dateShort}</span>
       </div>
     </div>

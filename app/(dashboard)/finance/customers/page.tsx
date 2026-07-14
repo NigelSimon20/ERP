@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
-import { FaPlus, FaUsers, FaSearch, FaPen, FaTrash } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -14,6 +13,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, DeleteRegular, EditRegular, PeopleRegular, SearchRegular } from '@fluentui/react-icons';
 
 interface Customer { id: string; name: string; email: string | null; phone: string | null; address: string | null; paymentTerms: number; creditLimit: number; outstandingBal: number; invoiceCount: number }
 type FormValues = { name: string; email: string; phone: string; address: string; paymentTerms: string; creditLimit: string }
@@ -76,47 +76,47 @@ export default function CustomersPage() {
 
   return (
     <div>
-      <PageHeader title="Customers" description="Manage your customer accounts" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Add Customer</Button>} />
+      <PageHeader title="Customers" description="Manage your customer accounts" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Customer</Button>} />
 
       <div className="mt-4 flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
-          <FaSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <SearchRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
           <Input placeholder="Search by name or email…" value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="divide-y divide-gray-100">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-40 bg-gray-200 rounded" /><div className="h-3 flex-1 bg-gray-100 rounded" /><div className="h-3 w-20 bg-gray-200 rounded" /></div>)}</div>
+          <div className="divide-y divide-border">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-40 bg-muted rounded" /><div className="h-3 flex-1 bg-muted rounded" /><div className="h-3 w-20 bg-muted rounded" /></div>)}</div>
         ) : filtered.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaUsers} title="No customers yet" description="Add your first customer to start raising invoices" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Add Customer</Button>} /></div>
+          <div className="py-16"><EmptyState icon={PeopleRegular} title="No customers yet" description="Add your first customer to start raising invoices" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Customer</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[700px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Name</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Email</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Phone</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Credit Limit</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Outstanding</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Invoices</th>
-                  <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Name</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Email</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Phone</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Credit Limit</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Outstanding</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Invoices</th>
+                  <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {filtered.map((c) => (
-                  <tr key={c.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-[#0D1B2A]">{c.name}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{c.email ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{c.phone ?? '—'}</td>
-                    <td className="px-4 py-3 text-right text-gray-600">{formatCurrency(Number(c.creditLimit))}</td>
+                  <tr key={c.id} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 font-medium text-foreground">{c.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{c.email ?? '—'}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{c.phone ?? '—'}</td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">{formatCurrency(Number(c.creditLimit))}</td>
                     <td className={`px-4 py-3 text-right font-medium ${Number(c.outstandingBal) > 0 ? 'text-red-600' : 'text-green-600'}`}>{formatCurrency(Number(c.outstandingBal))}</td>
-                    <td className="px-4 py-3 text-right text-gray-500">{c.invoiceCount}</td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">{c.invoiceCount}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button type="button" onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700" aria-label="Edit customer"><FaPen className="h-3.5 w-3.5" /></button>
-                        <button type="button" onClick={() => deleteCustomer(c)} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500" aria-label="Delete customer"><FaTrash className="h-3.5 w-3.5" /></button>
+                        <button type="button" onClick={() => openEdit(c)} className="p-1.5 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" aria-label="Edit customer"><EditRegular className="h-3.5 w-3.5" /></button>
+                        <button type="button" onClick={() => deleteCustomer(c)} className="p-1.5 rounded hover:bg-red-50 text-brand-muted-light hover:text-red-500" aria-label="Delete customer"><DeleteRegular className="h-3.5 w-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -151,7 +151,7 @@ export default function CustomersPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Customer'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Customer'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

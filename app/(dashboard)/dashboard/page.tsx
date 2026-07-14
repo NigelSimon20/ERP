@@ -3,9 +3,9 @@
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCurrentUser } from '@/lib/user-context'
-import { FaShieldAlt } from 'react-icons/fa'
 import toast from 'react-hot-toast'
 import { Suspense } from 'react'
+import { ShieldRegular } from '@fluentui/react-icons';
 
 const ROLE_MAP: Record<string, string> = {
   SUPER_ADMIN:          '/dashboard/executive',
@@ -37,10 +37,10 @@ function RouterInner() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[#FDEDEE] animate-pulse">
-        <FaShieldAlt size={32} className="text-[#E74C5B]" />
+      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 animate-pulse">
+        <ShieldRegular fontSize={32} className="text-primary" />
       </div>
-      <p className="text-sm text-[#9CA3AF] font-medium">Loading your dashboard…</p>
+      <p className="text-sm text-brand-muted-light font-medium">Loading your dashboard…</p>
     </div>
   )
 }
@@ -49,10 +49,10 @@ export default function DashboardRouter() {
   return (
     <Suspense fallback={
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
-      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-[#FDEDEE]">
-        <FaShieldAlt size={32} className="text-[#E74C5B]" />
+      <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10">
+        <ShieldRegular fontSize={32} className="text-primary" />
       </div>
-      <p className="text-sm text-[#9CA3AF] font-medium">Loading your dashboard…</p>
+      <p className="text-sm text-brand-muted-light font-medium">Loading your dashboard…</p>
     </div>
     }>
       <RouterInner />

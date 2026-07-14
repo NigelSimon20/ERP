@@ -2,21 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { FaChartLine, FaUsers, FaFileAlt, FaChartBar, FaArrowRight, FaBullseye } from 'react-icons/fa'
 import { formatCurrency } from '@/lib/utils'
+import { ArrowRightRegular, ArrowTrendingRegular, DataBarVerticalRegular, DocumentRegular, PeopleRegular, TargetArrowRegular } from '@fluentui/react-icons';
 
 interface KpiCard { title: string; value: string; sub: string; href: string; icon: React.ElementType; color: string }
 
 function KpiCard({ title, value, sub, href, icon: Icon, color }: KpiCard) {
   return (
-    <Link href={href} className="block rounded-lg border border-gray-200 bg-white p-5 hover:shadow-md transition-shadow group">
+    <Link href={href} className="block rounded-lg border border-border bg-card p-5 hover:shadow-md transition-shadow group">
       <div className="flex items-start justify-between">
         <div className={`rounded-lg p-2.5 ${color}`}><Icon className="h-5 w-5" /></div>
-        <FaArrowRight className="h-4 w-4 text-gray-300 group-hover:text-gray-500 transition-colors mt-1" />
+        <ArrowRightRegular className="h-4 w-4 text-brand-muted-light group-hover:text-muted-foreground transition-colors mt-1" />
       </div>
-      <p className="mt-3 text-2xl font-bold text-[#0D1B2A]">{value}</p>
-      <p className="text-sm font-medium text-gray-600 mt-0.5">{title}</p>
-      <p className="text-xs text-gray-400 mt-1">{sub}</p>
+      <p className="mt-3 text-2xl font-bold text-foreground">{value}</p>
+      <p className="text-sm font-medium text-muted-foreground mt-0.5">{title}</p>
+      <p className="text-xs text-brand-muted-light mt-1">{sub}</p>
     </Link>
   )
 }
@@ -65,9 +65,9 @@ export default function BdDashboard() {
   if (loading) {
     return (
       <div>
-        <h1 className="text-xl font-bold text-[#0D1B2A]">Business Development</h1>
+        <h1 className="text-xl font-bold text-foreground">Business Development</h1>
         <div className="mt-6 grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-32 rounded-lg bg-gray-100 animate-pulse" />)}
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-32 rounded-lg bg-muted animate-pulse" />)}
         </div>
       </div>
     )
@@ -77,41 +77,41 @@ export default function BdDashboard() {
     <div>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-[#0D1B2A]">Business Development</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Pipeline overview</p>
+          <h1 className="text-xl font-bold text-foreground">Business Development</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Pipeline overview</p>
         </div>
-        <Link href="/business-development/bd-reports" className="text-sm text-[#CC0000] hover:underline flex items-center gap-1"><FaChartBar className="h-4 w-4" /> View Reports</Link>
+        <Link href="/business-development/bd-reports" className="text-sm text-primary hover:underline flex items-center gap-1"><DataBarVerticalRegular className="h-4 w-4" /> View Reports</Link>
       </div>
 
       {/* KPI Cards */}
       <div className="mt-5 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Open Leads" value={String(openLeads.length)} sub="Active in pipeline" href="/business-development/leads" icon={FaBullseye} color="bg-indigo-50 text-indigo-600" />
-        <KpiCard title="Pipeline Value" value={formatCurrency(data?.totalPipeline ?? 0)} sub={`${formatCurrency(data?.pipelineValue ?? 0)} weighted`} href="/business-development/leads" icon={FaChartLine} color="bg-green-50 text-green-600" />
-        <KpiCard title="Customers" value={String(data?.customers.length ?? 0)} sub="Active accounts" href="/business-development/customers" icon={FaUsers} color="bg-sky-50 text-sky-600" />
-        <KpiCard title="Pending Quotes" value={String(pendingQuotes.length)} sub={`${formatCurrency(pendingQuotes.reduce((s, q) => s + Number(q.totalAmount), 0))} in drafts & sent`} href="/business-development/quotations" icon={FaFileAlt} color="bg-amber-50 text-amber-600" />
+        <KpiCard title="Open Leads" value={String(openLeads.length)} sub="Active in pipeline" href="/business-development/leads" icon={TargetArrowRegular} color="bg-primary/10 text-primary" />
+        <KpiCard title="Pipeline Value" value={formatCurrency(data?.totalPipeline ?? 0)} sub={`${formatCurrency(data?.pipelineValue ?? 0)} weighted`} href="/business-development/leads" icon={ArrowTrendingRegular} color="bg-green-50 text-green-600 dark:bg-green-500/10 dark:text-green-400" />
+        <KpiCard title="Customers" value={String(data?.customers.length ?? 0)} sub="Active accounts" href="/business-development/customers" icon={PeopleRegular} color="bg-muted text-foreground" />
+        <KpiCard title="Pending Quotes" value={String(pendingQuotes.length)} sub={`${formatCurrency(pendingQuotes.reduce((s, q) => s + Number(q.totalAmount), 0))} in drafts & sent`} href="/business-development/quotations" icon={DocumentRegular} color="bg-amber-50 text-amber-600 dark:bg-amber-500/10 dark:text-amber-400" />
       </div>
 
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Pipeline by Stage */}
-        <div className="lg:col-span-2 rounded-lg border border-gray-200 bg-white p-5">
+        <div className="lg:col-span-2 rounded-lg border border-border bg-card p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-[#0D1B2A]">Pipeline by Stage</h2>
-            <Link href="/business-development/leads" className="text-xs text-[#CC0000] hover:underline">View all leads →</Link>
+            <h2 className="font-semibold text-foreground">Pipeline by Stage</h2>
+            <Link href="/business-development/leads" className="text-xs text-primary hover:underline">View all leads →</Link>
           </div>
           {byStage.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-8">No active leads in pipeline</p>
+            <p className="text-sm text-brand-muted-light text-center py-8">No active leads in pipeline</p>
           ) : (
             <div className="space-y-3">
               {byStage.map((row) => (
                 <div key={row.stage} className="flex items-center gap-3 text-sm">
-                  <span className="w-24 text-xs text-gray-500 shrink-0">{STAGE_LABELS[row.stage]}</span>
-                  <div className="flex-1 h-5 rounded-full bg-gray-100 overflow-hidden">
+                  <span className="w-24 text-xs text-muted-foreground shrink-0">{STAGE_LABELS[row.stage]}</span>
+                  <div className="flex-1 h-5 rounded-full bg-muted overflow-hidden">
                     <svg className="h-full w-full" aria-hidden="true">
                       <rect x="0" y="0" width={`${Math.round((row.count / maxCount) * 100)}%`} height="100%" fill={STAGE_FILLS[row.stage] ?? '#d1d5db'} rx="10" />
                     </svg>
                   </div>
-                  <span className="text-xs font-medium text-[#0D1B2A] w-6 text-right">{row.count}</span>
-                  <span className="text-xs text-gray-400 w-20 text-right">{formatCurrency(row.value)}</span>
+                  <span className="text-xs font-medium text-foreground w-6 text-right">{row.count}</span>
+                  <span className="text-xs text-brand-muted-light w-20 text-right">{formatCurrency(row.value)}</span>
                 </div>
               ))}
             </div>
@@ -120,15 +120,15 @@ export default function BdDashboard() {
 
         {/* Win Rate & Quick Links */}
         <div className="space-y-4">
-          <div className="rounded-lg border border-gray-200 bg-white p-5">
-            <h2 className="font-semibold text-[#0D1B2A] mb-3">Win Rate</h2>
+          <div className="rounded-lg border border-border bg-card p-5">
+            <h2 className="font-semibold text-foreground mb-3">Win Rate</h2>
             <div className="text-center">
-              <p className="text-4xl font-bold text-[#CC0000]">{winRate}%</p>
-              <p className="text-xs text-gray-400 mt-1">{wonLeads} won / {totalClosed} closed</p>
+              <p className="text-4xl font-bold text-primary">{winRate}%</p>
+              <p className="text-xs text-brand-muted-light mt-1">{wonLeads} won / {totalClosed} closed</p>
             </div>
           </div>
-          <div className="rounded-lg border border-gray-200 bg-white p-5">
-            <h2 className="font-semibold text-[#0D1B2A] mb-3">Quick Links</h2>
+          <div className="rounded-lg border border-border bg-card p-5">
+            <h2 className="font-semibold text-foreground mb-3">Quick Links</h2>
             <div className="space-y-2">
               {[
                 { href: '/business-development/leads', label: 'Manage Leads' },
@@ -136,8 +136,8 @@ export default function BdDashboard() {
                 { href: '/business-development/customers', label: 'Customer Accounts' },
                 { href: '/business-development/bd-reports', label: 'BD Analytics' },
               ].map(({ href, label }) => (
-                <Link key={href} href={href} className="flex items-center justify-between text-sm rounded-lg px-3 py-2 hover:bg-gray-50 text-gray-600 hover:text-[#0D1B2A] transition-colors">
-                  {label}<FaArrowRight className="h-3.5 w-3.5 text-gray-300" />
+                <Link key={href} href={href} className="flex items-center justify-between text-sm rounded-lg px-3 py-2 hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors">
+                  {label}<ArrowRightRegular className="h-3.5 w-3.5 text-brand-muted-light" />
                 </Link>
               ))}
             </div>

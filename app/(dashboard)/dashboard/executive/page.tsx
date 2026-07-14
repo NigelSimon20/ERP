@@ -5,9 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { MdTrendingUp, MdAddCircle, MdEdit, MdDeleteForever, MdLogin, MdLogout, MdShowChart } from 'react-icons/md'
-import { FaHandHoldingUsd, FaUserShield, FaHardHat, FaChartBar, FaExclamationTriangle } from 'react-icons/fa'
-import { TbBuildingBank, TbBuildingSkyscraper, TbShieldExclamation } from 'react-icons/tb'
+import { AddCircleRegular, ArrowEnterRegular, ArrowTrendingRegular, BuildingBankRegular, BuildingRegular, DataBarVerticalRegular, DeleteRegular, EditRegular, MoneyHandRegular, PersonRegular, ShieldErrorRegular, ShieldPersonRegular, SignOutRegular, WarningRegular } from '@fluentui/react-icons';
 import { DashboardPageShell } from '@/components/dashboard/DashboardPageShell'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { ChartCard } from '@/components/dashboard/ChartCard'
@@ -38,18 +36,18 @@ const CT = { fontSize: 12, borderRadius: 10, border: '1px solid #E5E7EB', boxSha
 const SEVERITY_COLORS: Record<string, string> = THEME_SEVERITY_COLORS
 
 const ACTION_ICON: Record<string, React.ElementType> = {
-  CREATE: MdAddCircle,
-  UPDATE: MdEdit,
-  DELETE: MdDeleteForever,
-  LOGIN: MdLogin,
-  LOGOUT: MdLogout,
+  CREATE: AddCircleRegular,
+  UPDATE: EditRegular,
+  DELETE: DeleteRegular,
+  LOGIN: ArrowEnterRegular,
+  LOGOUT: SignOutRegular,
 }
 const ACTION_STYLE: Record<string, string> = {
-  CREATE: 'bg-[#DCFCE7] text-[#16A34A]',
-  UPDATE: 'bg-[#DBEAFE] text-[#1D4ED8]',
-  DELETE: 'bg-[#FEE2E2] text-[#B91C1C]',
-  LOGIN:  'bg-[#F3F4F6] text-[#6B7280]',
-  LOGOUT: 'bg-[#F3F4F6] text-[#6B7280]',
+  CREATE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  UPDATE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  DELETE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  LOGIN:  'bg-border text-muted-foreground',
+  LOGOUT: 'bg-border text-muted-foreground',
 }
 
 const CHART_TICK = { fontSize: 11, fill: '#9CA3AF' }
@@ -104,8 +102,8 @@ export default function ExecutiveDashboardPage() {
   if (error) return (
     <DashboardPageShell title="Executive Dashboard" subtitle="Company-wide overview">
       <div className="erp-card text-center py-16">
-        <p className="text-sm text-[#EF4444] font-medium">Failed to load dashboard data.</p>
-        <p className="text-xs text-[#9CA3AF] mt-1">Please refresh the page to try again.</p>
+        <p className="text-sm text-primary font-medium">Failed to load dashboard data.</p>
+        <p className="text-xs text-brand-muted-light mt-1">Please refresh the page to try again.</p>
       </div>
     </DashboardPageShell>
   )
@@ -117,19 +115,19 @@ export default function ExecutiveDashboardPage() {
         {/* ── Financial KPIs ── */}
         {loading ? <SkeletonKPI count={3} cols={3} /> : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <KPICard title="Total Revenue" subtitle="Fiscal year to date" value={formatCurrency(data?.totalRevenue ?? 0)} icon={MdTrendingUp} color="red" />
-            <KPICard title="Outstanding Receivables" subtitle="Awaiting collection" value={formatCurrency(data?.outstandingReceivables ?? 0)} icon={FaHandHoldingUsd} color="amber" />
-            <KPICard title="Cash in Bank" subtitle="Available balance" value={formatCurrency(data?.cashInBank ?? 0)} icon={TbBuildingBank} color="blue" />
+            <KPICard title="Total Revenue" subtitle="Fiscal year to date" value={formatCurrency(data?.totalRevenue ?? 0)} icon={ArrowTrendingRegular} color="red" />
+            <KPICard title="Outstanding Receivables" subtitle="Awaiting collection" value={formatCurrency(data?.outstandingReceivables ?? 0)} icon={MoneyHandRegular} color="amber" />
+            <KPICard title="Cash in Bank" subtitle="Available balance" value={formatCurrency(data?.cashInBank ?? 0)} icon={BuildingBankRegular} color="blue" />
           </div>
         )}
 
         {/* ── Operational KPIs ── */}
         {loading ? <SkeletonKPI count={4} cols={4} /> : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <KPICard title="Active Guards" value={data?.activeGuards ?? 0} icon={FaUserShield} color="navy" />
-            <KPICard title="Active Sites" value={data?.activeSites ?? 0} icon={TbBuildingSkyscraper} color="blue" />
-            <KPICard title="Open Incidents" value={data?.openIncidents ?? 0} icon={TbShieldExclamation} color={(data?.openIncidents ?? 0) > 0 ? 'amber' : 'green'} />
-            <KPICard title="Guards on Duty" subtitle="Today" value={data?.guardsOnDutyToday ?? 0} icon={FaHardHat} color="red" />
+            <KPICard title="Active Guards" value={data?.activeGuards ?? 0} icon={ShieldPersonRegular} color="navy" />
+            <KPICard title="Active Sites" value={data?.activeSites ?? 0} icon={BuildingRegular} color="blue" />
+            <KPICard title="Open Incidents" value={data?.openIncidents ?? 0} icon={ShieldErrorRegular} color={(data?.openIncidents ?? 0) > 0 ? 'amber' : 'green'} />
+            <KPICard title="Guards on Duty" subtitle="Today" value={data?.guardsOnDutyToday ?? 0} icon={PersonRegular} color="red" />
           </div>
         )}
 
@@ -141,7 +139,7 @@ export default function ExecutiveDashboardPage() {
             <>
               <ChartCard title="Revenue vs Expenses" subtitle="Last 6 months">
                 {!data?.monthlyChart?.length || !data?.monthlyChart?.some(m => m.revenue > 0 || m.expenses > 0) ? (
-                  <EmptyState icon={FaChartBar} title="No financial data yet" description="Record receipts and payments to see trends" />
+                  <EmptyState icon={DataBarVerticalRegular} title="No financial data yet" description="Record receipts and payments to see trends" />
                 ) : (
                   <ResponsiveContainer width="100%" height={224}>
                     <BarChart data={data.monthlyChart} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -150,7 +148,7 @@ export default function ExecutiveDashboardPage() {
                       <YAxis tickFormatter={fmtY} tick={CHART_TICK} axisLine={false} tickLine={false} width={52} />
                       <Tooltip formatter={(value: any) => formatCurrency(Number(value ?? 0))} contentStyle={CT} />
                       <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                      <Bar dataKey="revenue" name="Revenue" fill="#E74C5B" radius={[5,5,0,0]} maxBarSize={32} />
+                      <Bar dataKey="revenue" name="Revenue" fill="#DC2626" radius={[5,5,0,0]} maxBarSize={32} />
                       <Bar dataKey="expenses" name="Expenses" fill="#E5E7EB" radius={[5,5,0,0]} maxBarSize={32} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -159,7 +157,7 @@ export default function ExecutiveDashboardPage() {
 
               <ChartCard title="Incidents by Severity" subtitle="Current period">
                 {!data?.incidentsBySeverity?.length ? (
-                  <EmptyState icon={FaExclamationTriangle} title="No incidents recorded" description="Incidents will appear here once logged" />
+                  <EmptyState icon={WarningRegular} title="No incidents recorded" description="Incidents will appear here once logged" />
                 ) : (
                   <ResponsiveContainer width="100%" height={224}>
                     <PieChart>
@@ -187,12 +185,12 @@ export default function ExecutiveDashboardPage() {
             <>
               {/* Top Sites */}
               <div className="erp-card !p-0 overflow-hidden">
-                <div className="px-5 py-4 border-b border-[#E5E7EB]">
-                  <p className="text-sm font-semibold text-[#1F2937]">Top 5 Sites by Contract Value</p>
+                <div className="px-5 py-4 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">Top 5 Sites by Contract Value</p>
                 </div>
                 {!data?.topSites?.length ? (
                   <div className="px-5 py-8 text-center">
-                    <p className="text-sm text-[#9CA3AF]">No sites found</p>
+                    <p className="text-sm text-brand-muted-light">No sites found</p>
                   </div>
                 ) : (
                   <table className="erp-table w-full">
@@ -206,9 +204,9 @@ export default function ExecutiveDashboardPage() {
                     <tbody>
                       {data?.topSites?.map(s => (
                         <tr key={s.name}>
-                          <td className="font-medium text-[#1F2937] truncate max-w-[160px]">{s.name}</td>
-                          <td className="text-right text-[#6B7280]">{formatCurrency(s.revenue)}</td>
-                          <td className="text-right text-[#6B7280]">{s.guards}</td>
+                          <td className="font-medium text-foreground truncate max-w-[160px]">{s.name}</td>
+                          <td className="text-right text-muted-foreground">{formatCurrency(s.revenue)}</td>
+                          <td className="text-right text-muted-foreground">{s.guards}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -218,29 +216,29 @@ export default function ExecutiveDashboardPage() {
 
               {/* Recent Activity */}
               <div className="erp-card !p-0 overflow-hidden">
-                <div className="px-5 py-4 border-b border-[#E5E7EB]">
-                  <p className="text-sm font-semibold text-[#1F2937]">Recent Activity</p>
+                <div className="px-5 py-4 border-b border-border">
+                  <p className="text-sm font-semibold text-foreground">Recent Activity</p>
                 </div>
                 {!data?.recentMdShowChart?.length ? (
                   <div className="px-5 py-8">
-                    <EmptyState icon={MdShowChart} title="No activity yet" description="System actions will appear here" />
+                    <EmptyState icon={ArrowTrendingRegular} title="No activity yet" description="System actions will appear here" />
                   </div>
                 ) : (
-                  <ul className="divide-y divide-[#F3F4F6] px-5">
+                  <ul className="divide-y divide-border px-5">
                     {data?.recentMdShowChart?.map((item, idx) => {
-                      const Icon = ACTION_ICON[item.action] ?? MdShowChart
-                      const style = ACTION_STYLE[item.action] ?? 'bg-[#F3F4F6] text-[#6B7280]'
+                      const Icon = ACTION_ICON[item.action] ?? ArrowTrendingRegular
+                      const style = ACTION_STYLE[item.action] ?? 'bg-border text-muted-foreground'
                       return (
                         <li key={idx} className="flex items-center gap-3 py-3 first:pt-4 last:pb-4">
                           <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-sm ${style}`}>
                             <Icon size={14} />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <p className="text-sm text-[#374151] truncate">
+                            <p className="text-sm text-foreground truncate">
                               <span className="font-semibold">{item.userName}</span>
-                              <span className="text-[#9CA3AF]"> · {item.module}</span>
+                              <span className="text-brand-muted-light"> · {item.module}</span>
                             </p>
-                            <p className="text-xs text-[#9CA3AF] mt-0.5">{timeAgo(item.createdAt)}</p>
+                            <p className="text-xs text-brand-muted-light mt-0.5">{timeAgo(item.createdAt)}</p>
                           </div>
                         </li>
                       )

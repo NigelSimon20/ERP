@@ -3,9 +3,8 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { FaShieldAlt, FaDollarSign, FaUsers, FaBriefcase, FaCheckSquare, FaCog, FaFolderOpen, FaRobot, FaGlobe, FaBuilding, FaChevronDown, FaChevronRight } from 'react-icons/fa'
-import { MdDashboard } from 'react-icons/md'
 import { useState } from 'react'
+import { BotRegular, BriefcaseRegular, BuildingRegular, ChevronDownRegular, ChevronRightRegular, FolderOpenRegular, GlobeRegular, GridRegular, MoneyRegular, PeopleRegular, SettingsRegular, ShieldRegular, TaskListSquareLtrRegular } from '@fluentui/react-icons';
 
 interface NavItem {
   label: string
@@ -15,10 +14,10 @@ interface NavItem {
 }
 
 const nav: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: MdDashboard },
+  { label: 'Dashboard', href: '/dashboard', icon: GridRegular },
   {
     label: 'Finance',
-    icon: FaDollarSign,
+    icon: MoneyRegular,
     children: [
       { label: 'Dashboard', href: '/finance' },
       { label: 'Chart of Accounts', href: '/finance/chart-of-accounts' },
@@ -48,7 +47,7 @@ const nav: NavItem[] = [
   },
   {
     label: 'Operations',
-    icon: FaBuilding,
+    icon: BuildingRegular,
     children: [
       { label: 'Overview', href: '/operations' },
       { label: 'Sites', href: '/operations/sites' },
@@ -62,7 +61,7 @@ const nav: NavItem[] = [
   },
   {
     label: 'Human Resources',
-    icon: FaUsers,
+    icon: PeopleRegular,
     children: [
       { label: 'Overview', href: '/human-resources' },
       { label: 'Employees', href: '/human-resources/employees' },
@@ -74,7 +73,7 @@ const nav: NavItem[] = [
   },
   {
     label: 'Business Dev.',
-    icon: FaBriefcase,
+    icon: BriefcaseRegular,
     children: [
       { label: 'Overview', href: '/business-development' },
       { label: 'Leads', href: '/business-development/leads' },
@@ -86,7 +85,7 @@ const nav: NavItem[] = [
   },
   {
     label: 'Tasks & Requests',
-    icon: FaCheckSquare,
+    icon: TaskListSquareLtrRegular,
     children: [
       { label: 'Tasks', href: '/tasks-requests/tasks' },
       { label: 'Requests', href: '/tasks-requests/requests' },
@@ -94,18 +93,30 @@ const nav: NavItem[] = [
       { label: 'Calendar', href: '/tasks-requests/calendar' },
     ],
   },
-  { label: 'File Manager', href: '/file-manager', icon: FaFolderOpen },
-  { label: 'AI Helpdesk', href: '/ai-helpdesk', icon: FaRobot },
-  { label: 'Portals', href: '/external-portals', icon: FaGlobe },
+  { label: 'File Manager', href: '/file-manager', icon: FolderOpenRegular },
+  { label: 'AI Helpdesk', href: '/ai-helpdesk', icon: BotRegular },
+  { label: 'Portals', href: '/external-portals', icon: GlobeRegular },
   {
     label: 'Settings',
-    icon: FaCog,
+    icon: SettingsRegular,
     children: [
       { label: 'Company', href: '/settings/company' },
       { label: 'Users', href: '/settings/users' },
       { label: 'Audit Trail', href: '/settings/audit-trail' },
     ],
   },
+]
+
+// Purely visual grouping — maps existing nav item labels into section headers.
+// Does not affect ROLE_NAV_ACCESS, hrefs, or which items render; only which
+// header they render under.
+const SECTIONS: { title: string; items: string[] }[] = [
+  { title: 'MAIN', items: ['Dashboard', 'Tasks & Requests', 'File Manager'] },
+  { title: 'OPERATIONS', items: ['Operations'] },
+  { title: 'BUSINESS', items: ['Finance', 'Business Dev.'] },
+  { title: 'PEOPLE', items: ['Human Resources'] },
+  { title: 'INTELLIGENCE', items: ['AI Helpdesk'] },
+  { title: 'SYSTEM', items: ['Settings', 'Portals'] },
 ]
 
 const ROLE_NAV_ACCESS: Record<string, string[]> = {
@@ -128,6 +139,7 @@ export function Sidebar({ role = 'READ_ONLY', onClose }: { role?: string; onClos
   const filteredNav = nav.filter(item =>
     item.href === '/dashboard' || allowedGroups.includes(item.label)
   )
+  const navByLabel = new Map(filteredNav.map((item) => [item.label, item]))
 
   const [open, setOpen] = useState<string[]>(() =>
     filteredNav
@@ -145,12 +157,87 @@ export function Sidebar({ role = 'READ_ONLY', onClose }: { role?: string; onClos
     return pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
   }
 
+  function renderItem(item: NavItem) {
+    const Icon = item.icon
+
+    if (item.href) {
+      const active = isActive(item.href)
+      return (
+        <Link
+          key={item.href}
+          href={item.href}
+          onClick={onClose}
+          className={cn(
+            'group relative flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg text-sm transition-all duration-200 ease-in-out',
+            active
+              ? 'bg-primary/15 text-white font-semibold'
+              : 'text-white/60 font-medium hover:bg-white/[0.06] hover:text-white/90'
+          )}
+        >
+          {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-primary" />}
+          <Icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-primary' : 'text-white/40 group-hover:text-white/70')} />
+          {item.label}
+        </Link>
+      )
+    }
+
+    const isOpen = open.includes(item.label)
+    const hasActive = item.children?.some((c) => isActive(c.href)) ?? false
+
+    return (
+      <div key={item.label}>
+        <button
+          onClick={() => toggleSection(item.label)}
+          className={cn(
+            'group relative w-full flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg text-sm transition-all duration-200 ease-in-out',
+            hasActive
+              ? 'bg-white/[0.06] text-white font-semibold'
+              : 'text-white/60 font-medium hover:bg-white/[0.06] hover:text-white/90'
+          )}
+        >
+          {hasActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-primary" />}
+          <Icon className={cn('h-4 w-4 flex-shrink-0', hasActive ? 'text-primary' : 'text-white/40 group-hover:text-white/70')} />
+          <span className="flex-1 text-left">{item.label}</span>
+          <span className="text-white/30">
+            {isOpen
+              ? <ChevronDownRegular className="h-3 w-3" />
+              : <ChevronRightRegular className="h-3 w-3" />}
+          </span>
+        </button>
+
+        {isOpen && (
+          <div className="ml-4 mt-1 space-y-0.5 border-l border-white/[0.08] pl-3">
+            {item.children?.map((child) => {
+              const childActive = isActive(child.href)
+              return (
+                <Link
+                  key={child.href}
+                  href={child.href}
+                  onClick={onClose}
+                  className={cn(
+                    'relative block px-3 py-1.5 rounded-md text-xs transition-all duration-200 ease-in-out',
+                    childActive
+                      ? 'bg-primary/15 text-white font-semibold'
+                      : 'text-white/45 font-medium hover:text-white/90 hover:bg-white/[0.05]'
+                  )}
+                >
+                  {childActive && <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-primary" />}
+                  {child.label}
+                </Link>
+              )
+            })}
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
-    <div className="flex flex-col h-full w-64 flex-shrink-0 bg-[#111827]">
+    <div className="flex flex-col h-full w-64 flex-shrink-0 bg-brand-navy">
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 h-16 border-b border-white/[0.06] flex-shrink-0">
-        <div className="flex items-center justify-center w-8 h-8 bg-[#E74C5B] rounded-xl flex-shrink-0">
-          <FaShieldAlt className="h-4 w-4 text-white" />
+        <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-xl flex-shrink-0">
+          <ShieldRegular className="h-4 w-4 text-white" />
         </div>
         <div className="min-w-0">
           <p className="font-bold text-white text-sm leading-none tracking-tight">Ravenshield</p>
@@ -159,70 +246,22 @@ export function Sidebar({ role = 'READ_ONLY', onClose }: { role?: string; onClos
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-0.5 scrollbar-hide">
-        {filteredNav.map((item) => {
-          const Icon = item.icon
-          if (item.href) {
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onClose}
-                className={cn(
-                  'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
-                  isActive(item.href)
-                    ? 'bg-[#E74C5B] text-white shadow-sm'
-                    : 'text-white/55 hover:bg-white/[0.06] hover:text-white/90'
-                )}
-              >
-                <Icon className="h-4 w-4 flex-shrink-0" />
-                {item.label}
-              </Link>
-            )
-          }
+      <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-4 scrollbar-hide">
+        {SECTIONS.map((section) => {
+          const items = section.items
+            .map((label) => navByLabel.get(label))
+            .filter((item): item is NavItem => Boolean(item))
 
-          const isOpen = open.includes(item.label)
-          const hasActive = item.children?.some((c) => isActive(c.href))
+          if (items.length === 0) return null
 
           return (
-            <div key={item.label}>
-              <button
-                onClick={() => toggleSection(item.label)}
-                className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
-                  hasActive
-                    ? 'text-white/90 bg-white/[0.08]'
-                    : 'text-white/55 hover:bg-white/[0.06] hover:text-white/90'
-                )}
-              >
-                <Icon className="h-4 w-4 flex-shrink-0" />
-                <span className="flex-1 text-left">{item.label}</span>
-                <span className="text-white/30">
-                  {isOpen
-                    ? <FaChevronDown className="h-3 w-3" />
-                    : <FaChevronRight className="h-3 w-3" />}
-                </span>
-              </button>
-
-              {isOpen && (
-                <div className="ml-3 mt-1 space-y-0.5 border-l border-white/[0.07] pl-3">
-                  {item.children?.map((child) => (
-                    <Link
-                      key={child.href}
-                      href={child.href}
-                      onClick={onClose}
-                      className={cn(
-                        'block px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150',
-                        isActive(child.href)
-                          ? 'bg-[#E74C5B] text-white'
-                          : 'text-white/45 hover:text-white/90 hover:bg-white/[0.05]'
-                      )}
-                    >
-                      {child.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
+            <div key={section.title}>
+              <p className="px-4 mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-white/25">
+                {section.title}
+              </p>
+              <div className="space-y-0.5">
+                {items.map(renderItem)}
+              </div>
             </div>
           )
         })}

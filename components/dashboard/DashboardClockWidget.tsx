@@ -3,8 +3,7 @@
 import React from 'react'
 import { useGreeting } from '@/hooks/useGreeting'
 import { useClock } from '@/hooks/useClock'
-import { FiSun, FiCloud, FiMoon, FiClock, FiCalendar } from 'react-icons/fi'
-
+import { CalendarLtrRegular, ClockRegular, CloudRegular, WeatherMoonRegular, WeatherSunnyRegular } from '@fluentui/react-icons';
 interface DashboardClockWidgetProps {
   title?: string
   showGreeting?: boolean
@@ -32,19 +31,19 @@ export function DashboardClockWidget({
   const { timeString, dateString } = useClock()
 
   const phaseIcons: Record<string, React.ReactNode> = {
-    morning: <FiSun className="w-8 h-8 text-amber-500" />,
-    afternoon: <FiCloud className="w-8 h-8 text-blue-400" />,
-    evening: <FiCloud className="w-8 h-8 text-orange-400" />,
-    night: <FiMoon className="w-8 h-8 text-indigo-500" />
+    morning: <WeatherSunnyRegular className="w-8 h-8 text-primary" />,
+    afternoon: <CloudRegular className="w-8 h-8 text-muted-foreground" />,
+    evening: <CloudRegular className="w-8 h-8 text-muted-foreground" />,
+    night: <WeatherMoonRegular className="w-8 h-8 text-muted-foreground" />
   }
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
+    <div className="bg-card rounded-lg border border-border shadow-sm p-6">
       {/* Title */}
       {title && (
         <div className="flex items-center gap-2 mb-4">
-          <FiClock className="w-4 h-4 text-blue-600" />
-          <h3 className="text-sm font-semibold text-gray-900">{title}</h3>
+          <ClockRegular className="w-4 h-4 text-blue-600" />
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         </div>
       )}
 
@@ -52,27 +51,27 @@ export function DashboardClockWidget({
       <div className="space-y-4">
         {/* Time Display */}
         <div className="text-center">
-          <div className="text-5xl font-mono font-bold text-gray-900 tracking-wider">
+          <div className="text-5xl font-mono font-bold text-foreground tracking-wider">
             {timeString}
           </div>
           
-          <div className="flex items-center justify-center gap-2 mt-3 text-sm text-gray-600">
-            <FiCalendar className="w-4 h-4" />
+          <div className="flex items-center justify-center gap-2 mt-3 text-sm text-muted-foreground">
+            <CalendarLtrRegular className="w-4 h-4" />
             <span>{dateString}</span>
           </div>
         </div>
 
         {/* Greeting Section */}
         {showGreeting && (
-          <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+          <div className="flex items-center gap-3 pt-4 border-t border-border">
             {phaseIcons[phase]}
             
             <div className="flex-1">
-              <div className="font-semibold text-gray-900 text-sm">
+              <div className="font-semibold text-foreground text-sm">
                 {phrase}
-                {userName && <span className="text-premium-primary ml-1">{userName}</span>}
+                {userName && <span className="text-primary ml-1">{userName}</span>}
               </div>
-              <p className="text-xs text-gray-600 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 {subMessage}
               </p>
             </div>
@@ -94,12 +93,12 @@ export function CompactClockWidget() {
   const { timeString, dateShort } = useClock()
 
   return (
-    <div className="bg-gray-50 rounded-lg p-3 space-y-1 border border-gray-200">
+    <div className="bg-muted/50 rounded-lg p-3 space-y-1 border border-border">
       <div className="text-center">
-        <div className="text-2xl font-mono font-bold text-gray-900">
+        <div className="text-2xl font-mono font-bold text-foreground">
           {timeString}
         </div>
-        <div className="text-xs text-gray-600">
+        <div className="text-xs text-muted-foreground">
           {dateShort}
         </div>
       </div>

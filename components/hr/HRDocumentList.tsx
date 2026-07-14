@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LuPlus as Plus, LuFileText as FileText, LuClock as Clock, LuTrash2 as Trash2, LuDownload as Download, LuCircleAlert as AlertCircle } from 'react-icons/lu'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { AddRegular as Plus, ArrowDownloadRegular as Download, ClockRegular as Clock, DeleteRegular as Trash2, DocumentTextRegular as FileText, ErrorCircleRegular as AlertCircle } from '@fluentui/react-icons';
 
 interface HRDocument {
   id: string
@@ -82,7 +82,7 @@ export function HRDocumentList() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">HR Documents</h2>
         <Button className="flex gap-2">
-          <Plus size={18} />
+          <Plus fontSize={18} />
           Upload Document
         </Button>
       </div>
@@ -91,7 +91,7 @@ export function HRDocumentList() {
         <Card className="border-yellow-200 bg-yellow-50">
           <CardContent className="pt-6">
             <div className="flex gap-2 items-start">
-              <AlertCircle className="text-yellow-600 mt-1" size={20} />
+              <AlertCircle className="text-yellow-600 mt-1" fontSize={20} />
               <div>
                 <p className="font-semibold text-yellow-800">{expiringDocs.length} documents expiring soon</p>
                 <p className="text-sm text-yellow-700">Review and renew documents that expire within 30 days</p>
@@ -107,7 +107,7 @@ export function HRDocumentList() {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div className="flex gap-3 items-start">
-                  <FileText size={24} className="text-gray-400 mt-1" />
+                  <FileText fontSize={24} className="text-brand-muted-light mt-1" />
                   <div>
                     <CardTitle className="text-lg">{doc.title}</CardTitle>
                     <CardDescription>{doc.documentType}</CardDescription>
@@ -120,33 +120,33 @@ export function HRDocumentList() {
             <CardContent>
               <div className="grid grid-cols-2 gap-4 text-sm mb-4">
                 <div>
-                  <p className="text-gray-500">File</p>
+                  <p className="text-muted-foreground">File</p>
                   <p className="font-medium">{doc.fileName}</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Size</p>
+                  <p className="text-muted-foreground">Size</p>
                   <p className="font-medium">{formatFileSize(doc.fileSize)}</p>
                 </div>
                 {doc.guard && (
                   <div>
-                    <p className="text-gray-500">Employee</p>
+                    <p className="text-muted-foreground">Employee</p>
                     <p className="font-medium">{doc.guard.full_name}</p>
                   </div>
                 )}
                 {doc.expiryDate && (
                   <div>
-                    <p className="text-gray-500">Expires</p>
+                    <p className="text-muted-foreground">Expires</p>
                     <p className="font-medium">{new Date(doc.expiryDate).toLocaleDateString()}</p>
                   </div>
                 )}
                 <div>
-                  <p className="text-gray-500">Uploaded</p>
+                  <p className="text-muted-foreground">Uploaded</p>
                   <p className="font-medium">{new Date(doc.createdAt).toLocaleDateString()}</p>
                 </div>
               </div>
               <div className="flex gap-2">
                 <Button variant="outline" size="sm" className="flex gap-2">
-                  <Download size={16} />
+                  <Download fontSize={16} />
                   Download
                 </Button>
                 <Button
@@ -155,7 +155,7 @@ export function HRDocumentList() {
                   className="flex gap-2"
                   onClick={() => handleDelete(doc.id)}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 fontSize={16} />
                   Delete
                 </Button>
               </div>

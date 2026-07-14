@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaExchangeAlt } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, ArrowSwapRegular } from '@fluentui/react-icons';
 
 interface Transfer {
   id: string
@@ -80,34 +80,34 @@ export default function TransfersPage() {
 
   return (
     <div>
-      <PageHeader title="Bank Transfers" description="Move funds between your bank accounts" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> New Transfer</Button>} />
+      <PageHeader title="Bank Transfers" description="Move funds between your bank accounts" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Transfer</Button>} />
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="divide-y divide-gray-100">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-24 bg-gray-200 rounded" /><div className="h-3 flex-1 bg-gray-100 rounded" /><div className="h-3 w-20 bg-gray-200 rounded" /></div>)}</div>
+          <div className="divide-y divide-border">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-24 bg-muted rounded" /><div className="h-3 flex-1 bg-muted rounded" /><div className="h-3 w-20 bg-muted rounded" /></div>)}</div>
         ) : transfers.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaExchangeAlt} title="No transfers recorded yet" description="Create a transfer to move funds between bank accounts" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> New Transfer</Button>} /></div>
+          <div className="py-16"><EmptyState icon={ArrowSwapRegular} title="No transfers recorded yet" description="Create a transfer to move funds between bank accounts" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Transfer</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Reference</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Date</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">From</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">To</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Amount</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Notes</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Reference</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Date</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">From</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">To</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Amount</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Notes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {transfers.map((t) => (
-                <tr key={t.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs text-[#CC0000] font-medium">{t.reference}</td>
-                  <td className="px-4 py-3 text-gray-600">{formatDate(new Date(t.transferDate))}</td>
-                  <td className="px-4 py-3 text-gray-700">{t.fromAccount?.bankName}</td>
-                  <td className="px-4 py-3 text-gray-700">{t.toAccount?.bankName}</td>
+                <tr key={t.id} className="hover:bg-muted/50">
+                  <td className="px-4 py-3 font-mono text-xs text-primary font-medium">{t.reference}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{formatDate(new Date(t.transferDate))}</td>
+                  <td className="px-4 py-3 text-foreground">{t.fromAccount?.bankName}</td>
+                  <td className="px-4 py-3 text-foreground">{t.toAccount?.bankName}</td>
                   <td className="px-4 py-3 text-right font-semibold">{formatCurrency(Number(t.amount))}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{t.notes ?? '—'}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{t.notes ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -161,16 +161,16 @@ export default function TransfersPage() {
             </div>
 
             {showPreview && (
-              <div className="rounded-lg border border-[#0D1B2A]/20 bg-[#0D1B2A]/5 p-3 text-sm space-y-1">
-                <p className="font-medium text-[#0D1B2A]">Transfer Preview</p>
-                <p className="text-gray-600 text-xs">Moving {formatCurrency(amtNum)} from {fromAccount!.bankName} → {toAccount!.bankName}</p>
+              <div className="rounded-lg border border-border bg-muted/40 p-3 text-sm space-y-1">
+                <p className="font-medium text-foreground">Transfer Preview</p>
+                <p className="text-muted-foreground text-xs">Moving {formatCurrency(amtNum)} from {fromAccount!.bankName} → {toAccount!.bankName}</p>
                 <div className="grid grid-cols-2 gap-2 mt-2 text-xs">
-                  <div className="rounded bg-white border p-2">
-                    <p className="text-gray-400">{fromAccount!.bankName} after</p>
+                  <div className="rounded bg-card border p-2">
+                    <p className="text-brand-muted-light">{fromAccount!.bankName} after</p>
                     <p className={`font-bold ${Number(fromAccount!.currentBalance) - amtNum >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(Number(fromAccount!.currentBalance) - amtNum)}</p>
                   </div>
-                  <div className="rounded bg-white border p-2">
-                    <p className="text-gray-400">{toAccount!.bankName} after</p>
+                  <div className="rounded bg-card border p-2">
+                    <p className="text-brand-muted-light">{toAccount!.bankName} after</p>
                     <p className="font-bold text-green-600">{formatCurrency(Number(toAccount!.currentBalance) + amtNum)}</p>
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export default function TransfersPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
                 {isSubmitting ? 'Processing…' : 'Confirm Transfer'}
               </Button>
             </DialogFooter>

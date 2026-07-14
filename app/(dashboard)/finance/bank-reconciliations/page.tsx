@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaCheckCircle, FaTimesCircle } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, CheckmarkCircleRegular, DismissCircleRegular } from '@fluentui/react-icons';
 
 interface Reconciliation { id: string; reconcileDate: string; statementBalance: number; bookBalance: number; difference: number; status: string; bankAccount: { bankName: string; accountNumber: string; currency: string } }
 interface BankAccount { id: string; bankName: string; accountNumber: string; currency: string; currentBalance: number }
@@ -74,36 +74,36 @@ export default function BankReconciliationsPage() {
 
   return (
     <div>
-      <PageHeader title="Bank Reconciliations" description="Compare your book balance with bank statements" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Start Reconciliation</Button>} />
+      <PageHeader title="Bank Reconciliations" description="Compare your book balance with bank statements" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Start Reconciliation</Button>} />
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : recs.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaCheckCircle} title="No reconciliations yet" description="Start a reconciliation to compare your bank balance with your statements" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Start Reconciliation</Button>} /></div>
+          <div className="py-16"><EmptyState icon={CheckmarkCircleRegular} title="No reconciliations yet" description="Start a reconciliation to compare your bank balance with your statements" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Start Reconciliation</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Bank Account</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Date</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Statement Balance</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Book Balance</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Difference</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Bank Account</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Date</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Statement Balance</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Book Balance</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Difference</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {recs.map((r) => (
-                <tr key={r.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-[#0D1B2A]">{r.bankAccount?.bankName} <span className="text-gray-400 font-mono text-xs">{r.bankAccount?.accountNumber}</span></td>
-                  <td className="px-4 py-3 text-gray-600">{formatDate(new Date(r.reconcileDate))}</td>
+                <tr key={r.id} className="hover:bg-muted/50">
+                  <td className="px-4 py-3 font-medium text-foreground">{r.bankAccount?.bankName} <span className="text-brand-muted-light font-mono text-xs">{r.bankAccount?.accountNumber}</span></td>
+                  <td className="px-4 py-3 text-muted-foreground">{formatDate(new Date(r.reconcileDate))}</td>
                   <td className="px-4 py-3 text-right font-medium">{formatCurrency(r.statementBalance)}</td>
                   <td className="px-4 py-3 text-right font-medium">{formatCurrency(r.bookBalance)}</td>
                   <td className={`px-4 py-3 text-right font-bold ${Math.abs(r.difference) < 0.01 ? 'text-green-600' : 'text-red-600'}`}>
                     <div className="flex items-center justify-end gap-1">
-                      {Math.abs(r.difference) < 0.01 ? <FaCheckCircle className="h-3.5 w-3.5" /> : <FaTimesCircle className="h-3.5 w-3.5" />}
+                      {Math.abs(r.difference) < 0.01 ? <CheckmarkCircleRegular className="h-3.5 w-3.5" /> : <DismissCircleRegular className="h-3.5 w-3.5" />}
                       {formatCurrency(r.difference)}
                     </div>
                   </td>
@@ -143,12 +143,12 @@ export default function BankReconciliationsPage() {
             </div>
             <div className="space-y-1.5"><Label>Reconciliation Date *</Label><Input type="date" {...register('reconcileDate', { required: true })} /></div>
             <div className="space-y-1.5">
-              <Label>Statement Balance * <span className="text-gray-400 font-normal">(from your bank statement)</span></Label>
+              <Label>Statement Balance * <span className="text-brand-muted-light font-normal">(from your bank statement)</span></Label>
               <Input type="number" step="0.01" placeholder="0.00" {...register('statementBalance', { required: true })} />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Starting…' : 'Start Reconciliation'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Starting…' : 'Start Reconciliation'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -1,8 +1,8 @@
 'use client'
 import * as React from 'react'
 import * as DropdownMenuPrimitive from '@radix-ui/react-dropdown-menu'
-import { LuCheck as Check, LuChevronRight as ChevronRight, LuCircle as Circle } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
+import { CheckmarkRegular as Check, ChevronRightRegular as ChevronRight, CircleRegular as Circle } from '@fluentui/react-icons';
 
 const DropdownMenu = DropdownMenuPrimitive.Root
 const DropdownMenuTrigger = DropdownMenuPrimitive.Trigger

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaBook, FaPlus, FaPen, FaPowerOff, FaTrash, FaChevronRight } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, BookRegular, ChevronRightRegular, DeleteRegular, EditRegular, PowerRegular } from '@fluentui/react-icons';
 
 interface Account {
   id: string
@@ -42,7 +42,7 @@ const TYPE_LABELS: Record<string, string> = {
 
 function StatusBadge({ active }: { active: boolean }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>
       {active ? 'Active' : 'Inactive'}
     </span>
   )
@@ -139,65 +139,65 @@ export default function ChartOfAccountsPage() {
       <PageHeader
         title="Chart of Accounts"
         description="Manage your general ledger accounts"
-        action={<Button onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Add Account</Button>}
+        action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>}
       />
 
       {loading ? (
         <div className="space-y-6 mt-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="animate-pulse">
-              <div className="h-5 w-32 bg-gray-200 rounded mb-3" />
-              <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
-                {[1, 2, 3].map((j) => <div key={j} className="h-12 bg-gray-50" />)}
+              <div className="h-5 w-32 bg-muted rounded mb-3" />
+              <div className="rounded-lg border border-border bg-card divide-y divide-border">
+                {[1, 2, 3].map((j) => <div key={j} className="h-12 bg-muted/50" />)}
               </div>
             </div>
           ))}
         </div>
       ) : accounts.length === 0 ? (
         <div className="mt-16">
-          <EmptyState icon={FaBook} title="No accounts yet" description="Add your first account to start your chart of accounts" action={<Button onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-4"><FaPlus className="h-4 w-4 mr-1" /> Add Account</Button>} />
+          <EmptyState icon={BookRegular} title="No accounts yet" description="Add your first account to start your chart of accounts" action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-4"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>} />
         </div>
       ) : (
         <div className="mt-6 space-y-6">
           {grouped.map(({ type, label, rows }) => (
             <div key={type}>
               <div className="flex items-center gap-2 mb-2">
-                <FaChevronRight className="h-4 w-4 text-gray-400" />
-                <h3 className="text-sm font-semibold text-[#0D1B2A] uppercase tracking-wide">{label}</h3>
-                <span className="text-xs text-gray-400">({rows.length})</span>
+                <ChevronRightRegular className="h-4 w-4 text-brand-muted-light" />
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">{label}</h3>
+                <span className="text-xs text-brand-muted-light">({rows.length})</span>
               </div>
-              <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+              <div className="rounded-lg border border-border bg-card overflow-hidden">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
+                  <thead className="bg-muted/50 border-b border-border">
                     <tr>
-                      <th className="text-left px-4 py-2.5 font-medium text-gray-600 w-28">Code</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-gray-600">Name</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-gray-600 w-28">Type</th>
-                      <th className="text-right px-4 py-2.5 font-medium text-gray-600 w-36">Balance</th>
-                      <th className="text-left px-4 py-2.5 font-medium text-gray-600 w-24">Status</th>
-                      <th className="px-4 py-2.5 w-24 text-left font-medium text-gray-600">Actions</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Code</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Name</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-28">Type</th>
+                      <th className="text-right px-4 py-2.5 font-medium text-muted-foreground w-36">Balance</th>
+                      <th className="text-left px-4 py-2.5 font-medium text-muted-foreground w-24">Status</th>
+                      <th className="px-4 py-2.5 w-24 text-left font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-100">
+                  <tbody className="divide-y divide-border">
                     {rows.map((account) => (
-                      <tr key={account.id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-4 py-3 font-mono text-xs text-gray-600">{account.accountCode}</td>
-                        <td className="px-4 py-3 font-medium text-[#0D1B2A]">{account.name}</td>
-                        <td className="px-4 py-3 text-gray-500 capitalize">{account.type.toLowerCase()}</td>
-                        <td className="px-4 py-3 text-right font-medium text-[#0D1B2A]">
+                      <tr key={account.id} className="hover:bg-muted/50 transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{account.accountCode}</td>
+                        <td className="px-4 py-3 font-medium text-foreground">{account.name}</td>
+                        <td className="px-4 py-3 text-muted-foreground capitalize">{account.type.toLowerCase()}</td>
+                        <td className="px-4 py-3 text-right font-medium text-foreground">
                           {formatCurrency(Number(account.balance))}
                         </td>
                         <td className="px-4 py-3"><StatusBadge active={account.active} /></td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1 justify-end">
-                            <button type="button" onClick={() => openEdit(account)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700" title="Edit" aria-label="Edit account">
-                              <FaPen className="h-3.5 w-3.5" />
+                            <button type="button" onClick={() => openEdit(account)} className="p-1.5 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" title="Edit" aria-label="Edit account">
+                              <EditRegular className="h-3.5 w-3.5" />
                             </button>
-                            <button type="button" onClick={() => toggleActive(account)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700" title={account.active ? 'Deactivate' : 'Activate'} aria-label={account.active ? 'Deactivate account' : 'Activate account'}>
-                              <FaPowerOff className="h-3.5 w-3.5" />
+                            <button type="button" onClick={() => toggleActive(account)} className="p-1.5 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" title={account.active ? 'Deactivate' : 'Activate'} aria-label={account.active ? 'Deactivate account' : 'Activate account'}>
+                              <PowerRegular className="h-3.5 w-3.5" />
                             </button>
-                            <button type="button" onClick={() => deleteAccount(account)} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500" title="Delete" aria-label="Delete account">
-                              <FaTrash className="h-3.5 w-3.5" />
+                            <button type="button" onClick={() => deleteAccount(account)} className="p-1.5 rounded hover:bg-red-50 text-brand-muted-light hover:text-red-500" title="Delete" aria-label="Delete account">
+                              <DeleteRegular className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </td>
@@ -256,7 +256,7 @@ export default function ChartOfAccountsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
                 {isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Account'}
               </Button>
             </DialogFooter>

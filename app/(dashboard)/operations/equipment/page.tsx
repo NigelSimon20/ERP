@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaWrench, FaPen, FaTrash } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, DeleteRegular, EditRegular, WrenchRegular } from '@fluentui/react-icons';
 
 interface Equipment { id: string; name: string; serialNumber: string | null; category: string; condition: string; status: string; value: number | null; purchaseDate: string | null; notes: string | null; assignedTo: string | null; assignedToGuard: { id: string; name: string } | null; site: { id: string; name: string } | null }
 interface Guard { id: string; name: string; employeeNumber: string }
@@ -19,7 +19,7 @@ interface Site { id: string; name: string }
 type FormValues = { name: string; serialNumber: string; category: string; condition: string; value: string; purchaseDate: string; notes: string }
 type AssignValues = { assignedTo: string; siteId: string }
 
-const STATUS_STYLES: Record<string, string> = { AVAILABLE: 'bg-green-100 text-green-700', ASSIGNED: 'bg-blue-100 text-blue-700', REPAIR: 'bg-amber-100 text-amber-700', RETIRED: 'bg-gray-100 text-gray-500' }
+const STATUS_STYLES: Record<string, string> = { AVAILABLE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', ASSIGNED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', REPAIR: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', RETIRED: 'bg-muted text-muted-foreground' }
 const STATUS_TABS = ['ALL', 'AVAILABLE', 'ASSIGNED', 'REPAIR', 'RETIRED']
 const CATEGORIES = ['Radio', 'Torch', 'Handcuffs', 'Baton', 'Uniform', 'Vehicle', 'CCTV', 'Access Control', 'Firearm', 'Other']
 const CONDITIONS = ['EXCELLENT', 'GOOD', 'FAIR', 'POOR']
@@ -101,52 +101,52 @@ export default function EquipmentPage() {
 
   return (
     <div>
-      <PageHeader title="Equipment" description="Manage security equipment inventory" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Add Equipment</Button>} />
+      <PageHeader title="Equipment" description="Manage security equipment inventory" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Equipment</Button>} />
 
-      <div className="mt-4 flex gap-1 border-b border-gray-200">
+      <div className="mt-4 flex gap-1 border-b border-border">
         {STATUS_TABS.map(tab => (
-          <button key={tab} type="button" onClick={() => setStatusTab(tab)} className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${statusTab === tab ? 'border-[#CC0000] text-[#CC0000]' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>{tab}</button>
+          <button key={tab} type="button" onClick={() => setStatusTab(tab)} className={`px-3 py-2 text-xs font-medium border-b-2 transition-colors ${statusTab === tab ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'}`}>{tab}</button>
         ))}
       </div>
 
-      <div className="mt-3 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-3 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : equipment.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaWrench} title="No equipment found" description="Add equipment to start tracking your inventory" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Add Equipment</Button>} /></div>
+          <div className="py-16"><EmptyState icon={WrenchRegular} title="No equipment found" description="Add equipment to start tracking your inventory" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Equipment</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[900px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Name</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Serial</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Category</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Assigned To</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Site</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Condition</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Value</th>
-                  <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Name</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Serial</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Category</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Assigned To</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Site</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Condition</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Value</th>
+                  <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {equipment.map((e) => (
-                  <tr key={e.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-medium text-[#0D1B2A]">{e.name}</td>
-                    <td className="px-4 py-3 text-gray-400 font-mono text-xs">{e.serialNumber ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{e.category}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{e.assignedToGuard?.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-600 text-xs">{e.site?.name ?? '—'}</td>
-                    <td className="px-4 py-3 text-xs"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${e.condition === 'EXCELLENT' || e.condition === 'GOOD' ? 'bg-green-50 text-green-700' : e.condition === 'FAIR' ? 'bg-amber-50 text-amber-700' : 'bg-red-50 text-red-600'}`}>{e.condition}</span></td>
-                    <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[e.status] ?? 'bg-gray-100 text-gray-600'}`}>{e.status}</span></td>
-                    <td className="px-4 py-3 text-right text-gray-600">{e.value != null ? formatCurrency(Number(e.value)) : '—'}</td>
+                  <tr key={e.id} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 font-medium text-foreground">{e.name}</td>
+                    <td className="px-4 py-3 text-brand-muted-light font-mono text-xs">{e.serialNumber ?? '—'}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{e.category}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{e.assignedToGuard?.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{e.site?.name ?? '—'}</td>
+                    <td className="px-4 py-3 text-xs"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs ${e.condition === 'EXCELLENT' || e.condition === 'GOOD' ? 'bg-green-50 text-green-700 dark:bg-green-500/10 dark:text-green-400' : e.condition === 'FAIR' ? 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400' : 'bg-primary/5 text-primary dark:bg-primary/10 dark:text-red-300'}`}>{e.condition}</span></td>
+                    <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[e.status] ?? 'bg-muted text-muted-foreground'}`}>{e.status}</span></td>
+                    <td className="px-4 py-3 text-right text-muted-foreground">{e.value != null ? formatCurrency(Number(e.value)) : '—'}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1.5 text-xs">
-                        <button type="button" onClick={() => openEdit(e)} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700" aria-label="Edit equipment"><FaPen className="h-3.5 w-3.5" /></button>
-                        {e.status === 'AVAILABLE' && <button type="button" onClick={() => { setAssignTarget(e); aReset({ assignedTo: '', siteId: '' }) }} className="text-blue-600 hover:underline" aria-label="Assign equipment">Assign</button>}
-                        {e.status === 'ASSIGNED' && <button type="button" onClick={() => unassign(e)} className="text-amber-600 hover:underline" aria-label="Unassign equipment">Unassign</button>}
-                        <button type="button" onClick={() => deleteEquipment(e)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500" aria-label="Delete equipment"><FaTrash className="h-3.5 w-3.5" /></button>
+                        <button type="button" onClick={() => openEdit(e)} className="p-1 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" aria-label="Edit equipment"><EditRegular className="h-3.5 w-3.5" /></button>
+                        {e.status === 'AVAILABLE' && <button type="button" onClick={() => { setAssignTarget(e); aReset({ assignedTo: '', siteId: '' }) }} className="text-primary hover:underline" aria-label="Assign equipment">Assign</button>}
+                        {e.status === 'ASSIGNED' && <button type="button" onClick={() => unassign(e)} className="text-amber-600 dark:text-amber-400 hover:underline" aria-label="Unassign equipment">Unassign</button>}
+                        <button type="button" onClick={() => deleteEquipment(e)} className="p-1 rounded hover:bg-primary/10 text-brand-muted-light hover:text-primary" aria-label="Delete equipment"><DeleteRegular className="h-3.5 w-3.5" /></button>
                       </div>
                     </td>
                   </tr>
@@ -191,7 +191,7 @@ export default function EquipmentPage() {
             <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Optional notes" {...register('notes')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Equipment'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Equipment'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -222,7 +222,7 @@ export default function EquipmentPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setAssignTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={aSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{aSubmitting ? 'Assigning…' : 'Assign'}</Button>
+              <Button type="submit" disabled={aSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{aSubmitting ? 'Assigning…' : 'Assign'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

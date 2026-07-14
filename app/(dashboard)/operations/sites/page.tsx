@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaMapMarkerAlt, FaChevronDown, FaChevronRight, FaPen, FaTrash } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, ChevronDownRegular, ChevronRightRegular, DeleteRegular, EditRegular, LocationRegular } from '@fluentui/react-icons';
 
 interface Site {
   id: string; name: string; address: string | null; guardsRequired: number
@@ -110,75 +110,75 @@ export default function SitesPage() {
 
   return (
     <div>
-      <PageHeader title="Sites" description="Manage all client sites and contracts" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Add Site</Button>} />
+      <PageHeader title="Sites" description="Manage all client sites and contracts" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Site</Button>} />
 
       {expiringSoon > 0 && (
-        <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-700">
+        <div className="mt-4 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-2.5 text-sm text-amber-700 dark:text-amber-400">
           {expiringSoon} site contract{expiringSoon > 1 ? 's' : ''} expiring within {CONTRACT_EXPIRY_WARN_DAYS} days
         </div>
       )}
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="divide-y divide-gray-100">{[1,2,3].map(i => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-40 bg-gray-200 rounded" /><div className="h-3 flex-1 bg-gray-100 rounded" /></div>)}</div>
+          <div className="divide-y divide-border">{[1,2,3].map(i => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-40 bg-muted rounded" /><div className="h-3 flex-1 bg-muted rounded" /></div>)}</div>
         ) : sites.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaMapMarkerAlt} title="No sites yet" description="Add your first client site to start managing deployments" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Add Site</Button>} /></div>
+          <div className="py-16"><EmptyState icon={LocationRegular} title="No sites yet" description="Add your first client site to start managing deployments" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Site</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
                   <th className="w-8 px-2 py-2.5"><span className="sr-only">Expand</span></th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Name</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Customer</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Guards Req.</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Active Deps.</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Contract Value</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Contract End</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                  <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Name</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Customer</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Guards Req.</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Active Deps.</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Contract Value</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Contract End</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                  <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {sites.map((s) => (
                   <>
-                    <tr key={s.id} className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${isExpiringSoon(s.contractEnd) ? 'bg-amber-50/40' : ''}`} onClick={() => toggleExpand(s)}>
-                      <td className="px-2 py-3 text-center text-gray-400">
-                        {expandedId === s.id ? <FaChevronDown className="h-3.5 w-3.5 inline" /> : <FaChevronRight className="h-3.5 w-3.5 inline" />}
+                    <tr key={s.id} className={`border-b border-border hover:bg-muted/50 cursor-pointer ${isExpiringSoon(s.contractEnd) ? 'bg-amber-50/40' : ''}`} onClick={() => toggleExpand(s)}>
+                      <td className="px-2 py-3 text-center text-brand-muted-light">
+                        {expandedId === s.id ? <ChevronDownRegular className="h-3.5 w-3.5 inline" /> : <ChevronRightRegular className="h-3.5 w-3.5 inline" />}
                       </td>
-                      <td className="px-4 py-3 font-medium text-[#0D1B2A]">{s.name}</td>
-                      <td className="px-4 py-3 text-gray-500 text-xs">{s.customerName ?? '—'}</td>
-                      <td className="px-4 py-3 text-right text-gray-600">{s.guardsRequired}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">{s.name}</td>
+                      <td className="px-4 py-3 text-muted-foreground text-xs">{s.customerName ?? '—'}</td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">{s.guardsRequired}</td>
                       <td className="px-4 py-3 text-right">
                         <span className={`font-medium ${s.activeDeploymentCount >= s.guardsRequired ? 'text-green-600' : 'text-amber-600'}`}>{s.activeDeploymentCount}</span>
                       </td>
-                      <td className="px-4 py-3 text-right text-gray-600">{s.contractValue != null ? formatCurrency(Number(s.contractValue)) : '—'}</td>
-                      <td className={`px-4 py-3 text-sm ${isExpiringSoon(s.contractEnd) ? 'text-amber-600 font-medium' : 'text-gray-600'}`}>{s.contractEnd ? formatDate(new Date(s.contractEnd)) : '—'}</td>
+                      <td className="px-4 py-3 text-right text-muted-foreground">{s.contractValue != null ? formatCurrency(Number(s.contractValue)) : '—'}</td>
+                      <td className={`px-4 py-3 text-sm ${isExpiringSoon(s.contractEnd) ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-muted-foreground'}`}>{s.contractEnd ? formatDate(new Date(s.contractEnd)) : '—'}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${s.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{s.status}</span>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${s.status === 'ACTIVE' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>{s.status}</span>
                       </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
-                          <button type="button" onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700" aria-label="Edit site"><FaPen className="h-3.5 w-3.5" /></button>
-                          <button type="button" onClick={() => deleteSite(s)} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500" aria-label="Delete site"><FaTrash className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => openEdit(s)} className="p-1.5 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" aria-label="Edit site"><EditRegular className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => deleteSite(s)} className="p-1.5 rounded hover:bg-primary/10 text-brand-muted-light hover:text-primary" aria-label="Delete site"><DeleteRegular className="h-3.5 w-3.5" /></button>
                         </div>
                       </td>
                     </tr>
                     {expandedId === s.id && (
-                      <tr key={`${s.id}-expanded`} className="bg-gray-50 border-b border-gray-200">
+                      <tr key={`${s.id}-expanded`} className="bg-muted/50 border-b border-border">
                         <td colSpan={9} className="px-8 py-3">
-                          <p className="text-xs font-semibold text-gray-500 mb-2">Active Deployments</p>
+                          <p className="text-xs font-semibold text-muted-foreground mb-2">Active Deployments</p>
                           {expandedDeployments?.length === 0 ? (
-                            <p className="text-xs text-gray-400">No active deployments at this site</p>
+                            <p className="text-xs text-brand-muted-light">No active deployments at this site</p>
                           ) : (
                             <div className="flex flex-wrap gap-2">
                               {expandedDeployments?.map((d) => (
-                                <span key={d.id} className="inline-flex items-center gap-1.5 rounded-full bg-white border border-gray-200 px-2.5 py-1 text-xs">
-                                  <span className="font-medium text-[#0D1B2A]">{d.guard?.name}</span>
-                                  <span className="text-gray-400">·</span>
-                                  <span className="text-gray-500">{d.shift}</span>
-                                  <span className="text-gray-400">·</span>
-                                  <span className="text-gray-400">from {formatDate(new Date(d.startDate))}</span>
+                                <span key={d.id} className="inline-flex items-center gap-1.5 rounded-full bg-card border border-border px-2.5 py-1 text-xs">
+                                  <span className="font-medium text-foreground">{d.guard?.name}</span>
+                                  <span className="text-brand-muted-light">·</span>
+                                  <span className="text-muted-foreground">{d.shift}</span>
+                                  <span className="text-brand-muted-light">·</span>
+                                  <span className="text-brand-muted-light">from {formatDate(new Date(d.startDate))}</span>
                                 </span>
                               ))}
                             </div>
@@ -228,7 +228,7 @@ export default function SitesPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Site'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Site'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

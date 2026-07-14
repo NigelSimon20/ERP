@@ -2,8 +2,7 @@
 
 import React from 'react'
 import { useClock } from '@/hooks/useClock'
-import { FiClock } from 'react-icons/fi'
-
+import { ClockRegular } from '@fluentui/react-icons';
 interface LiveClockProps {
   showIcon?: boolean
   showDate?: boolean
@@ -36,8 +35,8 @@ export function LiveClock({
 
   if (compact) {
     return (
-      <div className="flex items-center gap-2 text-sm font-mono text-gray-700">
-        {showIcon && <FiClock className="w-4 h-4 text-blue-600" />}
+      <div className="flex items-center gap-2 text-sm font-mono text-foreground">
+        {showIcon && <ClockRegular className="w-4 h-4 text-blue-600" />}
         <span className="tracking-wider">{timeString}</span>
       </div>
     )
@@ -47,17 +46,17 @@ export function LiveClock({
     <div className="flex items-start gap-3">
       {showIcon && (
         <div className="flex-shrink-0 mt-1">
-          <FiClock className="w-5 h-5 text-blue-600" />
+          <ClockRegular className="w-5 h-5 text-blue-600" />
         </div>
       )}
       
       <div className="flex-1 space-y-1">
-        <div className="font-mono text-xl font-semibold text-gray-900 tracking-wider">
+        <div className="font-mono text-xl font-semibold text-foreground tracking-wider">
           {timeString}
         </div>
         
         {showDate && (
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-muted-foreground">
             {dateString}
           </div>
         )}

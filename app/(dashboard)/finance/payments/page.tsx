@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaCreditCard } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, PaymentRegular } from '@fluentui/react-icons';
 
 interface Payment {
   id: string
@@ -120,53 +120,53 @@ export default function PaymentsPage() {
       <PageHeader
         title="Payments"
         description="Record outgoing payments and supplier bills"
-        action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Record Payment</Button>}
+        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Record Payment</Button>}
       />
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="divide-y divide-gray-100">
+          <div className="divide-y divide-border">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse">
-                <div className="h-3 w-24 bg-gray-200 rounded" />
-                <div className="h-3 flex-1 bg-gray-100 rounded" />
-                <div className="h-3 w-20 bg-gray-200 rounded" />
+                <div className="h-3 w-24 bg-muted rounded" />
+                <div className="h-3 flex-1 bg-muted rounded" />
+                <div className="h-3 w-20 bg-muted rounded" />
               </div>
             ))}
           </div>
         ) : payments.length === 0 ? (
           <div className="py-16">
             <EmptyState
-              icon={FaCreditCard}
+              icon={PaymentRegular}
               title="No payments recorded"
               description="Record your first outgoing payment"
-              action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Record Payment</Button>}
+              action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Record Payment</Button>}
             />
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[700px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Reference</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Date</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Payee</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Bank Account</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Method</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Amount</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Reference</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Date</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Payee</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Bank Account</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Method</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Amount</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {payments.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs text-[#CC0000] font-medium">{p.reference}</td>
-                    <td className="px-4 py-3 text-gray-600">{formatDate(new Date(p.paymentDate))}</td>
-                    <td className="px-4 py-3 font-medium text-[#0D1B2A]">{p.payee}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">
+                  <tr key={p.id} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 font-mono text-xs text-primary font-medium">{p.reference}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatDate(new Date(p.paymentDate))}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{p.payee}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">
                       {p.bankAccount?.bankName} <span className="font-mono">{p.bankAccount?.accountNumber}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{p.method.replace('_', ' ')}</span>
+                      <span className="text-xs bg-muted text-muted-foreground rounded-full px-2 py-0.5">{p.method.replace('_', ' ')}</span>
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-red-600">{formatCurrency(Number(p.amount))}</td>
                   </tr>
@@ -262,7 +262,7 @@ export default function PaymentsPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
                 {isSubmitting ? 'Saving…' : 'Record Payment'}
               </Button>
             </DialogFooter>

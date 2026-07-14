@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { toGuardDto, splitName } from '@/lib/guards'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -14,7 +15,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   })
 
   if (!guard) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ guard })
+  return NextResponse.json({ guard: toGuardDto(guard) })
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
@@ -26,29 +27,28 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
-  const { name, idNumber, phone, email, address, department, position, rank, hourlyRate, status, dateOfBirth, dateHired, whatsapp } = body
+  const { name, idNumber, phone, email, address, department, position, dailyRate, status, dateOfBirth, dateHired } = body
+  const { first_name, last_name } = name ? splitName(name) : { first_name: undefined, last_name: undefined }
 
   const guard = await prisma.guard.update({
     where: { id: params.id },
     data: {
-      ...(name ? { name } : {}),
-      ...(idNumber !== undefined ? { idNumber: idNumber || null } : {}),
+      ...(name ? { full_name: name, first_name, last_name } : {}),
+      ...(idNumber !== undefined ? { national_id: idNumber || null } : {}),
       ...(phone !== undefined ? { phone: phone || null } : {}),
       ...(email !== undefined ? { email: email || null } : {}),
       ...(address !== undefined ? { address: address || null } : {}),
       ...(department !== undefined ? { department: department || null } : {}),
       ...(position !== undefined ? { position: position || null } : {}),
-      ...(rank !== undefined ? { rank: rank || null } : {}),
-      ...(hourlyRate != null ? { hourlyRate: Number(hourlyRate) } : {}),
+      ...(dailyRate != null ? { daily_rate: Number(dailyRate) } : {}),
       ...(status ? { status } : {}),
-      ...(dateOfBirth !== undefined ? { dateOfBirth: dateOfBirth ? new Date(dateOfBirth) : null } : {}),
-      ...(dateHired !== undefined ? { dateHired: dateHired ? new Date(dateHired) : null } : {}),
-      ...(whatsapp !== undefined ? { whatsapp: whatsapp || null } : {}),
+      ...(dateOfBirth !== undefined ? { date_of_birth: dateOfBirth || null } : {}),
+      ...(dateHired !== undefined ? { hire_date: dateHired || null } : {}),
     },
   })
 
   await logAudit({ companyId, userId, userName: session.name, action: 'UPDATE', module: 'Guard', recordId: guard.id, oldValues: existing, newValues: guard })
-  return NextResponse.json({ guard })
+  return NextResponse.json({ guard: toGuardDto(guard) })
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {

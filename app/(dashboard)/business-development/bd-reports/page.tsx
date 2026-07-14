@@ -16,13 +16,13 @@ const STAGE_COLORS: Record<string, string> = THEME_STAGE_COLORS
 const PIE_COLORS = THEME_PIE_COLORS
 
 function EmptyChart() {
-  return <div className="h-48 flex items-center justify-center text-sm text-gray-400">No data for selected period</div>
+  return <div className="h-48 flex items-center justify-center text-sm text-brand-muted-light">No data for selected period</div>
 }
 
 function ReportCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-5">
-      <h3 className="font-semibold text-[#0D1B2A] mb-4">{title}</h3>
+    <div className="rounded-lg border border-border bg-card p-5">
+      <h3 className="font-semibold text-foreground mb-4">{title}</h3>
       {children}
     </div>
   )
@@ -93,7 +93,7 @@ export default function BdReportsPage() {
       <div>
         <PageHeader title="BD Reports" description="Pipeline and performance analytics" />
         <div className="mt-6 grid grid-cols-2 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-64 rounded-lg bg-gray-100 animate-pulse" />)}
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-64 rounded-lg bg-muted animate-pulse" />)}
         </div>
       </div>
     )
@@ -104,7 +104,7 @@ export default function BdReportsPage() {
       <PageHeader title="BD Reports" description="Pipeline and performance analytics" />
 
       <div className="mt-4 flex items-center gap-3">
-        <span className="text-sm text-gray-500">Period:</span>
+        <span className="text-sm text-muted-foreground">Period:</span>
         <Select value={period} onValueChange={setPeriod}>
           <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
@@ -128,8 +128,8 @@ export default function BdReportsPage() {
                 <YAxis yAxisId="left" orientation="left" tick={{ fontSize: 10 }} />
                 <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                 <Tooltip formatter={(value, name) => name === 'value' ? formatCurrency(Number(value)) : value} labelFormatter={l => l} />
-                <Bar yAxisId="left" dataKey="count" name="Leads" fill="#0D1B2A" radius={[3, 3, 0, 0]}>
-                  {pipelineByStage.map((entry) => <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] ?? '#6b7280'} />)}
+                <Bar yAxisId="left" dataKey="count" name="Leads" fill="#111827" radius={[3, 3, 0, 0]}>
+                  {pipelineByStage.map((entry) => <Cell key={entry.stage} fill={STAGE_COLORS[entry.stage] ?? '#9CA3AF'} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -150,9 +150,9 @@ export default function BdReportsPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-3">
-                <div><p className="text-2xl font-bold text-green-600">{wonCount}</p><p className="text-xs text-gray-400">Won</p></div>
-                <div><p className="text-2xl font-bold text-red-500">{lostCount}</p><p className="text-xs text-gray-400">Lost</p></div>
-                {wonCount + lostCount > 0 && <div><p className="text-lg font-semibold text-[#0D1B2A]">{Math.round(wonCount / (wonCount + lostCount) * 100)}%</p><p className="text-xs text-gray-400">Win Rate</p></div>}
+                <div><p className="text-2xl font-bold text-green-600 dark:text-green-400">{wonCount}</p><p className="text-xs text-brand-muted-light">Won</p></div>
+                <div><p className="text-2xl font-bold text-primary">{lostCount}</p><p className="text-xs text-brand-muted-light">Lost</p></div>
+                {wonCount + lostCount > 0 && <div><p className="text-lg font-semibold text-foreground">{Math.round(wonCount / (wonCount + lostCount) * 100)}%</p><p className="text-xs text-brand-muted-light">Win Rate</p></div>}
               </div>
             </div>
           )}
@@ -166,7 +166,7 @@ export default function BdReportsPage() {
                 <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={80} />
                 <Tooltip formatter={v => formatCurrency(Number(v))} />
-                <Bar dataKey="revenue" name="Revenue" fill="#CC0000" radius={[0, 3, 3, 0]} />
+                <Bar dataKey="revenue" name="Revenue" fill="#DC2626" radius={[0, 3, 3, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -178,15 +178,15 @@ export default function BdReportsPage() {
             <div className="flex items-center gap-6">
               <div className="relative flex items-center justify-center w-32 h-32 shrink-0">
                 <svg viewBox="0 0 36 36" className="w-32 h-32 -rotate-90">
-                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#f3f4f6" strokeWidth="3.5" />
-                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#CC0000" strokeWidth="3.5" strokeDasharray={`${conversionRate} ${100 - conversionRate}`} strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#E5E7EB" strokeWidth="3.5" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#DC2626" strokeWidth="3.5" strokeDasharray={`${conversionRate} ${100 - conversionRate}`} strokeLinecap="round" />
                 </svg>
-                <span className="absolute text-2xl font-bold text-[#CC0000]">{conversionRate}%</span>
+                <span className="absolute text-2xl font-bold text-primary">{conversionRate}%</span>
               </div>
               <div className="space-y-3 text-sm">
-                <div><p className="text-lg font-bold text-[#0D1B2A]">{totalQuotes}</p><p className="text-xs text-gray-400">Total Quotes</p></div>
-                <div><p className="text-lg font-bold text-green-600">{acceptedQuotes}</p><p className="text-xs text-gray-400">Accepted</p></div>
-                <div><p className="text-lg font-bold text-gray-400">{totalQuotes - acceptedQuotes}</p><p className="text-xs text-gray-400">Not accepted</p></div>
+                <div><p className="text-lg font-bold text-foreground">{totalQuotes}</p><p className="text-xs text-brand-muted-light">Total Quotes</p></div>
+                <div><p className="text-lg font-bold text-green-600">{acceptedQuotes}</p><p className="text-xs text-brand-muted-light">Accepted</p></div>
+                <div><p className="text-lg font-bold text-brand-muted-light">{totalQuotes - acceptedQuotes}</p><p className="text-xs text-brand-muted-light">Not accepted</p></div>
               </div>
             </div>
           )}

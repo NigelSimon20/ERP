@@ -2,8 +2,8 @@
 import * as React from 'react'
 import * as SheetPrimitive from '@radix-ui/react-dialog'
 import { cva, type VariantProps } from 'class-variance-authority'
-import { LuX as X } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
+import { DismissRegular as X } from '@fluentui/react-icons';
 
 const Sheet = SheetPrimitive.Root
 const SheetTrigger = SheetPrimitive.Trigger

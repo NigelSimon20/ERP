@@ -2,22 +2,22 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaBell, FaCheckDouble, FaExternalLinkAlt, FaFilter } from 'react-icons/fa'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { useNotifications } from '@/hooks/useNotifications'
 import { cn, timeAgo } from '@/lib/utils'
+import { AlertRegular, CheckmarkStarburstRegular, FilterRegular, OpenRegular } from '@fluentui/react-icons';
 
 const ALL_TYPES = ['ALL', 'TASK', 'INCIDENT', 'LEAVE', 'ATTENDANCE', 'PATROL', 'VISITOR', 'PAYROLL', 'SYSTEM']
 
 const TYPE_COLORS: Record<string, string> = {
-  TASK:        'bg-[#DBEAFE] text-[#1D4ED8]',
-  INCIDENT:    'bg-[#FEE2E2] text-[#DC2626]',
-  LEAVE:       'bg-[#D1FAE5] text-[#059669]',
-  ATTENDANCE:  'bg-[#FEF3C7] text-[#D97706]',
-  PATROL:      'bg-[#EDE9FE] text-[#7C3AED]',
-  VISITOR:     'bg-[#E0F2FE] text-[#0284C7]',
-  PAYROLL:     'bg-[#DCFCE7] text-[#16A34A]',
-  SYSTEM:      'bg-[#F3F4F6] text-[#374151]',
+  TASK:        'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  INCIDENT:    'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  LEAVE:       'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  ATTENDANCE:  'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  PATROL:      'bg-brand-navy/10 text-brand-navy dark:bg-white/10 dark:text-white',
+  VISITOR:     'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
+  PAYROLL:     'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+  SYSTEM:      'bg-border text-foreground',
 }
 
 export default function NotificationsPage() {
@@ -53,7 +53,7 @@ export default function NotificationsPage() {
               onClick={markAllRead}
               className="erp-btn erp-btn-secondary erp-btn-sm flex items-center gap-1.5"
             >
-              <FaCheckDouble className="h-3.5 w-3.5" />
+              <CheckmarkStarburstRegular className="h-3.5 w-3.5" />
               Mark all read ({unreadCount})
             </button>
           ) : undefined
@@ -62,7 +62,7 @@ export default function NotificationsPage() {
 
       {/* Filters */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <FaFilter className="h-3.5 w-3.5 text-[#9CA3AF]" />
+        <FilterRegular className="h-3.5 w-3.5 text-brand-muted-light" />
         {ALL_TYPES.map((t) => (
           <button
             key={t}
@@ -71,8 +71,8 @@ export default function NotificationsPage() {
             className={cn(
               'px-3 py-1 rounded-full text-xs font-semibold transition-colors border',
               typeFilter === t
-                ? 'bg-[#E74C5B] text-white border-[#E74C5B]'
-                : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:border-[#E74C5B] hover:text-[#E74C5B]'
+                ? 'bg-primary text-white border-primary'
+                : 'bg-card text-muted-foreground border-border hover:border-primary hover:text-primary'
             )}
           >
             {t}
@@ -87,8 +87,8 @@ export default function NotificationsPage() {
               className={cn(
                 'px-3 py-1 rounded-full text-xs font-medium transition-colors border capitalize',
                 readFilter === r
-                  ? 'bg-[#374151] text-white border-[#374151]'
-                  : 'bg-white text-[#6B7280] border-[#E5E7EB] hover:bg-[#F3F4F6]'
+                  ? 'bg-brand-navy text-white border-brand-navy'
+                  : 'bg-card text-muted-foreground border-border hover:bg-border'
               )}
             >
               {r}
@@ -101,26 +101,26 @@ export default function NotificationsPage() {
       <div className="mt-4 erp-card overflow-hidden p-0">
         {loading && notifications.length === 0 ? (
           <div className="py-12 flex flex-col items-center gap-3">
-            <div className="h-8 w-8 border-2 border-[#E74C5B] border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-[#9CA3AF]">Loading notifications…</p>
+            <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-brand-muted-light">Loading notifications…</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="py-16 flex flex-col items-center gap-3">
-            <div className="h-14 w-14 rounded-2xl bg-[#F3F4F6] flex items-center justify-center">
-              <FaBell className="h-6 w-6 text-[#9CA3AF]" />
+            <div className="h-14 w-14 rounded-2xl bg-border flex items-center justify-center">
+              <AlertRegular className="h-6 w-6 text-brand-muted-light" />
             </div>
-            <p className="text-sm font-semibold text-[#374151]">No notifications</p>
-            <p className="text-xs text-[#9CA3AF]">Try adjusting the filters above</p>
+            <p className="text-sm font-semibold text-foreground">No notifications</p>
+            <p className="text-xs text-brand-muted-light">Try adjusting the filters above</p>
           </div>
         ) : (
-          <div className="divide-y divide-[#F3F4F6]">
+          <div className="divide-y divide-border">
             {filtered.map((n) => (
               <button
                 key={n.id}
                 type="button"
                 className={cn(
-                  'w-full text-left px-5 py-4 hover:bg-[#F9FAFB] transition-colors',
-                  !n.read && 'bg-[#FFF8F8]'
+                  'w-full text-left px-5 py-4 hover:bg-muted/50 transition-colors',
+                  !n.read && 'bg-primary/5'
                 )}
                 onClick={() => handleClick(n.id, n.link, n.read)}
               >
@@ -128,7 +128,7 @@ export default function NotificationsPage() {
                   {/* Unread indicator */}
                   <div className="mt-1.5 flex-shrink-0">
                     {!n.read
-                      ? <span className="h-2.5 w-2.5 rounded-full bg-[#E74C5B] block" />
+                      ? <span className="h-2.5 w-2.5 rounded-full bg-primary block" />
                       : <span className="h-2.5 w-2.5 rounded-full bg-transparent block" />}
                   </div>
 
@@ -141,18 +141,18 @@ export default function NotificationsPage() {
                       )}>
                         {n.type}
                       </span>
-                      <span className="text-[10px] text-[#9CA3AF]">{timeAgo(n.createdAt)}</span>
+                      <span className="text-[10px] text-brand-muted-light">{timeAgo(n.createdAt)}</span>
                     </div>
                     <p className={cn(
                       'text-sm font-semibold leading-snug',
-                      !n.read ? 'text-[#111827]' : 'text-[#374151]'
+                      'text-foreground'
                     )}>
                       {n.title}
                     </p>
-                    <p className="text-xs text-[#6B7280] mt-0.5">{n.message}</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{n.message}</p>
                   </div>
 
-                  {n.link && <FaExternalLinkAlt className="h-3 w-3 text-[#9CA3AF] flex-shrink-0 mt-1.5" />}
+                  {n.link && <OpenRegular className="h-3 w-3 text-brand-muted-light flex-shrink-0 mt-1.5" />}
                 </div>
               </button>
             ))}
@@ -161,7 +161,7 @@ export default function NotificationsPage() {
       </div>
 
       {notifications.length > 0 && (
-        <p className="text-center text-xs text-[#9CA3AF] mt-4">
+        <p className="text-center text-xs text-brand-muted-light mt-4">
           Showing {filtered.length} of {notifications.length} notifications · Auto-refreshes every 30s
         </p>
       )}

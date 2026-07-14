@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaCreditCard, FaPen, FaTrash } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import toast from 'react-hot-toast'
+import { AddRegular, DeleteRegular, EditRegular, PaymentRegular } from '@fluentui/react-icons';
 
 interface EmployeeAccount { id: string; bankName: string; accountNumber: string; accountType: string; isPrimary: boolean; active: boolean; guard: { name: string; employeeNumber: string } }
 interface Guard { id: string; name: string; employeeNumber: string }
@@ -73,46 +73,46 @@ export default function EmployeeAccountsPage() {
 
   return (
     <div>
-      <PageHeader title="Employee Accounts" description="Manage guard bank accounts for payroll disbursement" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Add Account</Button>} />
+      <PageHeader title="Employee Accounts" description="Manage guard bank accounts for payroll disbursement" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>} />
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="divide-y divide-gray-100">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-32 bg-gray-200 rounded" /><div className="h-3 flex-1 bg-gray-100 rounded" /></div>)}</div>
+          <div className="divide-y divide-border">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-32 bg-muted rounded" /><div className="h-3 flex-1 bg-muted rounded" /></div>)}</div>
         ) : accounts.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaCreditCard} title="No employee bank accounts" description="Add bank accounts to enable payroll disbursement" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Add Account</Button>} /></div>
+          <div className="py-16"><EmptyState icon={PaymentRegular} title="No employee bank accounts" description="Add bank accounts to enable payroll disbursement" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Guard</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Bank</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Account Number</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Type</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Primary</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Guard</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Bank</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Account Number</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Type</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Primary</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {accounts.map((a) => (
-                <tr key={a.id} className="hover:bg-gray-50">
+                <tr key={a.id} className="hover:bg-muted/50">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-[#0D1B2A]">{a.guard?.name}</p>
-                    <p className="text-xs text-gray-400">{a.guard?.employeeNumber}</p>
+                    <p className="font-medium text-foreground">{a.guard?.name}</p>
+                    <p className="text-xs text-brand-muted-light">{a.guard?.employeeNumber}</p>
                   </td>
-                  <td className="px-4 py-3 text-gray-700">{a.bankName}</td>
+                  <td className="px-4 py-3 text-foreground">{a.bankName}</td>
                   <td className="px-4 py-3 font-mono text-xs">{a.accountNumber}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{a.accountType}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{a.accountType}</td>
                   <td className="px-4 py-3">
                     {a.isPrimary && <span className="inline-flex rounded-full px-2 py-0.5 text-xs bg-green-100 text-green-700 font-medium">Primary</span>}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${a.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{a.active ? 'Active' : 'Inactive'}</span>
+                    <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${a.active ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>{a.active ? 'Active' : 'Inactive'}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1">
-                      <button type="button" onClick={() => openEdit(a)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700" aria-label="Edit account"><FaPen className="h-3.5 w-3.5" /></button>
-                      <button type="button" onClick={() => deleteAccount(a)} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500" aria-label="Delete account"><FaTrash className="h-3.5 w-3.5" /></button>
+                      <button type="button" onClick={() => openEdit(a)} className="p-1.5 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" aria-label="Edit account"><EditRegular className="h-3.5 w-3.5" /></button>
+                      <button type="button" onClick={() => deleteAccount(a)} className="p-1.5 rounded hover:bg-red-50 text-brand-muted-light hover:text-red-500" aria-label="Delete account"><DeleteRegular className="h-3.5 w-3.5" /></button>
                     </div>
                   </td>
                 </tr>
@@ -162,7 +162,7 @@ export default function EmployeeAccountsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Account'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Account'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

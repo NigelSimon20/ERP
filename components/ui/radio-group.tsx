@@ -1,8 +1,8 @@
 'use client'
 import * as React from 'react'
 import * as RadioGroupPrimitive from '@radix-ui/react-radio-group'
-import { LuCircle as Circle } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
+import { CircleRegular as Circle } from '@fluentui/react-icons';
 
 const RadioGroup = React.forwardRef<
   React.ElementRef<typeof RadioGroupPrimitive.Root>,

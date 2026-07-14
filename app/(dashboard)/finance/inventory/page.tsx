@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaBox, FaExclamationTriangle } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, BoxRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface InventoryItem { id: string; name: string; category: string; unit: string; quantityOnHand: number; reorderLevel: number; unitCost: number; totalValue: number; lowStock: boolean }
 type FormValues = { name: string; category: string; unit: string; quantityOnHand: string; reorderLevel: string; unitCost: string }
@@ -74,64 +74,64 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <PageHeader title="Inventory" description="Track stock levels and reorder points" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Add Item</Button>} />
+      <PageHeader title="Inventory" description="Track stock levels and reorder points" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Item</Button>} />
 
       {/* Summary */}
       <div className="mt-5 grid grid-cols-3 gap-4">
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-xs text-gray-500 mb-1">Total Items</p>
-          <p className="text-2xl font-bold text-[#0D1B2A]">{summary.totalItems}</p>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground mb-1">Total Items</p>
+          <p className="text-2xl font-bold text-foreground">{summary.totalItems}</p>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-xs text-gray-500 mb-1">Total Stock Value</p>
-          <p className="text-2xl font-bold text-[#0D1B2A]">{formatCurrency(summary.totalValue)}</p>
+        <div className="rounded-lg border border-border bg-card p-4">
+          <p className="text-xs text-muted-foreground mb-1">Total Stock Value</p>
+          <p className="text-2xl font-bold text-foreground">{formatCurrency(summary.totalValue)}</p>
         </div>
-        <div className={`rounded-lg border p-4 ${summary.lowStockCount > 0 ? 'border-amber-200 bg-amber-50' : 'border-gray-200 bg-white'}`}>
-          <p className="text-xs text-gray-500 mb-1">Low Stock Items</p>
+        <div className={`rounded-lg border p-4 ${summary.lowStockCount > 0 ? 'border-amber-200 bg-amber-50' : 'border-border bg-card'}`}>
+          <p className="text-xs text-muted-foreground mb-1">Low Stock Items</p>
           <div className="flex items-center gap-2">
             <p className={`text-2xl font-bold ${summary.lowStockCount > 0 ? 'text-amber-600' : 'text-green-600'}`}>{summary.lowStockCount}</p>
-            {summary.lowStockCount > 0 && <FaExclamationTriangle className="h-5 w-5 text-amber-500" />}
+            {summary.lowStockCount > 0 && <WarningRegular className="h-5 w-5 text-amber-500" />}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : items.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaBox} title="No inventory items" description="Add items to track your stock levels" action={<Button type="button" onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Add Item</Button>} /></div>
+          <div className="py-16"><EmptyState icon={BoxRegular} title="No inventory items" description="Add items to track your stock levels" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Item</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Item Name</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Category</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Unit</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Qty on Hand</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Reorder Level</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Unit Cost</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Total Value</th>
-                <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Item Name</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Category</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Unit</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Qty on Hand</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Reorder Level</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Unit Cost</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Total Value</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {items.map((i) => (
-                <tr key={i.id} className={`hover:bg-gray-50 ${i.lowStock ? 'bg-amber-50/40' : ''}`}>
-                  <td className="px-4 py-3 font-medium text-[#0D1B2A]">{i.name}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{i.category}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{i.unit}</td>
+                <tr key={i.id} className={`hover:bg-muted/50 ${i.lowStock ? 'bg-amber-50/40' : ''}`}>
+                  <td className="px-4 py-3 font-medium text-foreground">{i.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{i.category}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{i.unit}</td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-1">
-                      <span className={i.lowStock ? 'text-amber-600 font-bold' : 'text-gray-700'}>{i.quantityOnHand}</span>
+                      <span className={i.lowStock ? 'text-amber-600 font-bold' : 'text-foreground'}>{i.quantityOnHand}</span>
                       {i.lowStock && <span className="text-xs bg-amber-100 text-amber-600 rounded-full px-1.5 py-0.5">Low</span>}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-500">{i.reorderLevel}</td>
-                  <td className="px-4 py-3 text-right text-gray-700">{formatCurrency(i.unitCost)}</td>
-                  <td className="px-4 py-3 text-right font-medium text-[#0D1B2A]">{formatCurrency(i.totalValue)}</td>
+                  <td className="px-4 py-3 text-right text-muted-foreground">{i.reorderLevel}</td>
+                  <td className="px-4 py-3 text-right text-foreground">{formatCurrency(i.unitCost)}</td>
+                  <td className="px-4 py-3 text-right font-medium text-foreground">{formatCurrency(i.totalValue)}</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2 text-xs">
-                      <button type="button" onClick={() => openEdit(i)} className="text-gray-500 hover:text-[#0D1B2A] hover:underline" aria-label="Edit item">Edit</button>
+                      <button type="button" onClick={() => openEdit(i)} className="text-muted-foreground hover:text-foreground hover:underline" aria-label="Edit item">Edit</button>
                       <button type="button" onClick={() => deleteItem(i)} className="text-red-400 hover:underline" aria-label="Remove item">Remove</button>
                     </div>
                   </td>
@@ -174,7 +174,7 @@ export default function InventoryPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Item'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Item'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

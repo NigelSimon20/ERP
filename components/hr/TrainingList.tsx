@@ -1,10 +1,10 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { LuPlus as Plus, LuCalendar as Calendar, LuUsers as Users, LuBookOpen as BookOpen, LuTrash2 as Trash2, LuPencil as Edit2 } from 'react-icons/lu'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { AddRegular as Plus, BookOpenRegular as BookOpen, CalendarLtrRegular as Calendar, DeleteRegular as Trash2, EditRegular as Edit2, PeopleRegular as Users } from '@fluentui/react-icons';
 
 interface Training {
   id: string
@@ -53,11 +53,11 @@ export function TrainingList() {
 
   const getStatusColor = (status: string) => {
     return {
-      SCHEDULED: 'bg-blue-100 text-blue-800',
-      IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
-      COMPLETED: 'bg-green-100 text-green-800',
-      CANCELLED: 'bg-red-100 text-red-800',
-    }[status] || 'bg-gray-100 text-gray-800'
+      SCHEDULED: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400',
+      IN_PROGRESS: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400',
+      COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400',
+      CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+    }[status] || 'bg-muted text-foreground'
   }
 
   if (loading) return <div className="text-center py-8">Loading...</div>
@@ -67,7 +67,7 @@ export function TrainingList() {
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Training Programs</h2>
         <Button className="flex gap-2">
-          <Plus size={18} />
+          <Plus fontSize={18} />
           New Training
         </Button>
       </div>
@@ -92,23 +92,23 @@ export function TrainingList() {
             <CardContent>
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
-                  <Calendar size={16} className="text-gray-500" />
+                  <Calendar fontSize={16} className="text-muted-foreground" />
                   <span>{new Date(training.startDate).toLocaleDateString()} - {new Date(training.endDate).toLocaleDateString()}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <BookOpen size={16} className="text-gray-500" />
+                  <BookOpen fontSize={16} className="text-muted-foreground" />
                   <span>{training.durationHours} hours</span>
                 </div>
                 {training.trainer && <div><strong>Trainer:</strong> {training.trainer}</div>}
                 {training.location && <div><strong>Location:</strong> {training.location}</div>}
                 <div className="flex items-center gap-2">
-                  <Users size={16} className="text-gray-500" />
+                  <Users fontSize={16} className="text-muted-foreground" />
                   <span>{training.participants?.length || 0} Participants</span>
                 </div>
               </div>
               <div className="flex gap-2 mt-4">
                 <Button variant="outline" size="sm" className="flex gap-2">
-                  <Edit2 size={16} />
+                  <Edit2 fontSize={16} />
                   Edit
                 </Button>
                 <Button
@@ -117,7 +117,7 @@ export function TrainingList() {
                   className="flex gap-2"
                   onClick={() => handleDelete(training.id)}
                 >
-                  <Trash2 size={16} />
+                  <Trash2 fontSize={16} />
                   Delete
                 </Button>
               </div>

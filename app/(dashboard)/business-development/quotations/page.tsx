@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, useFieldArray, useWatch, Controller } from 'react-hook-form'
-import { FaPlus, FaTrash, FaFileAlt, FaPrint } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, DeleteRegular, DocumentRegular, PrintRegular } from '@fluentui/react-icons';
 
 interface QuotationItem { id: string; description: string; quantity: number; unitPrice: number; taxRate: number; lineTotal: number }
 interface Quotation { id: string; quoteNumber: string; status: string; issueDate: string; validUntil: string | null; subtotal: number; taxAmount: number; totalAmount: number; notes: string | null; customer: { id: string; name: string } | null; lead: { id: string; companyName: string } | null; items: QuotationItem[] }
@@ -20,7 +20,7 @@ interface Lead { id: string; companyName: string }
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
 type FormValues = { linkType: 'customer' | 'lead'; customerId: string; leadId: string; issueDate: string; validUntil: string; notes: string; items: LineItem[] }
 
-const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-gray-100 text-gray-600', SENT: 'bg-blue-100 text-blue-700', ACCEPTED: 'bg-green-100 text-green-700', DECLINED: 'bg-red-100 text-red-600', EXPIRED: 'bg-amber-100 text-amber-700', CONVERTED: 'bg-purple-100 text-purple-700' }
+const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-muted-foreground', SENT: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', ACCEPTED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', DECLINED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', EXPIRED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', CONVERTED: 'bg-brand-navy text-white' }
 const TAX_RATES = [0, 5, 10, 14.5, 15, 20]
 
 function calcLineTotals(items: LineItem[]) {
@@ -111,7 +111,7 @@ export default function QuotationsPage() {
 
   function printQuote(q: Quotation) {
     const w = window.open('', '_blank')!
-    w.document.write(`<!DOCTYPE html><html><head><title>${q.quoteNumber}</title><style>body{font-family:sans-serif;padding:40px;max-width:700px;margin:0 auto}h1{color:#0D1B2A}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #e5e7eb;padding:8px 12px;text-align:left}th{background:#f9fafb}tfoot td{font-weight:bold}.total{font-size:1.2em;color:#CC0000}</style></head><body>
+    w.document.write(`<!DOCTYPE html><html><head><title>${q.quoteNumber}</title><style>body{font-family:sans-serif;padding:40px;max-width:700px;margin:0 auto}h1{color:#111827}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #E5E7EB;padding:8px 12px;text-align:left}th{background:#F8FAFC}tfoot td{font-weight:bold}.total{font-size:1.2em;color:#DC2626}</style></head><body>
       <h1>QUOTATION</h1><p><strong>Quote #:</strong> ${q.quoteNumber}</p>
       <p><strong>Date:</strong> ${formatDate(new Date(q.issueDate))}</p>
       ${q.validUntil ? `<p><strong>Valid Until:</strong> ${formatDate(new Date(q.validUntil))}</p>` : ''}
@@ -127,38 +127,38 @@ export default function QuotationsPage() {
 
   return (
     <div>
-      <PageHeader title="Quotations" description="Create and manage sales quotations" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> New Quote</Button>} />
+      <PageHeader title="Quotations" description="Create and manage sales quotations" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Quote</Button>} />
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : quotations.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaFileAlt} title="No quotations yet" description="Create your first quotation for a lead or customer" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> New Quote</Button>} /></div>
+          <div className="py-16"><EmptyState icon={DocumentRegular} title="No quotations yet" description="Create your first quotation for a lead or customer" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Quote</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Quote #</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Customer / Lead</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Issue Date</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Valid Until</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-gray-600">Total</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                  <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Quote #</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Customer / Lead</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Issue Date</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Valid Until</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Total</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                  <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {quotations.map((q) => (
-                  <tr key={q.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500">{q.quoteNumber}</td>
-                    <td className="px-4 py-3 font-medium text-[#0D1B2A]">{q.customer?.name ?? q.lead?.companyName ?? '—'}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(new Date(q.issueDate))}</td>
-                    <td className="px-4 py-3 text-gray-500 text-xs">{q.validUntil ? formatDate(new Date(q.validUntil)) : <span className="text-gray-300">—</span>}</td>
+                  <tr key={q.id} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 font-mono text-xs text-muted-foreground">{q.quoteNumber}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{q.customer?.name ?? q.lead?.companyName ?? '—'}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(new Date(q.issueDate))}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{q.validUntil ? formatDate(new Date(q.validUntil)) : <span className="text-brand-muted-light">—</span>}</td>
                     <td className="px-4 py-3 text-right font-semibold">{formatCurrency(Number(q.totalAmount))}</td>
                     <td className="px-4 py-3">
                       {['DRAFT', 'SENT'].includes(q.status) ? (
-                        <select value={q.status} onChange={e => updateStatus(q, e.target.value)} className="text-xs rounded border border-gray-200 px-2 py-0.5 bg-white" aria-label="Quote status">
+                        <select value={q.status} onChange={e => updateStatus(q, e.target.value)} className="text-xs rounded border border-border px-2 py-0.5 bg-card" aria-label="Quote status">
                           <option value="DRAFT">Draft</option>
                           <option value="SENT">Sent</option>
                           <option value="ACCEPTED">Accepted</option>
@@ -166,17 +166,17 @@ export default function QuotationsPage() {
                           <option value="EXPIRED">Expired</option>
                         </select>
                       ) : (
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[q.status] ?? 'bg-gray-100 text-gray-600'}`}>{q.status}</span>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[q.status] ?? 'bg-muted text-muted-foreground'}`}>{q.status}</span>
                       )}
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
-                        <button type="button" onClick={() => printQuote(q)} className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700" aria-label="Print quote"><FaPrint className="h-3.5 w-3.5" /></button>
+                        <button type="button" onClick={() => printQuote(q)} className="p-1 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" aria-label="Print quote"><PrintRegular className="h-3.5 w-3.5" /></button>
                         {q.status === 'ACCEPTED' && q.customer && (
-                          <button type="button" onClick={() => setConvertTarget(q)} className="text-xs text-purple-600 hover:underline font-medium" aria-label="Convert to invoice">→ Invoice</button>
+                          <button type="button" onClick={() => setConvertTarget(q)} className="text-xs text-brand-navy dark:text-white hover:underline font-medium" aria-label="Convert to invoice">→ Invoice</button>
                         )}
                         {q.status === 'DRAFT' && (
-                          <button type="button" onClick={() => deleteQuotation(q)} className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500" aria-label="Delete quote"><FaTrash className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => deleteQuotation(q)} className="p-1 rounded hover:bg-primary/10 text-brand-muted-light hover:text-primary" aria-label="Delete quote"><DeleteRegular className="h-3.5 w-3.5" /></button>
                         )}
                       </div>
                     </td>
@@ -194,10 +194,10 @@ export default function QuotationsPage() {
           <DialogHeader><DialogTitle>New Quotation</DialogTitle></DialogHeader>
           <form onSubmit={handleSubmit(onCreate)} className="space-y-5">
             {/* Link to */}
-            <div className="rounded-lg bg-gray-50 p-3 space-y-3">
+            <div className="rounded-lg bg-muted/50 p-3 space-y-3">
               <div className="flex items-center gap-4 text-sm">
-                <label className="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="customer" {...register('linkType')} className="accent-[#CC0000]" /> Customer</label>
-                <label className="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="lead" {...register('linkType')} className="accent-[#CC0000]" /> Lead</label>
+                <label className="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="customer" {...register('linkType')} className="accent-primary" /> Customer</label>
+                <label className="flex items-center gap-1.5 cursor-pointer"><input type="radio" value="lead" {...register('linkType')} className="accent-primary" /> Lead</label>
               </div>
               {linkType === 'customer' ? (
                 <div className="space-y-1.5">
@@ -231,7 +231,7 @@ export default function QuotationsPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-sm font-semibold">Line Items</Label>
-                <Button type="button" size="sm" variant="outline" onClick={() => append({ description: '', quantity: '1', unitPrice: '', taxRate: '0' })}><FaPlus className="h-3.5 w-3.5 mr-1" /> Add Line</Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => append({ description: '', quantity: '1', unitPrice: '', taxRate: '0' })}><AddRegular className="h-3.5 w-3.5 mr-1" /> Add Line</Button>
               </div>
               <div className="space-y-2">
                 {fields.map((field, idx) => {
@@ -245,13 +245,13 @@ export default function QuotationsPage() {
                       <div className="col-span-2"><Input type="number" placeholder="Qty" min="0" step="any" {...register(`items.${idx}.quantity`)} /></div>
                       <div className="col-span-2"><Input type="number" placeholder="Price" min="0" step="0.01" {...register(`items.${idx}.unitPrice`)} /></div>
                       <div className="col-span-2">
-                        <select className="w-full h-9 rounded-md border border-gray-300 px-2 text-sm" aria-label="Tax rate" {...register(`items.${idx}.taxRate`)}>
+                        <select className="w-full h-9 rounded-md border border-border px-2 text-sm" aria-label="Tax rate" {...register(`items.${idx}.taxRate`)}>
                           {TAX_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
                         </select>
                       </div>
                       <div className="col-span-1 flex items-center justify-between gap-1">
-                        <span className="text-xs text-gray-500 hidden xl:block">{lineTotal > 0 ? formatCurrency(lineTotal) : ''}</span>
-                        {fields.length > 1 && <button type="button" onClick={() => remove(idx)} className="p-1 text-gray-400 hover:text-red-500" aria-label="Remove line"><FaTrash className="h-3.5 w-3.5" /></button>}
+                        <span className="text-xs text-muted-foreground hidden xl:block">{lineTotal > 0 ? formatCurrency(lineTotal) : ''}</span>
+                        {fields.length > 1 && <button type="button" onClick={() => remove(idx)} className="p-1 text-brand-muted-light hover:text-primary" aria-label="Remove line"><DeleteRegular className="h-3.5 w-3.5" /></button>}
                       </div>
                     </div>
                   )
@@ -259,9 +259,9 @@ export default function QuotationsPage() {
               </div>
               <div className="mt-3 flex justify-end text-sm space-y-0.5">
                 <div className="text-right space-y-0.5">
-                  <div className="flex gap-8 text-gray-500"><span>Subtotal</span><span>{formatCurrency(totals.subtotal)}</span></div>
-                  <div className="flex gap-8 text-gray-500"><span>Tax</span><span>{formatCurrency(totals.taxAmount)}</span></div>
-                  <div className="flex gap-8 font-bold text-[#0D1B2A]"><span>Total</span><span>{formatCurrency(totals.totalAmount)}</span></div>
+                  <div className="flex gap-8 text-muted-foreground"><span>Subtotal</span><span>{formatCurrency(totals.subtotal)}</span></div>
+                  <div className="flex gap-8 text-muted-foreground"><span>Tax</span><span>{formatCurrency(totals.taxAmount)}</span></div>
+                  <div className="flex gap-8 font-bold text-foreground"><span>Total</span><span>{formatCurrency(totals.totalAmount)}</span></div>
                 </div>
               </div>
             </div>
@@ -270,7 +270,7 @@ export default function QuotationsPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Creating…' : 'Create Quotation'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Creating…' : 'Create Quotation'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -280,10 +280,10 @@ export default function QuotationsPage() {
       <Dialog open={!!convertTarget} onOpenChange={(open) => !open && setConvertTarget(null)}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Convert to Invoice</DialogTitle></DialogHeader>
-          <p className="text-sm text-gray-600">Convert <strong>{convertTarget?.quoteNumber}</strong> ({formatCurrency(Number(convertTarget?.totalAmount))}) to a sales invoice for <strong>{convertTarget?.customer?.name}</strong>?</p>
+          <p className="text-sm text-muted-foreground">Convert <strong>{convertTarget?.quoteNumber}</strong> ({formatCurrency(Number(convertTarget?.totalAmount))}) to a sales invoice for <strong>{convertTarget?.customer?.name}</strong>?</p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setConvertTarget(null)}>Cancel</Button>
-            <Button type="button" disabled={converting} onClick={convertToInvoice} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{converting ? 'Converting…' : 'Convert to Invoice'}</Button>
+            <Button type="button" disabled={converting} onClick={convertToInvoice} className="bg-primary hover:bg-brand-red-dark text-white">{converting ? 'Converting…' : 'Convert to Invoice'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

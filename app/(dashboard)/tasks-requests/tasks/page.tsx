@@ -2,18 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import {
-  FaWhatsapp, FaPlus, FaCheckCircle, FaPen, FaTrash, FaClipboardList,
-  FaSearch, FaFilter, FaDownload, FaExclamationTriangle, FaClock,
-  FaChartLine, FaFlag,
-} from 'react-icons/fa'
-import { MdPendingActions, MdDone, MdOutlineCancel } from 'react-icons/md'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { WhatsAppReminderToggle } from '@/components/tasks/WhatsAppReminderToggle'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, ArrowDownloadRegular, ArrowTrendingRegular, ChatRegular, CheckmarkCircleRegular, CheckmarkRegular, ClipboardTaskListLtrRegular, ClockRegular, DeleteRegular, DismissCircleRegular, EditRegular, FilterRegular, FlagRegular, SearchRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface User { id: string; name: string; whatsapp: string | null }
 interface Task {
@@ -56,8 +51,8 @@ function StatsCard({ title, value, icon: Icon, iconCls, bgCls }: {
         <Icon className={`h-5 w-5 ${iconCls}`} />
       </div>
       <div>
-        <p className="text-2xl font-bold text-[#1F2937] leading-none tabular-nums">{value}</p>
-        <p className="text-xs text-[#6B7280] mt-1 font-medium">{title}</p>
+        <p className="text-2xl font-bold text-foreground leading-none tabular-nums">{value}</p>
+        <p className="text-xs text-muted-foreground mt-1 font-medium">{title}</p>
       </div>
     </div>
   )
@@ -75,17 +70,17 @@ function TaskRow({ task, onEdit, onDelete, onComplete }: {
   const s = STATUS_CFG[task.status]
 
   return (
-    <tr className={`group border-b border-[#F3F4F6] transition-colors duration-100 hover:bg-[#FAFAFB] ${overdue ? '' : ''}`}>
+    <tr className={`group border-b border-border transition-colors duration-100 hover:bg-muted/50 ${overdue ? '' : ''}`}>
       <td className="px-5 py-4">
         <div className="flex items-start gap-2.5 min-w-0">
-          {overdue && <FaExclamationTriangle className="h-3.5 w-3.5 text-[#E74C5B] mt-0.5 flex-shrink-0" />}
+          {overdue && <WarningRegular className="h-3.5 w-3.5 text-primary mt-0.5 flex-shrink-0" />}
           <div className="min-w-0">
-            <p className="font-semibold text-[#1F2937] text-sm leading-tight truncate max-w-[260px]">{task.title}</p>
+            <p className="font-semibold text-foreground text-sm leading-tight truncate max-w-[260px]">{task.title}</p>
             {task.description && (
-              <p className="text-xs text-[#9CA3AF] mt-0.5 truncate max-w-[260px]">{task.description}</p>
+              <p className="text-xs text-brand-muted-light mt-0.5 truncate max-w-[260px]">{task.description}</p>
             )}
             {overdue && (
-              <span className="text-[10px] font-bold text-[#E74C5B] uppercase tracking-wider">Overdue</span>
+              <span className="text-[10px] font-bold text-primary uppercase tracking-wider">Overdue</span>
             )}
           </div>
         </div>
@@ -93,18 +88,18 @@ function TaskRow({ task, onEdit, onDelete, onComplete }: {
       <td className="px-5 py-4">
         {task.assignedToUser ? (
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-[#FDEDEE] flex items-center justify-center text-[#E74C5B] text-[10px] font-bold flex-shrink-0">
+            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-bold flex-shrink-0">
               {initials(task.assignedToUser.name)}
             </div>
-            <span className="text-sm text-[#374151] truncate max-w-[140px]">{task.assignedToUser.name}</span>
+            <span className="text-sm text-foreground truncate max-w-[140px]">{task.assignedToUser.name}</span>
           </div>
         ) : (
-          <span className="text-sm text-[#D1D5DB]">—</span>
+          <span className="text-sm text-border">—</span>
         )}
       </td>
       <td className="px-5 py-4">
-        <div className={`flex items-center gap-1.5 text-sm ${overdue ? 'text-[#E74C5B] font-semibold' : 'text-[#6B7280]'}`}>
-          <FaClock className="h-3 w-3 flex-shrink-0" />
+        <div className={`flex items-center gap-1.5 text-sm ${overdue ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>
+          <ClockRegular className="h-3 w-3 flex-shrink-0" />
           {formatDate(task.dueDate)}
         </div>
       </td>
@@ -115,23 +110,23 @@ function TaskRow({ task, onEdit, onDelete, onComplete }: {
         <span className={s?.cls ?? 'erp-badge erp-badge-muted'}>{s?.label ?? task.status.replace('_', ' ')}</span>
       </td>
       <td className="px-5 py-4 text-center">
-        {task.whatsappReminder && <FaWhatsapp className="h-4 w-4 text-[#25D366] mx-auto" />}
+        {task.whatsappReminder && <ChatRegular className="h-4 w-4 text-[#25D366] mx-auto" />}
       </td>
       <td className="px-5 py-4">
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
           {task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && (
             <button type="button" onClick={() => onComplete(task)}
-              className="p-1.5 rounded-lg hover:bg-[#DCFCE7] text-[#9CA3AF] hover:text-[#16A34A] transition-colors" title="Mark complete">
-              <FaCheckCircle className="h-3.5 w-3.5" />
+              className="p-1.5 rounded-lg hover:bg-green-100 dark:hover:bg-green-500/15 text-brand-muted-light hover:text-green-700 dark:hover:text-green-400 transition-colors" title="Mark complete">
+              <CheckmarkCircleRegular className="h-3.5 w-3.5" />
             </button>
           )}
           <button type="button" onClick={() => onEdit(task)}
-            className="p-1.5 rounded-lg hover:bg-[#F3F4F6] text-[#9CA3AF] hover:text-[#374151] transition-colors" title="Edit">
-            <FaPen className="h-3 w-3" />
+            className="p-1.5 rounded-lg hover:bg-border text-brand-muted-light hover:text-foreground transition-colors" title="Edit">
+            <EditRegular className="h-3 w-3" />
           </button>
           <button type="button" onClick={() => onDelete(task)}
-            className="p-1.5 rounded-lg hover:bg-[#FEE2E2] text-[#9CA3AF] hover:text-[#B91C1C] transition-colors" title="Delete">
-            <FaTrash className="h-3 w-3" />
+            className="p-1.5 rounded-lg hover:bg-primary/10 text-brand-muted-light hover:text-primary transition-colors" title="Delete">
+            <DeleteRegular className="h-3 w-3" />
           </button>
         </div>
       </td>
@@ -147,18 +142,18 @@ function TaskTable({ items, loading, onEdit, onDelete, onComplete }: {
   if (loading) {
     return (
       <div className="py-20 flex flex-col items-center gap-3">
-        <div className="h-8 w-8 border-2 border-[#E74C5B] border-t-transparent rounded-full animate-spin" />
-        <p className="text-sm text-[#9CA3AF]">Loading tasks…</p>
+        <div className="h-8 w-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <p className="text-sm text-brand-muted-light">Loading tasks…</p>
       </div>
     )
   }
   if (items.length === 0) {
     return (
       <div className="py-24 flex flex-col items-center gap-4">
-        <div className="erp-icon-box-lg"><FaClipboardList className="h-6 w-6" /></div>
+        <div className="erp-icon-box-lg"><ClipboardTaskListLtrRegular className="h-6 w-6" /></div>
         <div className="text-center">
-          <p className="font-semibold text-[#374151]">No tasks found</p>
-          <p className="text-sm text-[#9CA3AF] mt-1">Try adjusting filters or create a new task</p>
+          <p className="font-semibold text-foreground">No tasks found</p>
+          <p className="text-sm text-brand-muted-light mt-1">Try adjusting filters or create a new task</p>
         </div>
       </div>
     )
@@ -298,39 +293,39 @@ export default function TasksPage() {
       {/* ── Header ── */}
       <div className="flex items-start justify-between gap-4">
         <div>
-          <p className="text-[11px] font-bold text-[#9CA3AF] uppercase tracking-widest mb-1">Task Management</p>
-          <h1 className="text-2xl font-bold text-[#1F2937] tracking-tight">Tasks</h1>
-          <p className="text-sm text-[#6B7280] mt-0.5">Manage and track all team assignments</p>
+          <p className="text-[11px] font-bold text-brand-muted-light uppercase tracking-widest mb-1">Task Management</p>
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">Tasks</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Manage and track all team assignments</p>
         </div>
         <div className="flex items-center gap-2">
           <button type="button" className="erp-btn erp-btn-ghost erp-btn-sm">
-            <FaDownload className="h-3.5 w-3.5" /> Export
+            <ArrowDownloadRegular className="h-3.5 w-3.5" /> Export
           </button>
           <button
             type="button"
             onClick={() => { resetForm(); setEditTask(null); setShowCreate(true) }}
             className="erp-btn erp-btn-primary"
           >
-            <FaPlus className="h-3.5 w-3.5" /> New Task
+            <AddRegular className="h-3.5 w-3.5" /> New Task
           </button>
         </div>
       </div>
 
       {/* ── Stats ── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <StatsCard title="Total Tasks"  value={stats.total}      icon={FaClipboardList}      iconCls="text-[#E74C5B]" bgCls="bg-[#FDEDEE]" />
-        <StatsCard title="Pending"      value={stats.pending}    icon={MdPendingActions}     iconCls="text-[#6B7280]" bgCls="bg-[#F3F4F6]" />
-        <StatsCard title="In Progress"  value={stats.inProgress} icon={FaChartLine}          iconCls="text-[#3B82F6]" bgCls="bg-[#DBEAFE]" />
-        <StatsCard title="Completed"    value={stats.completed}  icon={MdDone}               iconCls="text-[#22C55E]" bgCls="bg-[#DCFCE7]" />
-        <StatsCard title="Overdue"      value={stats.overdue}    icon={FaExclamationTriangle} iconCls="text-[#F59E0B]" bgCls="bg-[#FEF3C7]" />
+        <StatsCard title="Total Tasks"  value={stats.total}      icon={ClipboardTaskListLtrRegular}      iconCls="text-primary" bgCls="bg-primary/10" />
+        <StatsCard title="Pending"      value={stats.pending}    icon={ClockRegular}     iconCls="text-muted-foreground" bgCls="bg-border" />
+        <StatsCard title="In Progress"  value={stats.inProgress} icon={ArrowTrendingRegular}          iconCls="text-blue-600 dark:text-blue-400" bgCls="bg-blue-100 dark:bg-blue-500/15" />
+        <StatsCard title="Completed"    value={stats.completed}  icon={CheckmarkRegular}               iconCls="text-green-600 dark:text-green-400" bgCls="bg-green-100 dark:bg-green-500/15" />
+        <StatsCard title="Overdue"      value={stats.overdue}    icon={WarningRegular} iconCls="text-amber-600 dark:text-amber-400" bgCls="bg-amber-100 dark:bg-amber-500/15" />
       </div>
 
       {/* ── Table Card ── */}
       <div className="erp-card !p-0 overflow-hidden">
         {/* Toolbar */}
-        <div className="flex items-center gap-3 flex-wrap px-5 py-4 border-b border-[#E5E7EB]">
+        <div className="flex items-center gap-3 flex-wrap px-5 py-4 border-b border-border">
           <div className="relative min-w-[200px] flex-1 max-w-xs">
-            <FaSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#9CA3AF] pointer-events-none" />
+            <SearchRegular className="absolute left-3.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-brand-muted-light pointer-events-none" />
             <input
               placeholder="Search tasks…"
               value={search}
@@ -362,13 +357,13 @@ export default function TasksPage() {
             ))}
           </select>
           <button type="button" onClick={() => fetchTasks()} className="erp-btn erp-btn-ghost erp-btn-sm">
-            <FaFilter className="h-3 w-3" /> Apply
+            <FilterRegular className="h-3 w-3" /> Apply
           </button>
         </div>
 
         {/* Tabs */}
         <Tabs defaultValue="all" onValueChange={v => fetchTasks(v === 'mine')}>
-          <div className="px-5 border-b border-[#E5E7EB]">
+          <div className="px-5 border-b border-border">
             <TabsList className="bg-transparent p-0 gap-0 h-auto rounded-none">
               {[
                 { value: 'all',  label: 'All Tasks', count: tasks.length },
@@ -378,13 +373,13 @@ export default function TasksPage() {
                   key={tab.value}
                   value={tab.value}
                   className="relative px-4 py-3 rounded-none border-b-2 border-transparent text-sm font-medium
-                             text-[#6B7280] bg-transparent hover:text-[#374151]
-                             data-[state=active]:border-[#E74C5B] data-[state=active]:text-[#E74C5B]
+                             text-muted-foreground bg-transparent hover:text-foreground
+                             data-[state=active]:border-primary data-[state=active]:text-primary
                              data-[state=active]:bg-transparent data-[state=active]:shadow-none"
                 >
                   {tab.label}
                   {tab.count !== null && (
-                    <span className="ml-2 bg-[#F3F4F6] text-[#6B7280] text-xs px-1.5 py-0.5 rounded-full font-semibold">
+                    <span className="ml-2 bg-border text-muted-foreground text-xs px-1.5 py-0.5 rounded-full font-semibold">
                       {tab.count}
                     </span>
                   )}
@@ -405,15 +400,15 @@ export default function TasksPage() {
       <Dialog open={showCreate} onOpenChange={o => { if (!o) { setShowCreate(false); setEditTask(null); resetForm() } }}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto !rounded-[16px] !p-0 gap-0">
           {/* Header */}
-          <div className="flex items-center gap-3 px-6 py-5 border-b border-[#E5E7EB]">
+          <div className="flex items-center gap-3 px-6 py-5 border-b border-border">
             <div className="erp-icon-box-md flex-shrink-0">
-              <FaClipboardList className="h-4 w-4" />
+              <ClipboardTaskListLtrRegular className="h-4 w-4" />
             </div>
             <div>
-              <DialogTitle className="text-base font-bold text-[#1F2937] m-0 p-0">
+              <DialogTitle className="text-base font-bold text-foreground m-0 p-0">
                 {editTask ? 'Edit Task' : 'Create New Task'}
               </DialogTitle>
-              <p className="text-xs text-[#9CA3AF] mt-0.5">
+              <p className="text-xs text-brand-muted-light mt-0.5">
                 {editTask ? 'Update the task details below' : 'Fill in the details to create a task'}
               </p>
             </div>
@@ -445,7 +440,7 @@ export default function TasksPage() {
                 <label className="erp-label erp-label-req">Assign To</label>
                 <Controller control={control} name="assignedTo" render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger className="erp-field !h-12 !rounded-[10px] [&>span]:text-sm focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-[#E74C5B]">
+                    <SelectTrigger className="erp-field !h-12 !rounded-[10px] [&>span]:text-sm focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-primary">
                       <SelectValue placeholder="Select team member" />
                     </SelectTrigger>
                     <SelectContent>
@@ -464,7 +459,7 @@ export default function TasksPage() {
                   <label className="erp-label">Priority</label>
                   <Controller control={control} name="priority" render={({ field }) => (
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="erp-field !h-12 !rounded-[10px] [&>span]:text-sm focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-[#E74C5B]">
+                      <SelectTrigger className="erp-field !h-12 !rounded-[10px] [&>span]:text-sm focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-primary">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -482,7 +477,7 @@ export default function TasksPage() {
                   <label className="erp-label">Status</label>
                   <Controller control={control} name="status" render={({ field }) => (
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger className="erp-field !h-12 !rounded-[10px] [&>span]:text-sm focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-[#E74C5B]">
+                      <SelectTrigger className="erp-field !h-12 !rounded-[10px] [&>span]:text-sm focus-visible:ring-0 focus-visible:ring-offset-0 focus:border-primary">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -495,7 +490,7 @@ export default function TasksPage() {
                 </div>
               )}
 
-              <div className="rounded-[10px] border border-[#E5E7EB] p-4 bg-[#FAFAFB]">
+              <div className="rounded-[10px] border border-border p-4 bg-muted/50">
                 <WhatsAppReminderToggle
                   value={waReminder}
                   reminderTime={reminderTime}
@@ -507,7 +502,7 @@ export default function TasksPage() {
             </div>
 
             {/* Footer */}
-            <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-[#E5E7EB] bg-[#FAFAFB] rounded-b-[16px]">
+            <div className="flex items-center justify-end gap-2.5 px-6 py-4 border-t border-border bg-muted/50 rounded-b-[16px]">
               <button
                 type="button"
                 onClick={() => { setShowCreate(false); resetForm() }}

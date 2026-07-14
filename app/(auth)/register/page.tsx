@@ -6,14 +6,13 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { FaUser, FaEnvelope, FaPhone, FaBuilding, FaLock, FaEye, FaEyeSlash, FaExclamationCircle, FaSpinner, FaCheck } from 'react-icons/fa'
-import { MdClose } from 'react-icons/md'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { registerSchema } from '@/lib/validators'
 import toast from 'react-hot-toast'
 import { BrandPanel } from '@/components/auth/BrandPanel'
+import { BuildingRegular, CallRegular, CheckmarkRegular, DismissRegular, ErrorCircleRegular, EyeOffRegular, EyeRegular, LockClosedRegular, MailRegular, PersonRegular, SpinnerIosRegular } from '@fluentui/react-icons';
 
 type RegisterForm = z.infer<typeof registerSchema>
 
@@ -102,10 +101,10 @@ export default function RegisterPage() {
         <BrandPanel />
 
         <section className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-10">
-          <div className="w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-white p-6 shadow-[0_30px_90px_rgba(15,23,42,0.16)] sm:p-8 lg:p-10">
+          <div className="w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-card p-6 shadow-[0_30px_90px_rgba(15,23,42,0.16)] sm:p-8 lg:p-10">
             <div className="mb-6 text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-brand-red">
-                <FaBuilding className="h-5 w-5" />
+                <BuildingRegular className="h-5 w-5" />
               </div>
               <h2 className="text-3xl font-bold text-slate-900">Create your account</h2>
               <p className="mt-2 text-sm text-slate-600">Set up Ravenshield for your company and launch your operations workspace.</p>
@@ -116,7 +115,7 @@ export default function RegisterPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Full name</Label>
                   <div className="relative">
-                    <FaUser className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <PersonRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                     <Input id="name" placeholder="John Doe" className="pl-10" autoFocus {...register('name')} />
                   </div>
                   {errors.name && <p className="text-xs text-brand-red">{errors.name.message}</p>}
@@ -125,7 +124,7 @@ export default function RegisterPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="email">Email address</Label>
                   <div className="relative">
-                    <FaEnvelope className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <MailRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                     <Input id="email" type="email" placeholder="admin@company.com" className="pl-10" {...register('email')} />
                   </div>
                   {errors.email && <p className="text-xs text-brand-red">{errors.email.message}</p>}
@@ -136,7 +135,7 @@ export default function RegisterPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="phone">Phone</Label>
                   <div className="relative">
-                    <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <CallRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                     <Input id="phone" placeholder="+263 77 000 0000" className="pl-10" {...register('phone')} />
                   </div>
                   {errors.phone && <p className="text-xs text-brand-red">{errors.phone.message}</p>}
@@ -145,7 +144,7 @@ export default function RegisterPage() {
                 <div className="space-y-1.5">
                   <Label htmlFor="whatsapp">WhatsApp</Label>
                   <div className="relative">
-                    <FaPhone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <CallRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                     <Input id="whatsapp" placeholder="+263 77 000 0000" className="pl-10" {...register('whatsapp')} />
                   </div>
                 </div>
@@ -154,7 +153,7 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="companyName">Company name</Label>
                 <div className="relative">
-                  <FaBuilding className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <BuildingRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                   <Input id="companyName" placeholder="Ravenshield Security Ltd" className="pl-10" {...register('companyName')} />
                 </div>
                 {errors.companyName && <p className="text-xs text-brand-red">{errors.companyName.message}</p>}
@@ -163,7 +162,7 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="password">Password</Label>
                 <div className="relative">
-                  <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <LockClosedRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                   <Input
                     id="password"
                     type={showPw ? 'text' : 'password'}
@@ -174,10 +173,10 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowPw(!showPw)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted-light hover:text-foreground"
                     aria-label={showPw ? 'Hide password' : 'Show password'}
                   >
-                    {showPw ? <FaEyeSlash className="h-4 w-4" /> : <FaEye className="h-4 w-4" />}
+                    {showPw ? <EyeOffRegular className="h-4 w-4" /> : <EyeRegular className="h-4 w-4" />}
                   </button>
                 </div>
 
@@ -207,9 +206,9 @@ export default function RegisterPage() {
                         return (
                           <li key={rule.label} className="flex items-center gap-1.5 text-xs">
                             {passed ? (
-                              <FaCheck className="h-3 w-3 text-green-600 flex-shrink-0" />
+                              <CheckmarkRegular className="h-3 w-3 text-green-600 flex-shrink-0" />
                             ) : (
-                              <MdClose className="h-3 w-3 text-slate-300 flex-shrink-0" />
+                              <DismissRegular className="h-3 w-3 text-slate-300 flex-shrink-0" />
                             )}
                             <span className={passed ? 'text-green-700' : 'text-slate-500'}>{rule.label}</span>
                           </li>
@@ -224,7 +223,7 @@ export default function RegisterPage() {
               <div className="space-y-1.5">
                 <Label htmlFor="confirmPassword">Confirm password</Label>
                 <div className="relative">
-                  <FaLock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <LockClosedRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                   <Input
                     id="confirmPassword"
                     type={showConfirm ? 'text' : 'password'}
@@ -235,10 +234,10 @@ export default function RegisterPage() {
                   <button
                     type="button"
                     onClick={() => setShowConfirm(!showConfirm)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-brand-muted-light hover:text-foreground"
                     aria-label={showConfirm ? 'Hide password' : 'Show password'}
                   >
-                    {showConfirm ? <FaEyeSlash className="h-4 w-4" /> : <FaEye className="h-4 w-4" />}
+                    {showConfirm ? <EyeOffRegular className="h-4 w-4" /> : <EyeRegular className="h-4 w-4" />}
                   </button>
                 </div>
                 {errors.confirmPassword && (
@@ -261,7 +260,7 @@ export default function RegisterPage() {
 
               {error && (
                 <div className="flex items-center gap-2 rounded-lg border border-brand-red/20 bg-brand-red/10 px-3 py-2">
-                  <FaExclamationCircle className="h-4 w-4 flex-shrink-0 text-brand-red" />
+                  <ErrorCircleRegular className="h-4 w-4 flex-shrink-0 text-brand-red" />
                   <p className="text-sm text-brand-red">{error}</p>
                 </div>
               )}
@@ -273,7 +272,7 @@ export default function RegisterPage() {
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <FaSpinner className="h-4 w-4 animate-spin" /> Creating account…
+                    <SpinnerIosRegular className="h-4 w-4 animate-spin" /> Creating account…
                   </span>
                 ) : (
                   'Create Account'

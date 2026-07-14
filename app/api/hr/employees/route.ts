@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { nextEmployeeNumber, nextForceNumber } from '@/lib/auto-numbers'
 import { paginate } from '@/lib/utils'
+import { toGuardDto, splitName } from '@/lib/guards'
 
 export async function GET(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
     prisma.guard.count({ where: where as any }),
   ])
 
-  return NextResponse.json({ guards, total, page, pages: Math.ceil(total / take) })
+  return NextResponse.json({ guards: guards.map(toGuardDto), total, page, pages: Math.ceil(total / take) })
 }
 
 export async function POST(req: NextRequest) {
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   const { companyId, userId } = session
   const body = await req.json()
-  const { name, idNumber, phone, email, address, department, position, rank, hourlyRate, status, dateOfBirth, dateHired, whatsapp } = body
+  const { name, idNumber, phone, email, address, department, position, dailyRate, status, dateOfBirth, dateHired } = body
 
   if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 
@@ -55,6 +56,8 @@ export async function POST(req: NextRequest) {
     nextForceNumber(companyId),
   ])
 
+  const { first_name, last_name } = splitName(name)
+
   const guard = await prisma.guard.create({
     data: {
       id: crypto.randomUUID(),
@@ -62,14 +65,15 @@ export async function POST(req: NextRequest) {
       employee_code: employeeNumber,
       force_number: forceNumber,
       full_name: name,
-      first_name: name.split(' ')[0] ?? name,
-      last_name: name.split(' ').slice(1).join(' ') || null,
+      first_name,
+      last_name,
       national_id: idNumber || null,
       phone: phone || null,
       email: email || null,
       address: address || null,
       department: department || null,
       position: position || null,
+      daily_rate: dailyRate != null ? Number(dailyRate) : null,
       date_of_birth: dateOfBirth || null,
       hire_date: dateHired || null,
       status: status || 'ACTIVE',
@@ -77,5 +81,5 @@ export async function POST(req: NextRequest) {
   })
 
   await logAudit({ companyId, userId, userName: session.name, action: 'CREATE', module: 'Guard', recordId: guard.id, newValues: guard })
-  return NextResponse.json({ guard }, { status: 201 })
+  return NextResponse.json({ guard: toGuardDto(guard) }, { status: 201 })
 }

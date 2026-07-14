@@ -5,14 +5,16 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { LuUser as User, LuLoader as Loader2 } from 'react-icons/lu'
+import { PersonRegular as User, SpinnerIosRegular as Loader2 } from '@fluentui/react-icons'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PasswordInput } from './PasswordInput'
 import { SocialLogin } from './SocialLogin'
-import { WelcomeModal, type WelcomeData } from './WelcomeModal'
+import type { WelcomeData } from './WelcomeModal'
 import toast from 'react-hot-toast'
+
+export const WELCOME_DATA_STORAGE_KEY = 'ravenshield.welcomeData'
 
 // Updated login schema to accept username or email
 const loginSchema = z.object({
@@ -34,8 +36,6 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
   const router = useRouter()
   const [rememberMe, setRememberMe] = useState(false)
   const [generalError, setGeneralError] = useState('')
-  const [welcomeData, setWelcomeData] = useState<WelcomeData | null>(null)
-  const [pendingPath, setPendingPath] = useState('')
 
   const {
     register,
@@ -67,10 +67,9 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
         return
       }
 
-      // Show welcome modal before navigating to dashboard
+      // Hand off welcome data via sessionStorage; DashboardShell shows the modal after navigation
       const path = json.dashboardPath ?? '/dashboard'
-      setPendingPath(path)
-      setWelcomeData({
+      const welcomeData: WelcomeData = {
         name: json.user.name,
         role: json.user.role,
         companyName: json.user.companyName,
@@ -79,7 +78,9 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
         unreadCount: json.unreadCount ?? 0,
         pendingTasks: json.pendingTasks ?? 0,
         dashboardPath: path,
-      })
+      }
+      sessionStorage.setItem(WELCOME_DATA_STORAGE_KEY, JSON.stringify(welcomeData))
+      router.push(path)
     } catch (err) {
       setGeneralError('Network error. Please try again.')
       toast.error('Network error. Please try again.')
@@ -87,14 +88,7 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
   }
 
   return (
-    <>
-      {welcomeData && (
-        <WelcomeModal
-          data={welcomeData}
-          onClose={() => setWelcomeData(null)}
-        />
-      )}
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {/* General Error Message */}
       {generalError && (
         <div className="p-4 bg-brand-red/10 border border-brand-red/20 rounded-lg">
@@ -106,13 +100,13 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
       <div className="space-y-2">
         <Label
           htmlFor="email"
-          className="text-sm font-medium text-gray-900"
+          className="text-sm font-medium text-foreground"
         >
           Username or Email
         </Label>
         <div className="relative">
           <div className="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
-            <User className="w-5 h-5 text-gray-400" />
+            <User className="w-5 h-5 text-brand-muted-light" />
           </div>
           <input
             {...register('email')}
@@ -120,12 +114,12 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
             id="email"
             placeholder="Enter your username or email"
             className={`
-              w-full px-4 py-3 pl-12 border border-gray-200 rounded-lg
-              font-sans text-base text-gray-900 placeholder-gray-500
-              bg-white transition-all duration-200
-              focus:outline-none focus:ring-2 focus:ring-premium-primary focus:ring-opacity-50 focus:border-premium-primary
-              hover:border-gray-300
-              disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed
+              w-full px-4 py-3 pl-12 border border-border rounded-lg
+              font-sans text-base text-foreground placeholder-muted-foreground
+              bg-card transition-all duration-200
+              focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 focus:border-primary
+              hover:border-border
+              disabled:bg-muted/50 disabled:text-muted-foreground disabled:cursor-not-allowed
               ${errors.email ? 'border-brand-red focus:ring-brand-red focus:border-brand-red' : ''}
             `}
             disabled={isSubmitting}
@@ -160,7 +154,7 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
           />
           <Label
             htmlFor="remember"
-            className="text-sm font-medium text-gray-700 cursor-pointer"
+            className="text-sm font-medium text-foreground cursor-pointer"
           >
             Remember me
           </Label>
@@ -170,7 +164,7 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
         <button
           type="button"
           onClick={onForgotPassword}
-          className="text-sm font-medium text-premium-primary hover:text-premium-primary/80 
+          className="text-sm font-medium text-primary hover:text-primary/80
                      transition-colors duration-200 focus:outline-none focus:underline"
           disabled={isSubmitting}
         >
@@ -182,8 +176,8 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
       <Button
         type="submit"
         disabled={isSubmitting}
-        className="w-full h-12 mt-6 bg-premium-primary hover:bg-premium-primary/90 text-white font-semibold 
-                   rounded-lg transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-premium-primary/30
+        className="w-full h-12 mt-6 bg-primary hover:bg-primary/90 text-white font-semibold
+                   rounded-lg transition-all duration-300 shadow-md hover:shadow-lg hover:shadow-primary/30
                    flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {isSubmitting ? (
@@ -202,17 +196,16 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
       <SocialLogin loading={isSubmitting} />
 
       {/* Sign Up Link */}
-      <p className="text-center text-sm text-gray-600">
+      <p className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}
         <a
           href="/register"
-          className="font-semibold text-premium-primary hover:text-premium-primary/80 
+          className="font-semibold text-primary hover:text-primary/80
                      transition-colors duration-200"
         >
           Sign up here
         </a>
       </p>
     </form>
-    </>
   )
 }

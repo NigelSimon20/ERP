@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaShieldAlt } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, ShieldRegular } from '@fluentui/react-icons';
 
 interface Patrol { id: string; scheduledTime: string; actualTime: string | null; status: string; notes: string | null; site: { id: string; name: string }; guard: { id: string; name: string } | null }
 interface Site { id: string; name: string }
@@ -19,7 +19,7 @@ interface Guard { id: string; name: string }
 type ScheduleForm = { siteId: string; guardId: string; scheduledTime: string; notes: string }
 type CompletionForm = { actualTime: string; status: string; notes: string }
 
-const STATUS_STYLES: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700', COMPLETED: 'bg-green-100 text-green-700', MISSED: 'bg-red-100 text-red-600', PARTIAL: 'bg-amber-100 text-amber-700' }
+const STATUS_STYLES: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', MISSED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', PARTIAL: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
 
 function fmtTime(dt: string | null) { return dt ? new Date(dt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—' }
 
@@ -94,7 +94,7 @@ export default function PatrolsPage() {
 
   return (
     <div>
-      <PageHeader title="Patrols" description="Schedule and track guard patrols" action={<Button type="button" onClick={() => { sReset(); setShowScheduleDialog(true) }} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} />
+      <PageHeader title="Patrols" description="Schedule and track guard patrols" action={<Button type="button" onClick={() => { sReset(); setShowScheduleDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} />
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-40" />
@@ -111,33 +111,33 @@ export default function PatrolsPage() {
         </Select>
       </div>
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : patrols.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaShieldAlt} title="No patrols scheduled" description={`No patrols for ${date}`} action={<Button type="button" onClick={() => setShowScheduleDialog(true)} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-3"><FaPlus className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} /></div>
+          <div className="py-16"><EmptyState icon={ShieldRegular} title="No patrols scheduled" description={`No patrols for ${date}`} action={<Button type="button" onClick={() => setShowScheduleDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Site</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Guard</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Scheduled</th>
-                <th className="text-right px-4 py-2.5 font-medium text-gray-600">Actual</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Notes</th>
-                <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Site</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Guard</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Scheduled</th>
+                <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Actual</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Notes</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {patrols.map((p) => (
-                <tr key={p.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-[#0D1B2A]">{p.site?.name}</td>
-                  <td className="px-4 py-3 text-gray-600">{p.guard?.name ?? <span className="text-gray-400">Unassigned</span>}</td>
+                <tr key={p.id} className="hover:bg-muted/50">
+                  <td className="px-4 py-3 font-medium text-foreground">{p.site?.name}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{p.guard?.name ?? <span className="text-brand-muted-light">Unassigned</span>}</td>
                   <td className="px-4 py-3 text-right font-mono text-sm">{fmtTime(p.scheduledTime)}</td>
                   <td className="px-4 py-3 text-right font-mono text-sm">{fmtTime(p.actualTime)}</td>
-                  <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[p.status] ?? 'bg-gray-100 text-gray-600'}`}>{p.status}</span></td>
-                  <td className="px-4 py-3 text-gray-400 text-xs">{p.notes ?? '—'}</td>
+                  <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[p.status] ?? 'bg-muted text-muted-foreground'}`}>{p.status}</span></td>
+                  <td className="px-4 py-3 text-brand-muted-light text-xs">{p.notes ?? '—'}</td>
                   <td className="px-4 py-3">
                     {p.status === 'SCHEDULED' && (
                       <button type="button" onClick={() => openCompletion(p)} className="text-xs text-green-600 hover:underline" aria-label="Record patrol completion">Record</button>
@@ -177,7 +177,7 @@ export default function PatrolsPage() {
             <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Route or instructions" {...sr('notes')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowScheduleDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={sSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{sSubmitting ? 'Saving…' : 'Schedule'}</Button>
+              <Button type="submit" disabled={sSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{sSubmitting ? 'Saving…' : 'Schedule'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -191,7 +191,7 @@ export default function PatrolsPage() {
             <div className="space-y-1.5"><Label>Actual Time</Label><Input type="time" {...cr('actualTime')} /></div>
             <div className="space-y-1.5">
               <Label>Outcome</Label>
-              <select className="w-full h-9 rounded-md border border-gray-300 px-3 text-sm" {...cr('status')} aria-label="Patrol outcome">
+              <select className="w-full h-9 rounded-md border border-border px-3 text-sm" {...cr('status')} aria-label="Patrol outcome">
                 <option value="COMPLETED">Completed</option>
                 <option value="PARTIAL">Partial</option>
                 <option value="MISSED">Missed</option>
@@ -200,7 +200,7 @@ export default function PatrolsPage() {
             <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Observations or issues" {...cr('notes')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCompletionTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={cSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{cSubmitting ? 'Saving…' : 'Save Record'}</Button>
+              <Button type="submit" disabled={cSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{cSubmitting ? 'Saving…' : 'Save Record'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

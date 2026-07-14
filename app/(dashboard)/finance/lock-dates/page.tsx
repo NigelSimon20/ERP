@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { FaPlus, FaLock, FaTrash, FaExclamationTriangle } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, DeleteRegular, LockClosedRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface LockDate { id: string; lockedUntil: string; reason: string | null; createdAt: string; createdByUser?: { name: string } | null }
 type FormValues = { lockedUntil: string; reason: string }
@@ -64,11 +64,11 @@ export default function LockDatesPage() {
 
   return (
     <div>
-      <PageHeader title="Lock Dates" description="Prevent backdated entries into closed accounting periods" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Add Lock Date</Button>} />
+      <PageHeader title="Lock Dates" description="Prevent backdated entries into closed accounting periods" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Lock Date</Button>} />
 
       {activeLocks.length > 0 && (
         <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
-          <FaExclamationTriangle className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
+          <WarningRegular className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-sm font-semibold text-amber-800">Active Period Locks</p>
             <p className="text-xs text-amber-700 mt-0.5">
@@ -79,34 +79,34 @@ export default function LockDatesPage() {
         </div>
       )}
 
-      <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-          <h3 className="text-sm font-semibold text-[#0D1B2A]">Active Locks</h3>
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
+        <div className="px-4 py-3 border-b border-border bg-muted/50">
+          <h3 className="text-sm font-semibold text-foreground">Active Locks</h3>
         </div>
         {loading ? (
-          <div className="divide-y divide-gray-100">{[1, 2].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-24 bg-gray-200 rounded" /><div className="h-3 flex-1 bg-gray-100 rounded" /></div>)}</div>
+          <div className="divide-y divide-border">{[1, 2].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-24 bg-muted rounded" /><div className="h-3 flex-1 bg-muted rounded" /></div>)}</div>
         ) : activeLocks.length === 0 ? (
-          <div className="py-10"><EmptyState icon={FaLock} title="No active lock dates" description="All periods are open for entry" /></div>
+          <div className="py-10"><EmptyState icon={LockClosedRegular} title="No active lock dates" description="All periods are open for entry" /></div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="border-b border-gray-100">
+            <thead className="border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Locked Until</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Reason</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Created</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">By</th>
-                <th className="px-4 py-2.5 font-medium text-gray-600 text-left">Actions</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Locked Until</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Reason</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Created</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">By</th>
+                <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {activeLocks.map((l) => (
-                <tr key={l.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-semibold text-[#CC0000]">{formatDate(new Date(l.lockedUntil))}</td>
-                  <td className="px-4 py-3 text-gray-600">{l.reason ?? '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{formatDate(new Date(l.createdAt))}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{l.createdByUser?.name ?? '—'}</td>
+                <tr key={l.id} className="hover:bg-muted/50">
+                  <td className="px-4 py-3 font-semibold text-primary">{formatDate(new Date(l.lockedUntil))}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{l.reason ?? '—'}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(new Date(l.createdAt))}</td>
+                  <td className="px-4 py-3 text-muted-foreground text-xs">{l.createdByUser?.name ?? '—'}</td>
                   <td className="px-4 py-3">
-                    <button type="button" onClick={() => deleteLock(l)} className="p-1.5 rounded hover:bg-red-50 text-gray-300 hover:text-red-500" aria-label="Remove lock"><FaTrash className="h-3.5 w-3.5" /></button>
+                    <button type="button" onClick={() => deleteLock(l)} className="p-1.5 rounded hover:bg-red-50 text-brand-muted-light hover:text-red-500" aria-label="Remove lock"><DeleteRegular className="h-3.5 w-3.5" /></button>
                   </td>
                 </tr>
               ))}
@@ -116,17 +116,17 @@ export default function LockDatesPage() {
       </div>
 
       {expiredLocks.length > 0 && (
-        <div className="mt-4 rounded-lg border border-gray-200 bg-white overflow-hidden">
-          <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
-            <h3 className="text-sm font-semibold text-gray-400">Expired Locks</h3>
+        <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
+          <div className="px-4 py-3 border-b border-border bg-muted/50">
+            <h3 className="text-sm font-semibold text-brand-muted-light">Expired Locks</h3>
           </div>
           <table className="w-full text-sm">
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {expiredLocks.map((l) => (
                 <tr key={l.id} className="opacity-50">
-                  <td className="px-4 py-2.5 text-gray-500">{formatDate(new Date(l.lockedUntil))}</td>
-                  <td className="px-4 py-2.5 text-gray-400 text-xs">{l.reason ?? '—'}</td>
-                  <td className="px-4 py-2.5 text-gray-400 text-xs">{l.createdByUser?.name ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground">{formatDate(new Date(l.lockedUntil))}</td>
+                  <td className="px-4 py-2.5 text-brand-muted-light text-xs">{l.reason ?? '—'}</td>
+                  <td className="px-4 py-2.5 text-brand-muted-light text-xs">{l.createdByUser?.name ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -144,7 +144,7 @@ export default function LockDatesPage() {
             <div className="space-y-1.5">
               <Label>Lock Until Date *</Label>
               <Input type="date" {...register('lockedUntil', { required: true })} />
-              <p className="text-xs text-gray-400">No new entries can be posted on or before this date</p>
+              <p className="text-xs text-brand-muted-light">No new entries can be posted on or before this date</p>
             </div>
             <div className="space-y-1.5">
               <Label>Reason</Label>
@@ -152,7 +152,7 @@ export default function LockDatesPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">{isSubmitting ? 'Saving…' : 'Add Lock Date'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : 'Add Lock Date'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

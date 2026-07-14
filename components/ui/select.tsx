@@ -1,8 +1,8 @@
 'use client'
 import * as React from 'react'
 import * as SelectPrimitive from '@radix-ui/react-select'
-import { LuCheck as Check, LuChevronDown as ChevronDown, LuChevronUp as ChevronUp } from 'react-icons/lu'
 import { cn } from '@/lib/utils'
+import { CheckmarkRegular as Check, ChevronDownRegular as ChevronDown, ChevronUpRegular as ChevronUp } from '@fluentui/react-icons';
 
 const Select = SelectPrimitive.Root
 const SelectGroup = SelectPrimitive.Group

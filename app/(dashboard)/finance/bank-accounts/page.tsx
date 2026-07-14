@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
-import { FaPlus, FaBuilding, FaCreditCard, FaPen } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { AddRegular, BuildingRegular, EditRegular, PaymentRegular } from '@fluentui/react-icons';
 
 interface BankAccount {
   id: string
@@ -100,64 +100,64 @@ export default function BankAccountsPage() {
       <PageHeader
         title="Bank Accounts"
         description="Manage your company bank accounts"
-        action={<Button onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white"><FaPlus className="h-4 w-4 mr-1" /> Add Bank Account</Button>}
+        action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Bank Account</Button>}
       />
 
       {loading ? (
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 animate-pulse">
-              <div className="h-4 w-32 bg-gray-200 rounded mb-3" />
-              <div className="h-8 w-40 bg-gray-200 rounded mb-4" />
-              <div className="h-3 w-24 bg-gray-100 rounded" />
+            <div key={i} className="rounded-xl border border-border bg-card p-5 animate-pulse">
+              <div className="h-4 w-32 bg-muted rounded mb-3" />
+              <div className="h-8 w-40 bg-muted rounded mb-4" />
+              <div className="h-3 w-24 bg-muted rounded" />
             </div>
           ))}
         </div>
       ) : accounts.length === 0 ? (
         <div className="mt-16">
-          <EmptyState icon={FaBuilding} title="No bank accounts" description="Add your first bank account to start tracking balances" action={<Button onClick={openCreate} className="bg-[#CC0000] hover:bg-[#AA0000] text-white mt-4"><FaPlus className="h-4 w-4 mr-1" /> Add Bank Account</Button>} />
+          <EmptyState icon={BuildingRegular} title="No bank accounts" description="Add your first bank account to start tracking balances" action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-4"><AddRegular className="h-4 w-4 mr-1" /> Add Bank Account</Button>} />
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {accounts.map((account) => (
-            <div key={account.id} className="rounded-xl border border-gray-200 bg-white p-5 hover:shadow-sm transition-shadow">
+            <div key={account.id} className="rounded-xl border border-border bg-card p-5 hover:shadow-sm transition-shadow">
               <div className="flex items-start justify-between mb-3">
                 <div className="flex items-center gap-2">
-                  <div className="h-9 w-9 rounded-full bg-[#0D1B2A] flex items-center justify-center flex-shrink-0">
-                    <FaCreditCard className="h-4 w-4 text-white" />
+                  <div className="h-9 w-9 rounded-full bg-brand-navy flex items-center justify-center flex-shrink-0">
+                    <PaymentRegular className="h-4 w-4 text-white" />
                   </div>
                   <div>
-                    <p className="font-semibold text-[#0D1B2A] text-sm">{account.bankName}</p>
-                    <p className="text-xs text-gray-500 font-mono">{account.accountNumber}</p>
+                    <p className="font-semibold text-foreground text-sm">{account.bankName}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{account.accountNumber}</p>
                   </div>
                 </div>
-                <button type="button" onClick={() => openEdit(account)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400" aria-label="Edit bank account">
-                  <FaPen className="h-3.5 w-3.5" />
+                <button type="button" onClick={() => openEdit(account)} className="p-1.5 rounded hover:bg-muted text-brand-muted-light" aria-label="Edit bank account">
+                  <EditRegular className="h-3.5 w-3.5" />
                 </button>
               </div>
 
               <div className="mb-4">
-                <p className="text-xs text-gray-400 mb-0.5">Current Balance</p>
+                <p className="text-xs text-brand-muted-light mb-0.5">Current Balance</p>
                 <p className={`text-2xl font-bold ${account.currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(account.currentBalance)} <span className="text-sm font-normal text-gray-400">{account.currency}</span>
+                  {formatCurrency(account.currentBalance)} <span className="text-sm font-normal text-brand-muted-light">{account.currency}</span>
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 text-xs text-gray-500">
-                <span className="rounded-full bg-gray-100 px-2 py-0.5">{account.accountType}</span>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="rounded-full bg-muted px-2 py-0.5">{account.accountType}</span>
                 {Math.abs(account.currentBalance - account.calculatedBalance) > 0.01 && (
                   <span className="text-amber-600">Variance: {formatCurrency(Math.abs(account.currentBalance - account.calculatedBalance))}</span>
                 )}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-xs text-gray-500">
+              <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                 <div>
-                  <p className="text-gray-400">Opening</p>
-                  <p className="font-medium text-gray-700">{formatCurrency(account.openingBalance)}</p>
+                  <p className="text-brand-muted-light">Opening</p>
+                  <p className="font-medium text-foreground">{formatCurrency(account.openingBalance)}</p>
                 </div>
                 <div>
-                  <p className="text-gray-400">Calculated</p>
-                  <p className="font-medium text-gray-700">{formatCurrency(account.calculatedBalance)}</p>
+                  <p className="text-brand-muted-light">Calculated</p>
+                  <p className="font-medium text-foreground">{formatCurrency(account.calculatedBalance)}</p>
                 </div>
               </div>
             </div>
@@ -213,7 +213,7 @@ export default function BankAccountsPage() {
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
                 {isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Account'}
               </Button>
             </DialogFooter>

@@ -1,12 +1,8 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { PiRobotBold } from 'react-icons/pi'
-import { FaShieldAlt } from 'react-icons/fa'
-import { MdSend, MdAutoAwesome, MdClear } from 'react-icons/md'
-import { RiSparkling2Fill } from 'react-icons/ri'
-import { TbBrandHipchat } from 'react-icons/tb'
 import { formatDateTime } from '@/lib/utils'
+import { BotRegular, ChatRegular, DismissRegular, SendRegular, ShieldRegular, SparkleFilled, SparkleRegular } from '@fluentui/react-icons';
 
 interface Message {
   id: string
@@ -97,27 +93,27 @@ export default function AIHelpdeskPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] max-h-[800px]">
       {/* Header */}
-      <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+      <div className="flex items-center justify-between pb-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="rounded-lg bg-[#0D1B2A] p-2">
-            <PiRobotBold size={22} className="text-[#CC0000]" />
+          <div className="rounded-lg bg-brand-navy p-2">
+            <BotRegular fontSize={22} className="text-primary" />
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h1 className="text-lg font-bold text-[#0D1B2A]">Ravenshield AI Assistant</h1>
-              <RiSparkling2Fill size={15} className="text-[#CC0000]" />
+              <h1 className="text-lg font-bold text-foreground">Ravenshield AI Assistant</h1>
+              <SparkleFilled fontSize={15} className="text-primary" />
             </div>
-            <p className="text-xs text-gray-500">Ask me anything about your company data</p>
+            <p className="text-xs text-muted-foreground">Ask me anything about your company data</p>
           </div>
         </div>
         {messages.length > 0 && (
           <button
             type="button"
             onClick={() => setMessages([])}
-            className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors px-2 py-1.5 rounded-md hover:bg-gray-100"
+            className="flex items-center gap-1.5 text-xs text-brand-muted-light hover:text-foreground transition-colors px-2 py-1.5 rounded-md hover:bg-muted"
             aria-label="Clear conversation"
           >
-            <MdClear size={15} />
+            <DismissRegular fontSize={15} />
             Clear conversation
           </button>
         )}
@@ -127,12 +123,12 @@ export default function AIHelpdeskPage() {
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 text-center">
-            <div className="rounded-full bg-[#0D1B2A] p-5">
-              <FaShieldAlt size={32} className="text-[#CC0000]" />
+            <div className="rounded-full bg-brand-navy p-5">
+              <ShieldRegular fontSize={32} className="text-primary" />
             </div>
             <div>
-              <p className="font-semibold text-[#0D1B2A]">How can I help you today?</p>
-              <p className="text-sm text-gray-400 mt-1">I have live access to your company data.</p>
+              <p className="font-semibold text-foreground">How can I help you today?</p>
+              <p className="text-sm text-brand-muted-light mt-1">I have live access to your company data.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
               {STARTER_QUESTIONS.map(q => (
@@ -140,9 +136,9 @@ export default function AIHelpdeskPage() {
                   key={q}
                   type="button"
                   onClick={() => sendMessage(q)}
-                  className="flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-left text-gray-600 hover:border-[#25D366] hover:text-[#CC0000] hover:bg-green-50 transition-colors"
+                  className="flex items-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm text-left text-muted-foreground hover:border-primary hover:text-primary hover:bg-primary/5 transition-colors"
                 >
-                  <TbBrandHipchat size={14} className="shrink-0 text-gray-400" />
+                  <ChatRegular fontSize={14} className="shrink-0 text-brand-muted-light" />
                   {q}
                 </button>
               ))}
@@ -153,28 +149,28 @@ export default function AIHelpdeskPage() {
             {messages.map(msg => (
               <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 {msg.role === 'assistant' && (
-                  <div className="shrink-0 h-7 w-7 rounded-full bg-[#0D1B2A] flex items-center justify-center mt-0.5">
-                    <FaShieldAlt size={12} className="text-[#CC0000]" />
+                  <div className="shrink-0 h-7 w-7 rounded-full bg-brand-navy flex items-center justify-center mt-0.5">
+                    <ShieldRegular fontSize={12} className="text-primary" />
                   </div>
                 )}
                 <div className={`max-w-[75%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col gap-1`}>
                   <div className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed whitespace-pre-wrap ${
                     msg.role === 'user'
-                      ? 'bg-[#CC0000] text-white rounded-tr-sm'
-                      : 'bg-white border border-gray-200 text-gray-800 rounded-tl-sm'
+                      ? 'bg-primary text-white rounded-tr-sm'
+                      : 'bg-card border border-border text-foreground rounded-tl-sm'
                   }`}>
                     {msg.content}
                   </div>
-                  <p className="text-xs text-gray-400 px-1">{formatDateTime(msg.timestamp)}</p>
+                  <p className="text-xs text-brand-muted-light px-1">{formatDateTime(msg.timestamp)}</p>
                 </div>
               </div>
             ))}
             {loading && (
               <div className="flex gap-2 justify-start">
-                <div className="shrink-0 h-7 w-7 rounded-full bg-[#0D1B2A] flex items-center justify-center mt-0.5">
-                  <FaShieldAlt size={12} className="text-[#CC0000]" />
+                <div className="shrink-0 h-7 w-7 rounded-full bg-brand-navy flex items-center justify-center mt-0.5">
+                  <ShieldRegular fontSize={12} className="text-primary" />
                 </div>
-                <div className="bg-white border border-gray-200 rounded-2xl rounded-tl-sm">
+                <div className="bg-card border border-border rounded-2xl rounded-tl-sm">
                   <TypingDots />
                 </div>
               </div>
@@ -185,7 +181,7 @@ export default function AIHelpdeskPage() {
       </div>
 
       {/* Input area */}
-      <div className="border-t border-gray-200 pt-3 bg-white">
+      <div className="border-t border-border pt-3 bg-card">
         <div className="flex items-end gap-2">
           <textarea
             ref={textareaRef}
@@ -194,21 +190,21 @@ export default function AIHelpdeskPage() {
             onKeyDown={handleKeyDown}
             placeholder="Ask about guards, sites, invoices, incidents…"
             rows={1}
-            className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-2.5 text-sm min-h-[42px] focus:outline-none focus:ring-2 focus:ring-[#CC0000] focus:border-transparent"
+            className="flex-1 resize-none rounded-xl border border-border px-4 py-2.5 text-sm min-h-[42px] focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             aria-label="Chat input"
           />
           <button
             type="button"
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || loading}
-            className="shrink-0 h-10 w-10 rounded-xl bg-[#CC0000] hover:bg-[#AA0000] disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+            className="shrink-0 h-10 w-10 rounded-xl bg-primary hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             aria-label="Send message"
           >
-            <MdSend size={18} className="text-white" />
+            <SendRegular fontSize={18} className="text-white" />
           </button>
         </div>
-        <div className="flex items-center gap-1 mt-2 text-xs text-gray-400">
-          <MdAutoAwesome size={12} />
+        <div className="flex items-center gap-1 mt-2 text-xs text-brand-muted-light">
+          <SparkleRegular fontSize={12} />
           AI-powered · Enter to send · Shift+Enter for new line
         </div>
       </div>

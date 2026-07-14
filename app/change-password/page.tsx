@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { FaShieldAlt } from 'react-icons/fa'
-import { FaKey } from 'react-icons/fa'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
+import { KeyRegular, ShieldRegular } from '@fluentui/react-icons';
 
 export default function ChangePasswordPage() {
   const router = useRouter()
@@ -48,28 +47,28 @@ export default function ChangePasswordPage() {
 
   if (!checked) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-muted/50">
+        <div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-muted/50 flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <FaShieldAlt size={28} className="text-[#CC0000]" />
-            <span className="text-xl font-bold text-[#0D1B2A]">Ravenshield</span>
+            <ShieldRegular fontSize={28} className="text-primary" />
+            <span className="text-xl font-bold text-foreground">Ravenshield</span>
           </div>
           <div className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 rounded-full px-3 py-1 text-xs font-medium">
-            <FaKey className="h-3 w-3" /> Password change required
+            <KeyRegular className="h-3 w-3" /> Password change required
           </div>
         </div>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <h1 className="text-lg font-bold text-[#0D1B2A] mb-1">Set a new password</h1>
-          <p className="text-sm text-gray-500 mb-5">
+        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
+          <h1 className="text-lg font-bold text-foreground mb-1">Set a new password</h1>
+          <p className="text-sm text-muted-foreground mb-5">
             Your account requires a password change before you can continue.
           </p>
 
@@ -100,7 +99,7 @@ export default function ChangePasswordPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#CC0000] hover:bg-[#AA0000] text-white"
+              className="w-full bg-primary hover:bg-brand-red-dark text-white"
             >
               {loading ? 'Saving…' : 'Set Password & Continue'}
             </Button>

@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts'
-import { FaHandshake, FaCheckCircle, FaTimesCircle, FaQuoteRight, FaBuilding, FaChartPie, FaBriefcase, FaChartLine, FaChartBar } from 'react-icons/fa'
 import { DashboardPageShell } from '@/components/dashboard/DashboardPageShell'
 import { KPICard } from '@/components/dashboard/KPICard'
 // theme stage colors are available via the default import below
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { ArrowTrendingRegular, BriefcaseRegular, BuildingRegular, ChartMultipleRegular, CheckmarkCircleRegular, DataBarVerticalRegular, DismissCircleRegular, PeopleRegular, TextQuoteRegular } from '@fluentui/react-icons';
 
 const CT = { fontSize: 12, borderRadius: 10, border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }
 import Link from 'next/link'
@@ -90,13 +90,13 @@ export default function BDDashboardPage() {
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-2">
           {[
-            { label: 'Add Lead', href: '/business-development/leads', Icon: FaHandshake },
-            { label: 'Create Quote', href: '/business-development/quotations', Icon: FaQuoteRight },
-            { label: 'Customers', href: '/business-development/customers', Icon: FaBuilding },
-            { label: 'BD Reports', href: '/business-development/bd-reports', Icon: FaChartPie },
+            { label: 'Add Lead', href: '/business-development/leads', Icon: PeopleRegular },
+            { label: 'Create Quote', href: '/business-development/quotations', Icon: TextQuoteRegular },
+            { label: 'Customers', href: '/business-development/customers', Icon: BuildingRegular },
+            { label: 'BD Reports', href: '/business-development/bd-reports', Icon: ChartMultipleRegular },
           ].map(({ label, href, Icon }) => (
             <Link key={href} href={href} className="flex items-center gap-1.5 px-3 py-1.5 erp-btn erp-btn-ghost erp-btn-sm">
-              <Icon size={13} /> {label}
+              <Icon fontSize={13} /> {label}
             </Link>
           ))}
         </div>
@@ -104,45 +104,45 @@ export default function BDDashboardPage() {
         {/* Row 1 — Pipeline */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {loading ? [1,2,3,4].map(i => <div key={i} className="erp-card !p-5 animate-pulse h-28" />) : <>
-            <KPICard title="Pipeline Value" value={formatCurrency(data!.pipelineValue)} icon={FaChartLine} color="red" />
-            <KPICard title="Active Leads" value={data!.activeLeads} icon={FaHandshake} color="navy" />
-            <KPICard title="Won This Month" value={data!.wonThisMonth} icon={FaCheckCircle} color="green" />
-            <KPICard title="Lost This Month" value={data!.lostThisMonth} icon={FaTimesCircle} color={data!.lostThisMonth > 0 ? 'amber' : 'white'} />
+            <KPICard title="Pipeline Value" value={formatCurrency(data!.pipelineValue)} icon={ArrowTrendingRegular} color="red" />
+            <KPICard title="Active Leads" value={data!.activeLeads} icon={PeopleRegular} color="navy" />
+            <KPICard title="Won This Month" value={data!.wonThisMonth} icon={CheckmarkCircleRegular} color="green" />
+            <KPICard title="Lost This Month" value={data!.lostThisMonth} icon={DismissCircleRegular} color={data!.lostThisMonth > 0 ? 'amber' : 'white'} />
           </>}
         </div>
 
         {/* Row 2 — Quotations & Clients */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {loading ? [1,2,3,4].map(i => <div key={i} className="erp-card !p-5 animate-pulse h-28" />) : <>
-            <KPICard title="Total Customers" value={data!.totalCustomers} icon={FaBuilding} color="white" />
-            <KPICard title="Pending Quotes" value={data!.pendingQuotations} icon={FaQuoteRight} color={data!.pendingQuotations > 0 ? 'amber' : 'white'} />
-            <KPICard title="Conversion Rate" value={`${data!.quoteConversionRate}%`} icon={FaChartPie} color="white" />
-            <KPICard title="Contract Value" subtitle="Active sites" value={formatCurrency(data!.totalContractValue)} icon={FaBriefcase} color="white" />
+            <KPICard title="Total Customers" value={data!.totalCustomers} icon={BuildingRegular} color="white" />
+            <KPICard title="Pending Quotes" value={data!.pendingQuotations} icon={TextQuoteRegular} color={data!.pendingQuotations > 0 ? 'amber' : 'white'} />
+            <KPICard title="Conversion Rate" value={`${data!.quoteConversionRate}%`} icon={ChartMultipleRegular} color="white" />
+            <KPICard title="Contract Value" subtitle="Active sites" value={formatCurrency(data!.totalContractValue)} icon={BriefcaseRegular} color="white" />
           </>}
         </div>
 
         {/* Row 3 — Charts */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white erp-card">
-            <h3 className="text-sm font-semibold text-[#1F2937] mb-4">Pipeline by Stage</h3>
-            {loading ? <div className="h-52 bg-[#F3F4F6] rounded-xl animate-pulse" /> :
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-4">Pipeline by Stage</h3>
+            {loading ? <div className="h-52 bg-border rounded-xl animate-pulse" /> :
               !data?.leadsPerStage.length ?
-              <EmptyState icon={FaChartBar} title="No leads yet" description="Add leads to see pipeline data" /> :
+              <EmptyState icon={DataBarVerticalRegular} title="No leads yet" description="Add leads to see pipeline data" /> :
               <ResponsiveContainer width="100%" height={208}>
                 <BarChart data={data!.leadsPerStage} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
                   <XAxis dataKey="status" tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={CT} />
-                  <Bar dataKey="count" name="Leads" fill="#E74C5B" radius={[4,4,0,0]} />
+                  <Bar dataKey="count" name="Leads" fill="#DC2626" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             }
           </div>
 
-          <div className="bg-white erp-card">
-            <h3 className="text-sm font-semibold text-[#1F2937] mb-4">Won Leads Trend — Last 6 Months</h3>
-            {loading ? <div className="h-52 bg-[#F3F4F6] rounded-xl animate-pulse" /> :
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-4">Won Leads Trend — Last 6 Months</h3>
+            {loading ? <div className="h-52 bg-border rounded-xl animate-pulse" /> :
               <ResponsiveContainer width="100%" height={208}>
                 <LineChart data={data?.wonTrend ?? []} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
@@ -158,40 +158,40 @@ export default function BDDashboardPage() {
 
         {/* Row 4 — Tables */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white erp-card">
-            <h3 className="text-sm font-semibold text-[#1F2937] mb-3">Recent Leads</h3>
-            {loading ? <div className="h-32 bg-[#F3F4F6] rounded-xl animate-pulse" /> :
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Recent Leads</h3>
+            {loading ? <div className="h-32 bg-border rounded-xl animate-pulse" /> :
               !data?.recentLeads.length ?
-              <p className="text-sm text-gray-400 text-center py-6">No leads yet</p> :
+              <p className="text-sm text-brand-muted-light text-center py-6">No leads yet</p> :
               <div className="space-y-2">
                 {data!.recentLeads.map(l => (
-                  <div key={l.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
+                  <div key={l.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-medium text-gray-800 truncate">{l.companyName}</p>
-                      <p className="text-[10px] text-gray-500">{l.contactName} · {formatCurrency(l.estimatedValue)}</p>
+                      <p className="text-xs font-medium text-foreground truncate">{l.companyName}</p>
+                      <p className="text-[10px] text-muted-foreground">{l.contactName} · {formatCurrency(l.estimatedValue)}</p>
                     </div>
-                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${STAGE_COLORS[l.status] ?? 'bg-gray-100 text-gray-600'}`}>{l.status.replace('_', ' ')}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${STAGE_COLORS[l.status] ?? 'bg-muted text-muted-foreground'}`}>{l.status.replace('_', ' ')}</span>
                   </div>
                 ))}
               </div>
             }
           </div>
 
-          <div className="bg-white erp-card">
-            <h3 className="text-sm font-semibold text-[#1F2937] mb-3">Quotes Expiring Soon</h3>
-            {loading ? <div className="h-32 bg-[#F3F4F6] rounded-xl animate-pulse" /> :
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-3">Quotes Expiring Soon</h3>
+            {loading ? <div className="h-32 bg-border rounded-xl animate-pulse" /> :
               !data?.quotationsDueSoon.length ?
-              <p className="text-sm text-gray-400 text-center py-6">No quotes expiring soon</p> :
+              <p className="text-sm text-brand-muted-light text-center py-6">No quotes expiring soon</p> :
               <div className="space-y-2">
                 {data!.quotationsDueSoon.map(q => {
                   const urgent = new Date(q.validUntil) <= threeDaysOut
                   return (
-                    <div key={q.quoteNumber} className={`flex items-center gap-3 py-2 border-b border-gray-50 last:border-0 rounded ${urgent ? 'bg-red-50 -mx-2 px-2' : ''}`}>
+                    <div key={q.quoteNumber} className={`flex items-center gap-3 py-2 border-b border-border last:border-0 rounded ${urgent ? 'bg-red-50 -mx-2 px-2' : ''}`}>
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium text-gray-800 font-mono">{q.quoteNumber}</p>
-                        <p className="text-[10px] text-gray-500">{q.customerName} · Expires {formatDate(q.validUntil)}</p>
+                        <p className="text-xs font-medium text-foreground font-mono">{q.quoteNumber}</p>
+                        <p className="text-[10px] text-muted-foreground">{q.customerName} · Expires {formatDate(q.validUntil)}</p>
                       </div>
-                      <p className={`text-xs font-semibold shrink-0 ${urgent ? 'text-red-600' : 'text-gray-700'}`}>{formatCurrency(q.total)}</p>
+                      <p className={`text-xs font-semibold shrink-0 ${urgent ? 'text-red-600' : 'text-foreground'}`}>{formatCurrency(q.total)}</p>
                     </div>
                   )
                 })}
@@ -202,8 +202,8 @@ export default function BDDashboardPage() {
 
         {/* Row 5 — Revenue by Customer */}
         {!loading && data?.revenueByCustomer.some(c => c.amount > 0) && (
-          <div className="bg-white erp-card">
-            <h3 className="text-sm font-semibold text-[#1F2937] mb-4">Top Customers by Outstanding</h3>
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-4">Top Customers by Outstanding</h3>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={data!.revenueByCustomer} layout="vertical" margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" horizontal={false} />

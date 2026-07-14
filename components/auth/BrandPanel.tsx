@@ -2,9 +2,9 @@
 
 import React from 'react'
 import Image from 'next/image'
-import { LuShield } from 'react-icons/lu'
 import { FeatureGrid } from './FeatureGrid'
 import styles from './BrandPanel.module.css'
+import { ShieldRegular } from '@fluentui/react-icons';
 
 /**
  * BrandPanel - Left side panel with branding, features, and security message
@@ -54,7 +54,7 @@ export function BrandPanel() {
 
       {/* Footer Pledge */}
       <div className="relative z-10 flex items-center gap-2 text-white text-sm font-bold">
-        <LuShield className="w-5 h-5" />
+        <ShieldRegular className="w-5 h-5" />
         <span>Secure. Reliable. Always.</span>
       </div>
     </div>

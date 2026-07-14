@@ -21,7 +21,7 @@ import { LoginForm } from '@/components/auth/LoginForm'
  */
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-card">
       <main className="min-h-screen grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr]">
         <BrandPanel />
         <section className="flex min-h-screen items-center justify-center px-4 py-10 sm:px-8 md:px-12 lg:px-16">

@@ -4,30 +4,27 @@ import { useState, useEffect, Suspense, ReactNode } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCurrentUser } from '@/lib/user-context'
 import toast from 'react-hot-toast'
-import { MdDashboard } from 'react-icons/md'
-import { FaMoneyBillWave, FaShieldAlt, FaBriefcase, FaHardHat, FaUserTie, FaChevronDown } from 'react-icons/fa'
-import { RiTeamLine } from 'react-icons/ri'
-
+import { BriefcaseRegular, ChevronDownRegular, GridRegular, MoneyRegular, PeopleTeamRegular, PersonRegular, ShieldRegular } from '@fluentui/react-icons';
 const ROLE_BADGE: Record<string, { bg: string; label: string }> = {
-  SUPER_ADMIN:          { bg: 'bg-[#E74C5B] text-white',   label: 'Executive' },
-  ADMIN:                { bg: 'bg-[#E74C5B] text-white',   label: 'Executive' },
-  FINANCE_MANAGER:      { bg: 'bg-[#3B82F6] text-white',   label: 'Finance' },
-  OPERATIONS_MANAGER:   { bg: 'bg-[#374151] text-white',   label: 'Operations' },
-  HR_MANAGER:           { bg: 'bg-[#7C3AED] text-white',   label: 'Human Resources' },
-  BD_MANAGER:           { bg: 'bg-[#22C55E] text-white',   label: 'Business Dev.' },
-  GUARD:                { bg: 'bg-[#F59E0B] text-white',   label: 'Guard' },
-  STAFF:                { bg: 'bg-[#6B7280] text-white',   label: 'Staff' },
-  READ_ONLY:            { bg: 'bg-[#D1D5DB] text-[#374151]', label: 'View Only' },
+  SUPER_ADMIN:          { bg: 'bg-primary text-white',     label: 'Executive' },
+  ADMIN:                { bg: 'bg-primary text-white',     label: 'Executive' },
+  FINANCE_MANAGER:      { bg: 'bg-blue-500 text-white',     label: 'Finance' },
+  OPERATIONS_MANAGER:   { bg: 'bg-foreground text-background', label: 'Operations' },
+  HR_MANAGER:           { bg: 'bg-brand-navy text-white',  label: 'Human Resources' },
+  BD_MANAGER:           { bg: 'bg-green-600 text-white',   label: 'Business Dev.' },
+  GUARD:                { bg: 'bg-amber-500 text-white',   label: 'Guard' },
+  STAFF:                { bg: 'bg-gray-500 text-white', label: 'Staff' },
+  READ_ONLY:            { bg: 'bg-muted text-foreground',  label: 'View Only' },
 }
 
 const VIEW_AS_OPTIONS = [
-  { label: 'Executive',         path: '/dashboard/executive',            Icon: MdDashboard },
-  { label: 'Finance',           path: '/dashboard/finance',              Icon: FaMoneyBillWave },
-  { label: 'Operations',        path: '/dashboard/operations',           Icon: FaShieldAlt },
-  { label: 'Human Resources',   path: '/dashboard/hr',                   Icon: RiTeamLine },
-  { label: 'Business Dev',      path: '/dashboard/business-development', Icon: FaBriefcase },
-  { label: 'Guard',             path: '/dashboard/guard',                Icon: FaHardHat },
-  { label: 'Staff',             path: '/dashboard/staff',                Icon: FaUserTie },
+  { label: 'Executive',         path: '/dashboard/executive',            Icon: GridRegular },
+  { label: 'Finance',           path: '/dashboard/finance',              Icon: MoneyRegular },
+  { label: 'Operations',        path: '/dashboard/operations',           Icon: ShieldRegular },
+  { label: 'Human Resources',   path: '/dashboard/hr',                   Icon: PeopleTeamRegular },
+  { label: 'Business Dev',      path: '/dashboard/business-development', Icon: BriefcaseRegular },
+  { label: 'Guard',             path: '/dashboard/guard',                Icon: PersonRegular },
+  { label: 'Staff',             path: '/dashboard/staff',                Icon: PersonRegular },
 ]
 
 function BlockedNotice() {
@@ -72,8 +69,8 @@ export function DashboardPageShell({ title, subtitle, children }: Props) {
             {badge.label}
           </span>
           <div className="min-w-0">
-            <h1 className="text-xl font-bold text-[#1F2937] tracking-tight truncate">{title}</h1>
-            <p className="text-xs text-[#9CA3AF] truncate mt-0.5">{subtitle}</p>
+            <h1 className="text-xl font-bold text-foreground tracking-tight truncate">{title}</h1>
+            <p className="text-xs text-brand-muted-light truncate mt-0.5">{subtitle}</p>
           </div>
         </div>
 
@@ -85,23 +82,23 @@ export function DashboardPageShell({ title, subtitle, children }: Props) {
                 onClick={() => setViewAsOpen(v => !v)}
                 className="erp-btn erp-btn-ghost erp-btn-sm"
               >
-                <MdDashboard className="h-3.5 w-3.5" />
+                <GridRegular className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">View As</span>
-                <FaChevronDown className="h-2.5 w-2.5" />
+                <ChevronDownRegular className="h-2.5 w-2.5" />
               </button>
 
               {viewAsOpen && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setViewAsOpen(false)} />
-                  <div className="absolute right-0 top-full mt-1.5 w-52 bg-white border border-[#E5E7EB] rounded-[12px] shadow-dropdown py-1.5 z-20">
+                  <div className="absolute right-0 top-full mt-1.5 w-52 bg-card border border-border rounded-[12px] shadow-dropdown py-1.5 z-20">
                     {VIEW_AS_OPTIONS.map(({ label, path, Icon }) => (
                       <button
                         key={path}
                         type="button"
                         onClick={() => { setViewAsOpen(false); router.push(path) }}
-                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-[#374151] hover:bg-[#F9FAFB] transition-colors"
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-foreground hover:bg-muted/50 transition-colors"
                       >
-                        <Icon className="h-4 w-4 text-[#9CA3AF]" />
+                        <Icon className="h-4 w-4 text-brand-muted-light" />
                         {label}
                       </button>
                     ))}

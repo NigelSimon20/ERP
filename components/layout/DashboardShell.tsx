@@ -1,11 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Sidebar } from './Sidebar'
 import { TopBar } from './TopBar'
 import { MobileNav } from './MobileNav'
 import { Toaster } from 'react-hot-toast'
 import { UserProvider, UserInfo } from '@/lib/user-context'
+import { WelcomeModal, type WelcomeData } from '@/components/auth/WelcomeModal'
+import { WELCOME_DATA_STORAGE_KEY } from '@/components/auth/LoginForm'
 
 interface DashboardShellProps {
   user: UserInfo
@@ -14,9 +16,24 @@ interface DashboardShellProps {
 
 export function DashboardShell({ user, children }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [welcomeData, setWelcomeData] = useState<WelcomeData | null>(null)
+
+  useEffect(() => {
+    const raw = sessionStorage.getItem(WELCOME_DATA_STORAGE_KEY)
+    if (!raw) return
+    sessionStorage.removeItem(WELCOME_DATA_STORAGE_KEY)
+    try {
+      setWelcomeData(JSON.parse(raw))
+    } catch {
+      // Ignore malformed/stale data
+    }
+  }, [])
 
   return (
     <UserProvider value={user}>
+      {welcomeData && (
+        <WelcomeModal data={welcomeData} onClose={() => setWelcomeData(null)} />
+      )}
       <div className="flex h-screen overflow-hidden bg-brand-light">
         {/* Desktop sidebar */}
         <div className="hidden lg:flex">
@@ -29,7 +46,7 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
         {/* Main area */}
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <TopBar user={user} onMenuClick={() => setMobileOpen(true)} />
-          <main className="flex-1 overflow-y-auto p-5 md:p-7 bg-[#FAFAFB]">
+          <main className="flex-1 overflow-y-auto p-5 md:p-7 bg-background">
             {children}
           </main>
         </div>

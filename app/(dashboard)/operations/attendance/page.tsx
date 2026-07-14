@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { FaDownload, FaUsers, FaClock } from 'react-icons/fa'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -9,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import toast from 'react-hot-toast'
+import { ArrowDownloadRegular, ClockRegular, PeopleRegular } from '@fluentui/react-icons';
 
 type Status = 'PRESENT' | 'ABSENT' | 'SICK' | 'LEAVE' | 'AWOL' | 'OFF' | 'INDUCTION_PAID' | 'INDUCTION_UNPAID' | 'RELIEVED' | 'TRANSFERRED'
 type Shift = 'DAY' | 'NIGHT' | null
@@ -20,15 +20,15 @@ interface Mark { status: Status; shift: Shift }
 
 const STATUS_META: Record<Status, { code: string; label: string; className: string }> = {
   PRESENT: { code: 'P', label: 'Present', className: 'bg-green-600' },
-  ABSENT: { code: 'A', label: 'Absent', className: 'bg-red-600' },
-  SICK: { code: 'S', label: 'Sick', className: 'bg-yellow-500' },
+  ABSENT: { code: 'A', label: 'Absent', className: 'bg-primary' },
+  SICK: { code: 'S', label: 'Sick', className: 'bg-amber-500' },
   LEAVE: { code: 'L', label: 'Leave', className: 'bg-blue-500' },
-  AWOL: { code: 'W', label: 'AWOL', className: 'bg-purple-600' },
+  AWOL: { code: 'W', label: 'AWOL', className: 'bg-brand-navy' },
   OFF: { code: 'O', label: 'Off', className: 'bg-gray-400' },
-  INDUCTION_PAID: { code: 'IP', label: 'Induction Paid', className: 'bg-teal-500' },
-  INDUCTION_UNPAID: { code: 'IU', label: 'Induction Unpaid', className: 'bg-orange-500' },
+  INDUCTION_PAID: { code: 'IP', label: 'Induction Paid', className: 'bg-gray-500' },
+  INDUCTION_UNPAID: { code: 'IU', label: 'Induction Unpaid', className: 'bg-amber-600' },
   RELIEVED: { code: 'RL', label: 'Relieved', className: 'bg-rose-800' },
-  TRANSFERRED: { code: 'TR', label: 'Transferred', className: 'bg-indigo-500' },
+  TRANSFERRED: { code: 'TR', label: 'Transferred', className: 'bg-blue-700' },
 }
 const STATUS_ORDER = Object.keys(STATUS_META) as Status[]
 const SHIFT_CODE: Record<'DAY' | 'NIGHT', string> = { DAY: 'D', NIGHT: 'N' }
@@ -189,15 +189,15 @@ function TimesheetTab() {
 
   return (
     <div>
-      <p className="text-sm text-gray-500 mb-3">{daysInMonth}-Day Timesheet for {monthLabel(month)}</p>
+      <p className="text-sm text-muted-foreground mb-3">{daysInMonth}-Day Timesheet for {monthLabel(month)}</p>
 
       <div className="flex flex-wrap items-end gap-3 mb-3">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500">Month</label>
-          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="h-9 rounded-md border border-gray-300 px-3 text-sm" aria-label="Month" />
+          <label className="text-xs font-medium text-muted-foreground">Month</label>
+          <input type="month" value={month} onChange={(e) => setMonth(e.target.value)} className="h-9 rounded-md border border-border px-3 text-sm" aria-label="Month" />
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500">Site</label>
+          <label className="text-xs font-medium text-muted-foreground">Site</label>
           <Select value={siteId || 'all'} onValueChange={(v) => setSiteId(v === 'all' ? '' : v)}>
             <SelectTrigger className="w-44 h-9"><SelectValue placeholder="All Sites" /></SelectTrigger>
             <SelectContent>
@@ -207,7 +207,7 @@ function TimesheetTab() {
           </Select>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500">Region</label>
+          <label className="text-xs font-medium text-muted-foreground">Region</label>
           <Select value={region || 'all'} onValueChange={(v) => setRegion(v === 'all' ? '' : v)}>
             <SelectTrigger className="w-40 h-9"><SelectValue placeholder="All Regions" /></SelectTrigger>
             <SelectContent>
@@ -217,45 +217,45 @@ function TimesheetTab() {
           </Select>
         </div>
         <div className="ml-auto flex items-center gap-2">
-          <Button type="button" variant="outline" onClick={exportCsv}><FaDownload className="h-4 w-4 mr-1" /> Export</Button>
-          <Button type="button" onClick={saveChanges} disabled={saving || pendingCount === 0} className="bg-[#CC0000] hover:bg-[#AA0000] text-white">
+          <Button type="button" variant="outline" onClick={exportCsv}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export</Button>
+          <Button type="button" onClick={saveChanges} disabled={saving || pendingCount === 0} className="bg-primary hover:bg-brand-red-dark text-white">
             {saving ? 'Saving…' : `Save Changes${pendingCount ? ` (${pendingCount})` : ''}`}
           </Button>
         </div>
       </div>
 
-      <div className="mb-3 rounded-lg border border-gray-200 bg-white px-4 py-2.5 flex flex-wrap items-center gap-4 text-xs">
-        <span className="font-medium text-gray-500">Legend:</span>
+      <div className="mb-3 rounded-lg border border-border bg-card px-4 py-2.5 flex flex-wrap items-center gap-4 text-xs">
+        <span className="font-medium text-muted-foreground">Legend:</span>
         {STATUS_ORDER.map((s) => (
           <span key={s} className="flex items-center gap-1.5">
             <span className={`inline-flex h-5 w-5 items-center justify-center rounded text-[10px] font-bold text-white ${STATUS_META[s].className}`}>{STATUS_META[s].code}</span>
-            <span className="text-gray-600">{STATUS_META[s].label}</span>
+            <span className="text-muted-foreground">{STATUS_META[s].label}</span>
           </span>
         ))}
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : guards.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaUsers} title="No guards found" description="No guards match the current filters" /></div>
+          <div className="py-16"><EmptyState icon={PeopleRegular} title="No guards found" description="No guards match the current filters" /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="text-sm border-collapse">
-              <thead className="bg-gray-50 border-b border-gray-200">
+              <thead className="bg-muted/50 border-b border-border">
                 <tr>
-                  <th className="sticky left-0 bg-gray-50 text-left px-3 py-2 font-medium text-gray-600 whitespace-nowrap z-10">Force #</th>
-                  <th className="sticky left-[88px] bg-gray-50 text-left px-3 py-2 font-medium text-gray-600 whitespace-nowrap z-10 border-r border-gray-200">Name</th>
+                  <th className="sticky left-0 bg-muted/50 text-left px-3 py-2 font-medium text-muted-foreground whitespace-nowrap z-10">Force #</th>
+                  <th className="sticky left-[88px] bg-muted/50 text-left px-3 py-2 font-medium text-muted-foreground whitespace-nowrap z-10 border-r border-border">Name</th>
                   {Array.from({ length: daysInMonth }, (_, i) => (
-                    <th key={i} className="px-1 py-2 font-medium text-gray-500 text-center w-11">{i + 1}</th>
+                    <th key={i} className="px-1 py-2 font-medium text-muted-foreground text-center w-11">{i + 1}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-border">
                 {guards.map((g) => (
-                  <tr key={g.id} className="hover:bg-gray-50">
-                    <td className="sticky left-0 bg-white text-xs text-gray-500 px-3 py-1.5 whitespace-nowrap">{g.force_number ?? '—'}</td>
-                    <td className="sticky left-[88px] bg-white text-xs font-medium text-[#0D1B2A] px-3 py-1.5 whitespace-nowrap border-r border-gray-200">{g.full_name ?? '—'}</td>
+                  <tr key={g.id} className="hover:bg-muted/50">
+                    <td className="sticky left-0 bg-card text-xs text-muted-foreground px-3 py-1.5 whitespace-nowrap">{g.force_number ?? '—'}</td>
+                    <td className="sticky left-[88px] bg-card text-xs font-medium text-foreground px-3 py-1.5 whitespace-nowrap border-r border-border">{g.full_name ?? '—'}</td>
                     {Array.from({ length: daysInMonth }, (_, i) => {
                       const day = i + 1
                       const mark = markAt(g.id, day)
@@ -266,7 +266,7 @@ function TimesheetTab() {
                             type="button"
                             onClick={() => openCell(g.id, day, g.full_name ?? '—')}
                             aria-label={`Mark attendance for ${g.full_name} on day ${day}`}
-                            className={`h-9 w-10 rounded text-[11px] font-bold text-white flex flex-col items-center justify-center leading-none ${mark ? STATUS_META[mark.status].className : 'bg-gray-100 text-gray-300'} ${isDirty ? 'ring-2 ring-offset-1 ring-[#CC0000]' : ''}`}
+                            className={`h-9 w-10 rounded text-[11px] font-bold text-white flex flex-col items-center justify-center leading-none ${mark ? STATUS_META[mark.status].className : 'bg-muted text-brand-muted-light'} ${isDirty ? 'ring-2 ring-offset-1 ring-primary' : ''}`}
                           >
                             {mark ? (
                               <>
@@ -291,11 +291,11 @@ function TimesheetTab() {
           <DialogHeader><DialogTitle>{editingCell?.guardName} — Day {editingCell?.day}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-gray-500">Shift:</span>
+              <span className="text-xs font-medium text-muted-foreground">Shift:</span>
               <div className="flex gap-1">
                 {(['DAY', 'NIGHT'] as const).map((s) => (
                   <button key={s} type="button" onClick={() => setPendingShift(s)}
-                    className={`px-3 py-1 rounded-md text-xs font-medium border ${pendingShift === s ? 'bg-[#0D1B2A] text-white border-[#0D1B2A]' : 'border-gray-300 text-gray-600'}`}>
+                    className={`px-3 py-1 rounded-md text-xs font-medium border ${pendingShift === s ? 'bg-brand-navy text-white border-brand-navy' : 'border-border text-muted-foreground'}`}>
                     {s === 'DAY' ? 'Day' : 'Night'}
                   </button>
                 ))}
@@ -377,44 +377,44 @@ function SiteRegistersTab() {
     <div>
       <div className="flex flex-wrap items-end gap-3 mb-4">
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500">Site</label>
+          <label className="text-xs font-medium text-muted-foreground">Site</label>
           <Select value={siteId} onValueChange={setSiteId}>
             <SelectTrigger className="w-52 h-9"><SelectValue placeholder="Select site" /></SelectTrigger>
             <SelectContent>{sites.map((s) => <SelectItem key={s.id} value={s.id}>{s.site_name ?? s.id}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <div className="space-y-1">
-          <label className="text-xs font-medium text-gray-500">Date</label>
-          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 rounded-md border border-gray-300 px-3 text-sm" aria-label="Date" />
+          <label className="text-xs font-medium text-muted-foreground">Date</label>
+          <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-9 rounded-md border border-border px-3 text-sm" aria-label="Date" />
         </div>
       </div>
 
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : guards.length === 0 ? (
-          <div className="py-16"><EmptyState icon={FaUsers} title="No guards deployed" description="No active deployments found for this site" /></div>
+          <div className="py-16"><EmptyState icon={PeopleRegular} title="No guards deployed" description="No active deployments found for this site" /></div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Force #</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Name</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Status</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Quick Mark</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Force #</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Name</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Quick Mark</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {guards.map((g) => {
                 const status = statusFor(g.id)
                 return (
-                  <tr key={g.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-xs text-gray-500">{g.force_number ?? '—'}</td>
-                    <td className="px-4 py-2 font-medium text-[#0D1B2A]">{g.full_name ?? '—'}</td>
+                  <tr key={g.id} className="hover:bg-muted/50">
+                    <td className="px-4 py-2 text-xs text-muted-foreground">{g.force_number ?? '—'}</td>
+                    <td className="px-4 py-2 font-medium text-foreground">{g.full_name ?? '—'}</td>
                     <td className="px-4 py-2">
                       {status ? (
                         <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium text-white ${STATUS_META[status].className}`}>{STATUS_META[status].label}</span>
-                      ) : <span className="text-xs text-gray-400">Not marked</span>}
+                      ) : <span className="text-xs text-brand-muted-light">Not marked</span>}
                     </td>
                     <td className="px-4 py-2">
                       <div className="flex gap-1">
@@ -456,34 +456,34 @@ function AuditTrailTab() {
   }, [page])
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
       {loading ? (
-        <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-[#CC0000] border-t-transparent rounded-full animate-spin" /></div>
+        <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
       ) : logs.length === 0 ? (
-        <div className="py-16"><EmptyState icon={FaClock} title="No audit history" description="No attendance changes have been logged yet" /></div>
+        <div className="py-16"><EmptyState icon={ClockRegular} title="No audit history" description="No attendance changes have been logged yet" /></div>
       ) : (
         <>
           <table className="w-full text-sm">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className="bg-muted/50 border-b border-border">
               <tr>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">When</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">User</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Action</th>
-                <th className="text-left px-4 py-2.5 font-medium text-gray-600">Record</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">When</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">User</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Action</th>
+                <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Record</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-border">
               {logs.map((l) => (
                 <tr key={l.id}>
-                  <td className="px-4 py-2 text-xs text-gray-500">{new Date(l.createdAt).toLocaleString()}</td>
-                  <td className="px-4 py-2 text-xs text-gray-600">{l.userName}</td>
+                  <td className="px-4 py-2 text-xs text-muted-foreground">{new Date(l.createdAt).toLocaleString()}</td>
+                  <td className="px-4 py-2 text-xs text-muted-foreground">{l.userName}</td>
                   <td className="px-4 py-2 text-xs">{l.action}</td>
-                  <td className="px-4 py-2 text-xs text-gray-400">{l.recordId}</td>
+                  <td className="px-4 py-2 text-xs text-brand-muted-light">{l.recordId}</td>
                 </tr>
               ))}
             </tbody>
           </table>
-          <div className="flex items-center justify-between px-4 py-2.5 border-t border-gray-200 text-xs text-gray-500">
+          <div className="flex items-center justify-between px-4 py-2.5 border-t border-border text-xs text-muted-foreground">
             <span>{total} total</span>
             <div className="flex gap-2">
               <Button type="button" variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Prev</Button>

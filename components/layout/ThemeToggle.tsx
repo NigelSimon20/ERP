@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FaSun, FaMoon } from 'react-icons/fa'
-
+import { WeatherMoonRegular, WeatherSunnyRegular } from '@fluentui/react-icons';
 const STORAGE_KEY = 'ravenshield-theme'
 
 export function ThemeToggle() {
@@ -26,10 +25,10 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-gray-700 hover:bg-gray-100 rounded-md transition-colors"
+      className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-foreground hover:bg-muted rounded-md transition-colors duration-200"
       aria-label="Toggle dark mode"
     >
-      {dark ? <FaSun className="h-4 w-4" /> : <FaMoon className="h-4 w-4" />}
+      {dark ? <WeatherSunnyRegular className="h-4 w-4" /> : <WeatherMoonRegular className="h-4 w-4" />}
       {dark ? 'Light Mode' : 'Dark Mode'}
     </button>
   )

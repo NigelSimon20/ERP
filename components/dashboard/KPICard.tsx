@@ -1,15 +1,14 @@
-import { FaArrowUp, FaArrowDown } from 'react-icons/fa'
-
+import { ArrowDownRegular, ArrowUpRegular } from '@fluentui/react-icons';
 type Color = 'red' | 'navy' | 'white' | 'green' | 'amber' | 'blue' | 'purple'
 
 const ICON_MAP: Record<Color, string> = {
-  red:    'bg-[#FDEDEE] text-[#E74C5B]',
-  white:  'bg-[#FDEDEE] text-[#E74C5B]',
-  navy:   'bg-[#F3F4F6] text-[#374151]',
-  green:  'bg-[#DCFCE7] text-[#16A34A]',
-  amber:  'bg-[#FEF3C7] text-[#92400E]',
-  blue:   'bg-[#DBEAFE] text-[#1D4ED8]',
-  purple: 'bg-[#F3E8FF] text-[#7C3AED]',
+  red:    'bg-primary/10 text-primary',
+  white:  'bg-primary/10 text-primary',
+  navy:   'bg-muted text-foreground',
+  green:  'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  amber:  'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  blue:   'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  purple: 'bg-muted text-foreground',
 }
 
 interface KPICardProps {
@@ -32,22 +31,21 @@ export function KPICard({ title, value, subtitle, icon: Icon, color, trend }: KP
         </div>
         {trend && (
           <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0 ${
-            trend.direction === 'up' ? 'bg-[#DCFCE7] text-[#15803D]' : 'bg-[#FEE2E2] text-[#B91C1C]'
+            trend.direction === 'up' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300'
           }`}>
             {trend.direction === 'up'
-              ? <FaArrowUp className="h-2.5 w-2.5" />
-              : <FaArrowDown className="h-2.5 w-2.5" />}
+              ? <ArrowUpRegular className="h-2.5 w-2.5" />
+              : <ArrowDownRegular className="h-2.5 w-2.5" />}
             {Math.abs(trend.value)}%
           </div>
         )}
       </div>
       <div>
-        <p className="text-[11px] font-semibold text-[#6B7280] uppercase tracking-wide">{title}</p>
-        <p className="text-2xl font-bold text-[#1F2937] mt-0.5 tabular-nums leading-none">{value}</p>
-        {subtitle && <p className="text-xs text-[#9CA3AF] mt-1">{subtitle}</p>}
+        <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{title}</p>
+        <p className="text-2xl font-bold text-foreground mt-0.5 tabular-nums leading-none">{value}</p>
+        {subtitle && <p className="text-xs text-brand-muted-light mt-1">{subtitle}</p>}
       </div>
     </div>
   )
 }
-
 

@@ -94,11 +94,11 @@ export function SocialLogin({ loading = false }: SocialLoginProps) {
     <div className="space-y-4">
       {/* Divider */}
       <div className="flex items-center gap-3">
-        <div className="flex-1 h-px bg-gray-200" />
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+        <div className="flex-1 h-px bg-muted" />
+        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Or continue with
         </span>
-        <div className="flex-1 h-px bg-gray-200" />
+        <div className="flex-1 h-px bg-muted" />
       </div>
 
       {/* Google Button */}
@@ -108,7 +108,7 @@ export function SocialLogin({ loading = false }: SocialLoginProps) {
           variant="outline"
           onClick={handleGoogleLogin}
           disabled={loading || isLoading}
-          className="w-full h-12 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 flex items-center justify-center gap-2"
+          className="w-full h-12 border-border hover:border-gray-400 hover:bg-muted/50 transition-all duration-200 flex items-center justify-center gap-2"
         >
           <Image
             src="/assets/login/icons8-google-48.png"
