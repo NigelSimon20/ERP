@@ -6,7 +6,6 @@ import { KPICard } from '@/components/dashboard/KPICard'
 import { formatDate } from '@/lib/utils'
 import { EmptyState } from '@/components/shared/EmptyState'
 import Link from 'next/link'
-import { useCurrentUser } from '@/lib/user-context'
 import { CalendarLtrRegular, CheckmarkCircleRegular, DocumentAddRegular, TaskListLtrRegular, VideoRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface StaffData {
@@ -26,18 +25,10 @@ const PRIORITY_BADGE: Record<string, string> = {
   URGENT: 'bg-red-100 text-red-700',
 }
 
-function greeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 17) return 'afternoon'
-  return 'evening'
-}
-
 export default function StaffDashboardPage() {
   const [data, setData] = useState<StaffData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
-  const { name } = useCurrentUser()
 
   useEffect(() => {
     fetch('/api/dashboard/staff')
@@ -68,14 +59,6 @@ export default function StaffDashboardPage() {
   return (
     <DashboardPageShell title="My Workspace" subtitle="Tasks, meetings & deadlines">
       <div className="space-y-6">
-        {/* Welcome */}
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-lg font-bold text-foreground">Good {greeting()}, {name}!</p>
-            <p className="text-xs text-muted-foreground">{today.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-          </div>
-        </div>
-
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-2">
           {[

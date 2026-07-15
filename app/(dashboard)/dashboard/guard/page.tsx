@@ -26,13 +26,6 @@ const PRIORITY_BADGE: Record<string, string> = {
   URGENT: 'bg-red-100 text-red-700',
 }
 
-function greeting() {
-  const h = new Date().getHours()
-  if (h < 12) return 'morning'
-  if (h < 17) return 'afternoon'
-  return 'evening'
-}
-
 export default function GuardDashboardPage() {
   const [data, setData] = useState<GuardData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -64,7 +57,7 @@ export default function GuardDashboardPage() {
         {/* Welcome */}
         {!loading && data?.myProfile && (
           <div className="bg-brand-navy rounded-xl p-5 text-white">
-            <p className="text-lg font-bold">Good {greeting()}, {data.myProfile.name}!</p>
+            <p className="text-lg font-bold">{data.myProfile.name}</p>
             <p className="text-sm text-white/60 mt-0.5">{data.myProfile.rank ?? 'Guard'} {data.myProfile.department ? `· ${data.myProfile.department}` : ''}</p>
             <p className="text-sm text-white/50 mt-3">
               {time.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}

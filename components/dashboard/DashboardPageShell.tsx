@@ -3,6 +3,8 @@
 import { useState, useEffect, Suspense, ReactNode } from 'react'
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useCurrentUser } from '@/lib/user-context'
+import { useGreeting } from '@/hooks/useGreeting'
+import { useClock } from '@/hooks/useClock'
 import toast from 'react-hot-toast'
 import { BriefcaseRegular, ChevronDownRegular, GridRegular, MoneyRegular, PeopleTeamRegular, PersonRegular, ShieldRegular } from '@fluentui/react-icons';
 const ROLE_BADGE: Record<string, { bg: string; label: string }> = {
@@ -51,16 +53,25 @@ interface Props {
 
 export function DashboardPageShell({ title, subtitle, children }: Props) {
   const router = useRouter()
-  const { role } = useCurrentUser()
+  const { role, name } = useCurrentUser()
   const badge = ROLE_BADGE[role] ?? ROLE_BADGE.READ_ONLY
   const canViewAs = role === 'SUPER_ADMIN' || role === 'ADMIN'
   const [viewAsOpen, setViewAsOpen] = useState(false)
+  const { phrase, subMessage } = useGreeting()
+  const { dateString } = useClock()
+  const firstName = name?.split(' ')[0] ?? ''
 
   return (
     <div>
       <Suspense fallback={null}>
         <BlockedNotice />
       </Suspense>
+
+      {/* Greeting */}
+      <div className="mb-3">
+        <p className="text-lg font-bold text-foreground">{phrase}{firstName && `, ${firstName}`}!</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{subMessage} · {dateString}</p>
+      </div>
 
       {/* Page header bar */}
       <div className="flex items-center justify-between mb-6 gap-4">
