@@ -41,16 +41,14 @@ export async function GET() {
   const todayEnd = new Date(today.getTime() + 86_400_000)
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
 
-  // Phase 1: Get IDs needed for compound queries
-  const siteIds: string[] = [] // Site model lacks companyId; fetch all active sites
-  const guardIds: string[] = [] // Guard model may lack companyId; fetch all active guards
-
-  // Phase 2: All aggregations in parallel
+  // Site has no companyId column (single-tenant deployment: all sites belong
+  // to this company), so incident/site queries need no company filter.
+  // Guard *does* have companyId — attendance is scoped via the guard relation.
   const [
     revenueAgg, outstandingAgg, expensesAgg, bankAgg,
     activeGuards, activeSites, openIncidents, criticalIncidents,
     guardsOnDutyToday, pendingTasks, overdueInvoices, lastPayroll,
-    rawReceipts, rawPayments, incidentGroups, topSites, recentActivity,
+    rawReceipts, rawPayments, incidentGroups, allActiveSites, recentActivity,
   ] = await Promise.all([
     prisma.salesInvoice.aggregate({ where: { invoice_date: { gte: fiscalStart.toISOString().split('T')[0] }, status: { not: 'VOID' } }, _sum: { total_amount: true } }),
     prisma.salesInvoice.aggregate({ where: { status: { in: ['UNPAID', 'PARTIAL', 'OVERDUE'] } }, _sum: { balance_due: true } }),
@@ -58,18 +56,33 @@ export async function GET() {
     prisma.bankAccount.aggregate({ where: { is_active: true }, _sum: { current_balance: true } }),
     prisma.guard.count({ where: { companyId, status: 'ACTIVE' } }),
     prisma.site.count({ where: { status: 'ACTIVE' } }),
-    prisma.incident.count({ where: { siteId: { in: siteIds }, status: { in: ['OPEN', 'INVESTIGATING'] } } }),
-    prisma.incident.count({ where: { siteId: { in: siteIds }, severity: 'CRITICAL', status: { not: 'CLOSED' } } }),
-    prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: today, lt: todayEnd }, status: 'PRESENT' } }),
+    prisma.incident.count({ where: { status: { in: ['OPEN', 'INVESTIGATING'] } } }),
+    prisma.incident.count({ where: { severity: 'CRITICAL', status: { not: 'CLOSED' } } }),
+    prisma.attendance.count({ where: { guard: { companyId }, date: { gte: today, lt: todayEnd }, status: 'PRESENT' } }),
     prisma.task.count({ where: { companyId, status: { in: ['PENDING', 'IN_PROGRESS'] } } }),
     prisma.salesInvoice.count({ where: { status: 'OVERDUE' } }),
     prisma.payrollRun.findFirst({ where: { companyId }, orderBy: { createdAt: 'desc' }, select: { totalNet: true, periodStart: true, periodEnd: true } }),
     prisma.receipt.findMany({ where: { companyId, receiptDate: { gte: sixMonthsAgo } }, select: { receiptDate: true, amount: true } }),
     prisma.payment.findMany({ where: { payment_date: { gte: sixMonthsAgo.toISOString().split('T')[0] } }, select: { payment_date: true, amount: true } }),
-    prisma.incident.groupBy({ by: ['severity'], where: { siteId: { in: siteIds } }, _count: { _all: true } }),
-    prisma.site.findMany({ where: { status: 'ACTIVE' }, take: 5, select: { id: true, site_name: true, status: true }, orderBy: { id: 'asc' } }),
+    prisma.incident.groupBy({ by: ['severity'], _count: { _all: true } }),
+    prisma.site.findMany({
+      where: { status: 'ACTIVE' },
+      select: { id: true, site_name: true, status: true, billing_rate_day: true, billing_rate_night: true, day_shift_assigned: true, night_shift_assigned: true },
+    }),
     prisma.auditTrail.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 10, select: { action: true, module: true, userName: true, createdAt: true, recordId: true } }),
   ])
+
+  // Monthly contract value estimate from real billing-rate + shift-assignment
+  // columns (Site has no invoice/contract-value field to read directly).
+  const sitesWithValue = allActiveSites.map(s => ({
+    id: s.id,
+    name: s.site_name ?? 'Unnamed site',
+    status: s.status,
+    monthlyValue:
+      (s.billing_rate_day ?? 0) * (s.day_shift_assigned ?? 0) * 30 +
+      (s.billing_rate_night ?? 0) * (s.night_shift_assigned ?? 0) * 30,
+  }))
+  const topSites = sitesWithValue.sort((a, b) => b.monthlyValue - a.monthlyValue).slice(0, 5)
 
   // Guard counts per site
   const siteGuardCounts = await prisma.deployment.groupBy({
@@ -102,7 +115,8 @@ export async function GET() {
     ),
     incidentsBySeverity: incidentGroups.map(g => ({ severity: g.severity, count: g._count._all })),
     topSites: topSites.map(s => ({
-      name:          s.site_name,
+      name:          s.name,
+      revenue:       s.monthlyValue,
       guards:        guardCountMap[s.id] ?? 0,
       status:        s.status,
     })),

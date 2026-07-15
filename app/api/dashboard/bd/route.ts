@@ -22,9 +22,9 @@ export async function GET() {
   const [
     totalLeads, activeLeads, wonThisMonth, lostThisMonth,
     allActiveLeads, pendingQuotations, totalAccepted, totalQuotes,
-    totalCustomers, contractValueAgg,
+    totalCustomers, activeSitesForValue,
     leadsPerStage, recentLeads, quotationsDueSoon,
-    wonByMonth,
+    wonByMonth, topDebtorGroups,
   ] = await Promise.all([
     prisma.lead.count({ where: { companyId } }),
     prisma.lead.count({ where: { companyId, status: { notIn: ['WON', 'LOST'] } } }),
@@ -34,8 +34,14 @@ export async function GET() {
     prisma.quotation.count({ where: { companyId, status: { in: ['DRAFT', 'SENT'] } } }),
     prisma.quotation.count({ where: { companyId, status: 'ACCEPTED' } }),
     prisma.quotation.count({ where: { companyId } }),
-    prisma.customer.count({}),
-    prisma.site.count({ where: { status: 'ACTIVE' } }),
+    prisma.customer.count({ where: { companyId } }),
+    // Site has no direct contract-value column — same real proxy used by
+    // the executive dashboard: monthly billing estimated from real
+    // billing-rate + shift-assignment columns.
+    prisma.site.findMany({
+      where: { status: 'ACTIVE' },
+      select: { billing_rate_day: true, billing_rate_night: true, day_shift_assigned: true, night_shift_assigned: true },
+    }),
     prisma.lead.groupBy({ by: ['status'], where: { companyId }, _count: { _all: true } }),
     prisma.lead.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 5, select: { id: true, companyName: true, contactName: true, estimatedValue: true, status: true, createdAt: true } }),
     prisma.quotation.findMany({
@@ -45,6 +51,13 @@ export async function GET() {
       select: { quoteNumber: true, customerId: true, total: true, validUntil: true },
     }),
     prisma.lead.findMany({ where: { companyId, status: 'WON', updatedAt: { gte: sixMonthsAgo } }, select: { updatedAt: true } }),
+    // Customer *does* have companyId — top customers by outstanding
+    // invoice balance, same aggregation the Finance dashboard already uses.
+    prisma.salesInvoice.groupBy({
+      by: ['customer_id'],
+      where: { companyId, status: { notIn: ['VOID', 'PAID'] } },
+      _sum: { balance_due: true },
+    }),
   ])
 
   const pipelineValue = allActiveLeads.reduce((sum, l) => sum + Number(l.estimatedValue) * (l.probability / 100), 0)
@@ -63,9 +76,29 @@ export async function GET() {
     if (b) b.count++
   })
 
-  const customerIds = Array.from(new Set(quotationsDueSoon.map(q => q.customerId).filter(Boolean) as string[]))
+  const totalContractValue = activeSitesForValue.reduce((sum, s) =>
+    sum + (s.billing_rate_day ?? 0) * (s.day_shift_assigned ?? 0) * 30
+        + (s.billing_rate_night ?? 0) * (s.night_shift_assigned ?? 0) * 30
+  , 0)
+
+  const topDebtorRows = topDebtorGroups
+    .filter(d => d.customer_id && Number(d._sum.balance_due ?? 0) > 0)
+    .sort((a, b) => Number(b._sum.balance_due ?? 0) - Number(a._sum.balance_due ?? 0))
+    .slice(0, 5)
+
+  // customerIds covers both the quotes-due-soon lookup and the top-debtors
+  // lookup so both can share one customer fetch.
+  const customerIds = Array.from(new Set([
+    ...quotationsDueSoon.map(q => q.customerId).filter(Boolean) as string[],
+    ...topDebtorRows.map(d => d.customer_id as string),
+  ]))
   const customers = await prisma.customer.findMany({ where: { id: { in: customerIds } }, select: { id: true, company_name: true } })
   const customerMap = Object.fromEntries(customers.map(c => [c.id, c.company_name ?? 'Unknown']))
+
+  const revenueByCustomer = topDebtorRows.map(d => ({
+    name: customerMap[d.customer_id as string] ?? 'Unknown',
+    amount: Number(d._sum.balance_due ?? 0),
+  }))
 
   return NextResponse.json({
     totalLeads,
@@ -76,7 +109,7 @@ export async function GET() {
     pendingQuotations,
     quoteConversionRate,
     totalCustomers,
-    totalContractValue: 0, // Site model lacks aggregatable contractValue field
+    totalContractValue,
     leadsPerStage:  leadsPerStage.map(g => ({ status: g.status, count: g._count._all })),
     wonTrend:       wonTrendBuckets,
     recentLeads:    recentLeads.map(l => ({ ...l, estimatedValue: Number(l.estimatedValue), createdAt: l.createdAt.toISOString() })),
@@ -86,6 +119,6 @@ export async function GET() {
       total:        Number(q.total),
       validUntil:   q.validUntil.toISOString(),
     })),
-    revenueByCustomer: [], // Customer model lacks companyId field; unavailable
+    revenueByCustomer,
   })
 }

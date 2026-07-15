@@ -42,7 +42,7 @@ export function NotificationBell() {
       <PopoverTrigger asChild>
         <button
           type="button"
-          className="relative p-2 rounded-lg hover:bg-border text-muted-foreground hover:text-[#111827] transition-colors"
+          className="relative p-2 rounded-lg hover:bg-border text-muted-foreground hover:text-foreground transition-colors"
           aria-label={`Notifications${unreadCount > 0 ? ` (${unreadCount} unread)` : ''}`}
         >
           <AlertRegular className="h-5 w-5" />
@@ -59,7 +59,7 @@ export function NotificationBell() {
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-card">
           <div className="flex items-center gap-2">
             <AlertRegular className="h-4 w-4 text-primary" />
-            <p className="font-semibold text-sm text-[#111827]">Notifications</p>
+            <p className="font-semibold text-sm text-foreground">Notifications</p>
             {unreadCount > 0 && (
               <span className="h-5 px-1.5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                 {unreadCount}
@@ -100,7 +100,7 @@ export function NotificationBell() {
                 type="button"
                 className={cn(
                   'w-full text-left px-4 py-3 border-b border-border last:border-0 hover:bg-muted/50 transition-colors cursor-pointer',
-                  !n.read && 'bg-[#FFF8F8]'
+                  !n.read && 'bg-primary/5'
                 )}
                 onClick={() => handleNotificationClick(n.id, n.link, n.read)}
               >
@@ -110,7 +110,7 @@ export function NotificationBell() {
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-1">
-                      <p className={cn('text-sm font-medium leading-tight', !n.read ? 'text-[#111827]' : 'text-foreground')}>
+                      <p className={cn('text-sm font-medium leading-tight text-foreground')}>
                         {n.title}
                       </p>
                       <div className="flex items-center gap-1 flex-shrink-0">

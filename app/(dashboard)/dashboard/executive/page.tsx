@@ -29,7 +29,7 @@ interface ExecData {
   monthlyChart: { month: string; revenue: number; expenses: number }[]
   incidentsBySeverity: { severity: string; count: number }[]
   topSites: { name: string; revenue: number; guards: number; status: string }[]
-  recentMdShowChart: { action: string; module: string; userName: string; createdAt: string; recordId: string | null }[]
+  recentActivity: { action: string; module: string; userName: string; createdAt: string; recordId: string | null }[]
 }
 
 const CT = { fontSize: 12, borderRadius: 10, border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }
@@ -219,13 +219,13 @@ export default function ExecutiveDashboardPage() {
                 <div className="px-5 py-4 border-b border-border">
                   <p className="text-sm font-semibold text-foreground">Recent Activity</p>
                 </div>
-                {!data?.recentMdShowChart?.length ? (
+                {!data?.recentActivity?.length ? (
                   <div className="px-5 py-8">
                     <EmptyState icon={ArrowTrendingRegular} title="No activity yet" description="System actions will appear here" />
                   </div>
                 ) : (
                   <ul className="divide-y divide-border px-5">
-                    {data?.recentMdShowChart?.map((item, idx) => {
+                    {data?.recentActivity?.map((item, idx) => {
                       const Icon = ACTION_ICON[item.action] ?? ArrowTrendingRegular
                       const style = ACTION_STYLE[item.action] ?? 'bg-border text-muted-foreground'
                       return (

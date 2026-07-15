@@ -15,6 +15,7 @@ import { NotificationBell } from './NotificationBell'
 import { ThemeToggle } from './ThemeToggle'
 import { useClock } from '@/hooks/useClock'
 import toast from 'react-hot-toast'
+import { SearchPalette } from '@/components/shared/SearchPalette'
 
 interface TopBarProps {
   user: { name: string; email: string; role: string; companyName?: string }
@@ -59,7 +60,11 @@ export function TopBar({ user, onMenuClick }: TopBarProps) {
         <p className="text-xs text-muted-foreground font-semibold tracking-wide">{user.companyName}</p>
       </div>
 
-      <div className="flex items-center gap-1.5 ml-auto">
+      <div className="flex-1 flex justify-center px-2 min-w-0">
+        <SearchPalette />
+      </div>
+
+      <div className="flex items-center gap-1.5">
         {/* Live Clock */}
         <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg border border-border mr-1">
           <ClockRegular className="h-3.5 w-3.5 text-primary" />

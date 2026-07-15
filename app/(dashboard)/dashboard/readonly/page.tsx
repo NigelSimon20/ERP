@@ -12,7 +12,7 @@ interface ReadOnlyData {
   activeSites: number
   openIncidents: number
   pendingTasks: number
-  recentMdShowChart: { action: string; module: string; userName: string; createdAt: string }[]
+  recentActivity: { action: string; module: string; userName: string; createdAt: string }[]
 }
 
 const ACTION_ICON: Record<string, React.ElementType> = {
@@ -68,16 +68,16 @@ export default function ReadOnlyDashboardPage() {
           </>}
         </div>
 
-        {/* Recent ArrowTrendingRegular */}
+        {/* Recent Activity */}
         <div className="bg-card erp-card">
-          <h3 className="text-sm font-semibold text-foreground mb-4">Recent ArrowTrendingRegular</h3>
+          <h3 className="text-sm font-semibold text-foreground mb-4">Recent Activity</h3>
           {loading ? (
             <div className="space-y-3">{[1,2,3,4,5].map(i => <div key={i} className="h-10 bg-border rounded-xl animate-pulse" />)}</div>
-          ) : !data?.recentMdShowChart.length ? (
+          ) : !data?.recentActivity.length ? (
             <EmptyState icon={ArrowTrendingRegular} title="No activity yet" description="System actions will appear here" />
           ) : (
             <ul className="divide-y divide-border">
-              {data!.recentMdShowChart.map((item, idx) => {
+              {data!.recentActivity.map((item, idx) => {
                 const Icon = ACTION_ICON[item.action] ?? ArrowTrendingRegular
                 const style = ACTION_STYLE[item.action] ?? 'bg-muted text-brand-muted-light'
                 return (

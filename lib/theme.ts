@@ -23,14 +23,19 @@ export const CHART_TOOLTIP_STYLE = {
 
 export const CHART_PALETTE = [PRIMARY, GRAY_DARK, GRAY, GRAY_LIGHT]
 
+// Keys match the real `LeadStatus` enum values exactly (prisma/schema.prisma)
+// — a prior version of this map used different, fictional stage names
+// (INQUIRY/PROPOSAL/ON_HOLD) that never matched any actual lead status, so
+// most real leads silently fell back to a generic gray everywhere this was
+// consumed.
 export const STAGE_COLORS: Record<string, string> = {
-  INQUIRY: GRAY_LIGHT,
-  QUALIFIED: GRAY,
-  PROPOSAL: PRIMARY_LIGHT,
+  NEW: GRAY_LIGHT,
+  CONTACTED: GRAY,
+  QUALIFIED: PRIMARY_LIGHT,
+  PROPOSAL_SENT: PRIMARY_LIGHT,
   NEGOTIATION: PRIMARY,
   WON: GRAY_DARK,
   LOST: GRAY,
-  ON_HOLD: GRAY_LIGHT,
 }
 
 export const PIE_COLORS = [PRIMARY, GRAY_LIGHT]

@@ -88,7 +88,7 @@ export function SearchPalette() {
             ref={inputRef}
             value={query}
             onChange={handleChange}
-            placeholder="Search guards, sites, customers, invoices…"
+            placeholder="Search guards, sites, customers, invoices, tasks, leads…"
             className="flex-1 text-sm outline-none bg-transparent text-foreground placeholder:text-muted-foreground"
             aria-label="Search"
           />

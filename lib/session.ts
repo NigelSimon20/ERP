@@ -11,6 +11,7 @@ export interface SessionData {
   isLoggedIn: boolean
   mustChangePassword?: boolean
   guardId?: string
+  customerId?: string
 }
 
 export const sessionOptions: SessionOptions = {

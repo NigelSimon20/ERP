@@ -15,21 +15,19 @@ interface Receipt { id: string; reference: string; receiptDate: string; amount: 
 interface Site { id: string; name: string; address: string; status: string; guardsRequired: number }
 interface Incident { id: string; title: string; severity: string; status: string; reportedAt: string }
 
-import theme from '@/lib/theme'
-
 const STATUS_COLORS: Record<string, string> = {
-  PAID: `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`,
-  UNPAID: `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`,
-  PARTIAL: `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`,
-  OVERDUE: `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`,
-  VOID: `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`,
+  PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  UNPAID: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  PARTIAL: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  VOID: 'bg-muted text-muted-foreground',
 }
 
 const SEVERITY_COLORS: Record<string, string> = {
-  LOW: `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`,
-  MEDIUM: `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`,
-  HIGH: `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`,
-  CRITICAL: `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`,
+  LOW: 'bg-muted text-muted-foreground',
+  MEDIUM: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  HIGH: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  CRITICAL: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
 }
 
 export default function ClientPortalPage() {
@@ -61,10 +59,10 @@ export default function ClientPortalPage() {
     if (!user) return
     setDataLoading(true)
     Promise.all([
-      fetch('/api/finance/sales-invoices').then(r => r.json()).catch(() => ({ invoices: [] })),
-      fetch('/api/finance/receipts').then(r => r.json()).catch(() => ({ receipts: [] })),
-      fetch('/api/operations/sites').then(r => r.json()).catch(() => ({ sites: [] })),
-      fetch('/api/operations/incidents').then(r => r.json()).catch(() => ({ incidents: [] })),
+      fetch('/api/portal/client/invoices').then(r => r.json()).catch(() => ({ invoices: [] })),
+      fetch('/api/portal/client/receipts').then(r => r.json()).catch(() => ({ receipts: [] })),
+      fetch('/api/portal/client/sites').then(r => r.json()).catch(() => ({ sites: [] })),
+      fetch('/api/portal/client/incidents').then(r => r.json()).catch(() => ({ incidents: [] })),
     ]).then(([inv, rec, sit, inc]) => {
       setInvoices((inv.invoices ?? []).map((i: Record<string, unknown>) => ({ ...i, totalAmount: Number(i.totalAmount), paidAmount: Number(i.paidAmount), balanceDue: Number(i.balanceDue) })))
       setReceipts(rec.receipts ?? [])

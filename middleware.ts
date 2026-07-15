@@ -2,12 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 
+// Each entry lists every real path prefix (page AND api) that the rule must
+// cover. Page and API prefixes for a module are NOT always the same string
+// (e.g. Human Resources pages live at /human-resources but its API lives at
+// /api/hr; Business Development pages live at /business-development but its
+// API lives at /api/bd) — deriving one from the other silently missed the
+// API routes for both modules, leaving /api/hr/* and /api/bd/* reachable by
+// any logged-in user regardless of role. List each real prefix explicitly.
 const ROLE_GUARDS: [string, string[]][] = [
   ['/finance', ['SUPER_ADMIN', 'ADMIN', 'FINANCE_MANAGER']],
-  ['/hr', ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER']],
+  ['/api/finance', ['SUPER_ADMIN', 'ADMIN', 'FINANCE_MANAGER']],
+  ['/human-resources', ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER']],
+  ['/api/hr', ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER']],
   ['/operations', ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_MANAGER']],
+  ['/api/operations', ['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_MANAGER']],
   ['/business-development', ['SUPER_ADMIN', 'ADMIN', 'BD_MANAGER']],
+  ['/api/bd', ['SUPER_ADMIN', 'ADMIN', 'BD_MANAGER']],
   ['/settings', ['SUPER_ADMIN', 'ADMIN']],
+  ['/api/settings', ['SUPER_ADMIN', 'ADMIN']],
+  ['/api/users', ['SUPER_ADMIN', 'ADMIN']],
 ]
 
 const DASHBOARD_ACCESS: Record<string, string[]> = {
@@ -117,7 +130,7 @@ export async function middleware(req: NextRequest) {
 
   // Module-level role-based access control
   for (const [prefix, allowed] of ROLE_GUARDS) {
-    if (pathname.startsWith(prefix) || pathname.startsWith(`/api${prefix}`)) {
+    if (pathname.startsWith(prefix)) {
       if (!allowed.includes(session.role)) {
         if (isApiRoute(pathname)) {
           return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

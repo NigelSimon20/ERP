@@ -42,8 +42,8 @@ export async function GET() {
     prisma.patrol.count({ where: { siteId: { in: siteIds }, scheduledTime: { gte: today, lt: todayEnd }, status: 'COMPLETED' } }),
     prisma.patrol.count({ where: { siteId: { in: siteIds }, scheduledTime: { gte: monthStart }, status: 'MISSED' } }),
     prisma.coverageRequest.count({ where: { siteId: { in: siteIds }, status: 'PENDING' } }),
-    prisma.equipment.count({}), // Equipment doesn't have status field
-    prisma.equipment.count({}), // Equipment doesn't have status field
+    prisma.equipment.aggregate({ _sum: { quantity_in_stock: true } }),
+    prisma.equipment.aggregate({ _sum: { quantity_issued: true } }),
     prisma.incident.groupBy({ by: ['severity'], where: { siteId: { in: siteIds }, reportedAt: { gte: monthStart } }, _count: { _all: true } }),
     prisma.site.findMany({ where: { status: 'ACTIVE' }, take: 10, select: { id: true, site_name: true } }),
     prisma.incident.findMany({
@@ -96,8 +96,8 @@ export async function GET() {
     patrolsCompleted,
     patrolComplianceRate,
     pendingCoverage,
-    equipmentAvailable,
-    equipmentAssigned,
+    equipmentAvailable: Number(equipmentAvailable._sum.quantity_in_stock ?? 0),
+    equipmentAssigned:  Number(equipmentAssigned._sum.quantity_issued ?? 0),
     incidentsBySeverity: incidentGroups.map(g => ({ severity: g.severity, count: g._count._all })),
     siteAttendanceRates: siteAttendanceCounts.filter(s => s.rate > 0),
     recentIncidents: recentIncidents.map(i => ({

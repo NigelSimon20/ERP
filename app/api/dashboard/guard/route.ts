@@ -35,7 +35,7 @@ export async function GET() {
   const [
     myProfile, myCurrentDeployment, myAttendanceToday,
     daysPresent, daysAbsent, hoursAgg, overtimeAgg,
-    myLatestPayslip, myOpenTasks, myUpcomingPatrols, myPendingLeave,
+    latestPayslip, myOpenTasks, myUpcomingPatrols, myPendingLeave,
   ] = await Promise.all([
     prisma.guard.findUnique({ where: { id: guardId }, select: { id: true, full_name: true, position: true, department: true, employee_code: true, status: true } }),
     prisma.deployment.findFirst({
@@ -47,7 +47,14 @@ export async function GET() {
     prisma.attendance.count({ where: { guardId, date: { gte: monthStart }, status: 'ABSENT' } }),
     prisma.attendance.aggregate({ where: { guardId, date: { gte: monthStart } }, _sum: { hoursWorked: true } }),
     prisma.attendance.aggregate({ where: { guardId, date: { gte: monthStart } }, _sum: { overtimeHours: true } }),
-    Promise.resolve(null), // Payslip query removed - Payslip model doesn't have guardId field
+    // Payslip has no formal relation to Guard, but `employee_id` is
+    // populated with the guard's id (see app/api/hr/payroll/route.ts,
+    // which already relies on this same mapping).
+    prisma.payslip.findFirst({
+      where: { employee_id: guardId },
+      orderBy: { pay_date: 'desc' },
+      select: { net_pay: true, payroll_run_id: true },
+    }),
     prisma.task.findMany({
       where: { companyId, assignedTo: userId, status: { notIn: ['COMPLETED', 'CANCELLED'] } },
       orderBy: { dueDate: 'asc' },
@@ -68,12 +75,6 @@ export async function GET() {
   if (myCurrentDeployment) {
     const site = await prisma.site.findUnique({ where: { id: myCurrentDeployment.siteId }, select: { site_name: true, address: true } })
     deployment = { shiftType: myCurrentDeployment.shiftType, site }
-  } else {
-    const dep = await prisma.deployment.findFirst({ where: { guardId, status: 'ACTIVE' }, select: { siteId: true, shiftType: true } })
-    if (dep) {
-      const site = await prisma.site.findUnique({ where: { id: dep.siteId }, select: { site_name: true, address: true } })
-      deployment = { shiftType: dep.shiftType, site }
-    }
   }
 
   // Resolve site names for patrols
@@ -81,8 +82,34 @@ export async function GET() {
   const patrolSites = await prisma.site.findMany({ where: { id: { in: patrolSiteIds } }, select: { id: true, site_name: true } })
   const siteMap = Object.fromEntries(patrolSites.map(s => [s.id, s.site_name]))
 
+  // Resolve the payslip's period from its linked PayrollRun (Payslip itself
+  // has no periodStart/periodEnd — only a payroll_run_id scalar reference).
+  let myLatestPayslip: { netPay: number; periodStart: string; periodEnd: string } | null = null
+  if (latestPayslip?.payroll_run_id) {
+    const run = await prisma.payrollRun.findUnique({
+      where: { id: latestPayslip.payroll_run_id },
+      select: { periodStart: true, periodEnd: true },
+    })
+    if (run) {
+      myLatestPayslip = {
+        netPay: Number(latestPayslip.net_pay ?? 0),
+        periodStart: run.periodStart.toISOString(),
+        periodEnd: run.periodEnd.toISOString(),
+      }
+    }
+  }
+
   return NextResponse.json({
-    myProfile,
+    // The Guard model's real columns (full_name/position/employee_code) —
+    // the frontend expects name/rank/employeeNumber, so map them here
+    // instead of leaking raw Prisma field names to the client.
+    myProfile: myProfile ? {
+      name: myProfile.full_name ?? 'Guard',
+      rank: myProfile.position,
+      department: myProfile.department,
+      employeeNumber: myProfile.employee_code ?? '',
+      status: myProfile.status ?? '',
+    } : null,
     myCurrentDeployment: deployment,
     myAttendanceToday: myAttendanceToday ? {
       status:       myAttendanceToday.status,
@@ -96,7 +123,7 @@ export async function GET() {
       hoursWorked:   Number(hoursAgg._sum.hoursWorked ?? 0),
       overtimeHours: Number(overtimeAgg._sum.overtimeHours ?? 0),
     },
-    myLatestPayslip: null, // Payslip model doesn't have guardId field - unable to query
+    myLatestPayslip,
     myOpenTasks: myOpenTasks.map(t => ({ ...t, dueDate: t.dueDate.toISOString() })),
     myUpcomingPatrols: myUpcomingPatrols.map(p => ({
       siteName:      siteMap[p.siteId] ?? 'Unknown',

@@ -51,7 +51,7 @@ export async function GET() {
   const meetingIds = meetingAttendeeRows.map((row) => row.meetingId)
   const attendeeMeetingsToday = meetingIds.length > 0
     ? await prisma.meeting.findMany({
-        where: { id: { in: meetingIds } },
+        where: { id: { in: meetingIds }, meetingDate: { gte: today, lt: todayEnd } },
         select: {
           id: true,
           title: true,

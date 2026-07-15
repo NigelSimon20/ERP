@@ -9,7 +9,7 @@ import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { CalendarLtrRegular, ClockRegular, DocumentRegular, ShieldRegular, SignOutRegular } from '@fluentui/react-icons';
 
-interface SessionUser { id: string; name: string; email: string; role: string; companyId: string }
+interface SessionUser { id: string; name: string; email: string; role: string; companyId: string; guardId: string | null }
 interface Deployment { id: string; siteId: string; startDate: string; endDate: string | null; shiftType: string; status: string; site?: { name: string } }
 interface Attendance { id: string; date: string; checkIn: string | null; checkOut: string | null; hoursWorked: number; status: string }
 interface Payslip { id: string; payrollRunId: string; grossPay: number; totalDeductions: number; netPay: number; hoursWorked: number; status: string; payrollRun?: { periodStart: string; periodEnd: string } }
@@ -50,28 +50,18 @@ export default function GuardPortalPage() {
 
   useEffect(() => {
     if (!user) return
+    setGuardId(user.guardId)
+    if (!user.guardId) return
     setDataLoading(true)
-    // Find guard record matching the user's email
-    fetch('/api/hr/employees?search=' + encodeURIComponent(user.email))
-      .then(r => r.json())
-      .then(async j => {
-        const guards: Array<{ id: string; email: string }> = j.employees ?? j.guards ?? []
-        const guard = guards.find(g => g.email?.toLowerCase() === user.email.toLowerCase())
-        if (!guard) { setDataLoading(false); return }
-        setGuardId(guard.id)
-
-        const [dep, att, pay] = await Promise.all([
-          fetch(`/api/operations/deployments?guardId=${guard.id}`).then(r => r.json()).catch(() => ({ deployments: [] })),
-          fetch(`/api/operations/attendance?guardId=${guard.id}`).then(r => r.json()).catch(() => ({ attendance: [] })),
-          fetch(`/api/hr/payslips?guardId=${guard.id}`).then(r => r.json()).catch(() => ({ payslips: [] })),
-        ])
-
-        setDeployments(dep.deployments ?? [])
-        setAttendance((att.attendance ?? []).map((a: Record<string, unknown>) => ({ ...a, hoursWorked: Number(a.hoursWorked) })))
-        setPayslips((pay.payslips ?? []).map((p: Record<string, unknown>) => ({ ...p, grossPay: Number(p.grossPay), totalDeductions: Number(p.totalDeductions), netPay: Number(p.netPay), hoursWorked: Number(p.hoursWorked) })))
-      })
-      .catch(() => {})
-      .finally(() => setDataLoading(false))
+    Promise.all([
+      fetch('/api/portal/guard/deployments').then(r => r.json()).catch(() => ({ deployments: [] })),
+      fetch('/api/portal/guard/attendance').then(r => r.json()).catch(() => ({ attendance: [] })),
+      fetch('/api/portal/guard/payslips').then(r => r.json()).catch(() => ({ payslips: [] })),
+    ]).then(([dep, att, pay]) => {
+      setDeployments(dep.deployments ?? [])
+      setAttendance((att.attendance ?? []).map((a: Record<string, unknown>) => ({ ...a, hoursWorked: Number(a.hoursWorked) })))
+      setPayslips((pay.payslips ?? []).map((p: Record<string, unknown>) => ({ ...p, grossPay: Number(p.grossPay), totalDeductions: Number(p.totalDeductions), netPay: Number(p.netPay), hoursWorked: Number(p.hoursWorked) })))
+    }).finally(() => setDataLoading(false))
   }, [user])
 
   async function handleLogin(e: React.FormEvent) {

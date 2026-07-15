@@ -24,7 +24,7 @@ export async function GET() {
 
   const [
     totalEmployees, activeEmployees, suspendedEmployees,
-    newHiresThisMonth, pendingLeave, approvedLeaveThisMonth,
+    guardsWithHireDate, pendingLeave, approvedLeaveThisMonth,
     onLeaveToday, lastPayroll,
     presentMonth, totalAttendanceMonth, overtimeAgg,
     departmentGroups, leaveTypeGroups,
@@ -33,7 +33,14 @@ export async function GET() {
     prisma.guard.count({ where: { companyId } }),
     prisma.guard.count({ where: { companyId, status: 'ACTIVE' } }),
     prisma.guard.count({ where: { companyId, status: 'SUSPENDED' } }),
-    Promise.resolve(0), // New hires query simplified - hire_date is string field
+    // hire_date is a free-text String column (not DateTime, and not
+    // guaranteed to be in one consistent format given this data's import
+    // history), so the month filter happens in JS after fetching — same
+    // approach already used below for upcomingBirthdays.
+    prisma.guard.findMany({
+      where: { companyId, hire_date: { not: null } },
+      select: { hire_date: true },
+    }),
     prisma.leaveRequest.count({ where: { companyId, status: 'PENDING' } }),
     prisma.leaveRequest.count({ where: { companyId, status: 'APPROVED', startDate: { gte: monthStart } } }),
     prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: today, lt: todayEnd }, status: 'LEAVE' } }),
@@ -74,6 +81,13 @@ export async function GET() {
   })
 
   const attendanceRate = totalAttendanceMonth > 0 ? Math.round((presentMonth / totalAttendanceMonth) * 100) : 0
+
+  const newHiresThisMonth = guardsWithHireDate.filter(g => {
+    if (!g.hire_date) return false
+    const hired = new Date(g.hire_date)
+    if (isNaN(hired.getTime())) return false
+    return hired.getFullYear() === now.getFullYear() && hired.getMonth() === now.getMonth()
+  }).length
 
   return NextResponse.json({
     totalEmployees,

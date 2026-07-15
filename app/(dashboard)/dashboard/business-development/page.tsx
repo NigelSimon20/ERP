@@ -30,10 +30,18 @@ interface BDData {
 }
 const DASHBOARD_REFRESH_MS = 30_000
 
-import theme from '@/lib/theme'
-const STAGE_COLORS: Record<string, string> = Object.fromEntries(
-  Object.entries(theme.STAGE_COLORS).map(([k, _v]) => [k, `bg-[${theme.PRIMARY_BG}] text-[${theme.PRIMARY}]`])
-) as Record<string, string>
+// Real per-stage classes (matches the LeadStatus enum) — chart fill colors
+// live separately in lib/theme.ts's STAGE_COLORS (hex, for Recharts), this
+// is the Tailwind-class equivalent for badges.
+const STAGE_COLORS: Record<string, string> = {
+  NEW: 'bg-muted text-muted-foreground',
+  CONTACTED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+  QUALIFIED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  PROPOSAL_SENT: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  NEGOTIATION: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  WON: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  LOST: 'bg-muted text-muted-foreground',
+}
 
 export default function BDDashboardPage() {
   const [data, setData] = useState<BDData | null>(null)

@@ -152,6 +152,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    let customerId: string | undefined = user.customerId ?? undefined
+    if (user.role === 'CLIENT' && !customerId) {
+      const customer = await prisma.customer.findFirst({
+        where: { email: user.email, companyId: user.companyId },
+        select: { id: true },
+      })
+      customerId = customer?.id
+      if (customerId) {
+        await prisma.user.update({ where: { id: user.id }, data: { customerId } })
+      }
+    }
+
     // Fetch unread notification count and pending task count in parallel
     const [unreadCount, pendingTasks] = await Promise.all([
       prisma.notification.count({
@@ -179,6 +191,8 @@ export async function POST(req: NextRequest) {
         department: user.department ?? null,
         mustChangePassword: user.mustChangePassword,
         lastLogin: previousLastLogin,
+        guardId: guardId ?? null,
+        customerId: customerId ?? null,
       },
       dashboardPath,
       unreadCount,
@@ -194,6 +208,7 @@ export async function POST(req: NextRequest) {
     session.isLoggedIn = true
     session.mustChangePassword = user.mustChangePassword
     session.guardId = guardId
+    session.customerId = customerId
     await session.save()
 
     await logAudit({

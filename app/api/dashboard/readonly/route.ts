@@ -10,12 +10,11 @@ export async function GET() {
   if (!['SUPER_ADMIN', 'ADMIN', 'READ_ONLY'].includes(session.role)) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   const { companyId } = session
-  const siteIds = await prisma.site.findMany({ select: { id: true } }).then(r => r.map(x => x.id))
 
   const [activeGuards, activeSites, openIncidents, pendingTasks, recentActivity] = await Promise.all([
     prisma.guard.count({ where: { companyId, status: 'ACTIVE' } }),
     prisma.site.count({ where: { status: 'ACTIVE' } }),
-    prisma.incident.count({ where: { siteId: { in: siteIds }, status: { in: ['OPEN', 'INVESTIGATING'] } } }),
+    prisma.incident.count({ where: { status: { in: ['OPEN', 'INVESTIGATING'] } } }),
     prisma.task.count({ where: { companyId, status: { in: ['PENDING', 'IN_PROGRESS'] } } }),
     prisma.auditTrail.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 10, select: { action: true, module: true, userName: true, createdAt: true } }),
   ])

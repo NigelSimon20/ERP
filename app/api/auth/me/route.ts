@@ -26,6 +26,8 @@ export async function GET(req: NextRequest) {
       mustChangePassword: true,
       lastLogin: true,
       companyId: true,
+      guardId: true,
+      customerId: true,
       company: {
         select: {
           id: true,

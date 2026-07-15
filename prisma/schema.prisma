@@ -98,6 +98,7 @@ model Company {
   customers                Customer[]
   suppliers                Supplier[]
   payments                 Payment[]
+  customRoles              RoleDefinition[]
 
   // Banking details
   bankName                 String?  @map("bank_name")
@@ -182,6 +183,7 @@ model Customer {
   created_by_id         String?
   created_by            String?
   is_sample             Boolean?
+  user                  User?
 
   @@index([companyId])
   @@map("customers")
@@ -312,6 +314,8 @@ model User {
   company            Company  @relation(fields: [companyId], references: [id])
   guardId            String?  @unique
   guard              Guard?   @relation(fields: [guardId], references: [id])
+  customerId         String?  @unique
+  customer           Customer? @relation(fields: [customerId], references: [id])
   name               String
   email              String   @unique
   password           String
@@ -1479,4 +1483,97 @@ model OtpToken {
   createdAt DateTime @default(now())
 
   @@map("otp_tokens")
+}
+
+// ============================================================
+// RBAC FOUNDATION (additive — Phase 2)
+// ============================================================
+// This is a foundation, not yet a behavior change: `User.role` (plain
+// String) and the hardcoded allowlists in middleware.ts (ROLE_GUARDS,
+// DASHBOARD_ACCESS) are untouched. RoleDefinition/Permission/RolePermission
+// are seeded to describe exactly what those allowlists already enforce
+// today, so the tables start truthful instead of aspirational. A later
+// phase can point middleware/route checks at these tables and add a
+// Settings UI to edit them — this phase only lays the schema + seed data.
+// Named "RoleDefinition" (not "Role") because an unused `enum Role` already
+// exists from the original schema — Prisma doesn't allow a model and enum
+// to share a name, and the enum isn't safe to remove/rename in this pass.
+
+model RoleDefinition {
+  id        String   @id
+  key       String   @unique
+  label     String
+  isSystem  Boolean  @default(true)
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  permissions RolePermission[]
+
+  @@index([companyId])
+  @@map("roles")
+}
+
+model Permission {
+  id        String   @id
+  key       String   @unique
+  module    String
+  label     String
+  createdAt DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  id           String         @id
+  roleId       String
+  role         RoleDefinition @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permissionId String
+  permission   Permission     @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  createdAt    DateTime       @default(now())
+
+  @@unique([roleId, permissionId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+// ============================================================
+// OCCURRENCE BOOK (Phase 3)
+// ============================================================
+// Append-only per-site shift log. No update/delete route exists for this
+// model anywhere in the app by design -- immutability is enforced by never
+// building the mutation endpoint, not by a soft flag. `sequenceNumber` is
+// strictly increasing per site (enforced by the unique index) and each
+// entry's `entryHash` covers its own content plus the previous entry's
+// hash (SHA-256 chain, computed in lib/occurrence-book.ts), so any edit or
+// reordering of historical rows is detectable by recomputing the chain --
+// this is what the client actually verifies on every read.
+// Deliberately plain scalar FK-shaped columns (siteId, recordedById,
+// linkedIncidentId), no Prisma `@relation`, matching the convention already
+// used by Task/Lead/Notification/Incident in this schema -- keeps this
+// addition from requiring changes to Site/User/Incident.
+
+model OccurrenceEntry {
+  id               String   @id
+  companyId        String
+  siteId           String
+  sequenceNumber   Int
+  entryType        String
+  narrative        String   @db.Text
+  recordedById     String
+  recordedByName   String
+  occurredAt       DateTime
+  linkedIncidentId String?
+  previousHash     String
+  entryHash        String
+  createdAt        DateTime @default(now())
+
+  @@unique([siteId, sequenceNumber])
+  @@index([companyId])
+  @@index([siteId])
+  @@index([occurredAt])
+  @@map("occurrence_entries")
 }
