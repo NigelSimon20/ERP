@@ -29,32 +29,32 @@ export function RealtimeNotificationCenter() {
       let message = ''
 
       switch (change.table) {
-        case 'salesInvoice':
+        case 'sales_invoices':
           type = 'invoice'
-          title = `Sales Invoice ${change.record.invoiceNumber || change.record.invoice_number}`
-          message = `Invoice ${change.type.toLowerCase()}: $${change.record.total_amount || change.record.totalAmount}`
+          title = `Sales Invoice ${change.record.invoice_number}`
+          message = `Invoice ${change.type.toLowerCase()}: $${change.record.total_amount}`
           break
-        case 'purchaseInvoice':
+        case 'purchase_invoices':
           type = 'invoice'
-          title = `Purchase Invoice ${change.record.invoiceNumber}`
+          title = `Purchase Invoice ${change.record.invoice_number}`
           message = `Bill ${change.type.toLowerCase()}`
           break
-        case 'payment':
+        case 'payments':
           type = 'payment'
           title = `Payment ${change.record.reference}`
           message = `Payment ${change.type.toLowerCase()}: $${change.record.amount}`
           break
-        case 'customer':
+        case 'customers':
           type = 'customer'
           title = `Customer: ${change.record.company_name}`
           message = `Customer ${change.type.toLowerCase()}`
           break
-        case 'supplier':
+        case 'suppliers':
           type = 'supplier'
           title = `Supplier: ${change.record.company_name}`
           message = `Supplier ${change.type.toLowerCase()}`
           break
-        case 'bankAccount':
+        case 'bank_accounts':
           type = 'bank'
           title = `Bank Account: ${change.record.account_name}`
           message = `Balance: $${change.record.current_balance}`

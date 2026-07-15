@@ -76,10 +76,10 @@ export default function HRDashboardPage() {
 
   async function handleLeave(id: string, guardId: string, approve: boolean) {
     try {
-      const res = await fetch('/api/hr/leave-requests', {
-        method: 'PATCH',
+      const res = await fetch(`/api/hr/leave/${id}?action=${approve ? 'approve' : 'reject'}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status: approve ? 'APPROVED' : 'REJECTED' }),
+        body: JSON.stringify({}),
       })
       if (!res.ok) throw new Error()
       toast.success(approve ? 'Leave approved' : 'Leave rejected')

@@ -10,6 +10,8 @@ import { DashboardPageShell } from '@/components/dashboard/DashboardPageShell'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { RealtimeKPIDashboard } from '@/components/realtime/kpi-dashboard'
+import { RealtimeLiveActivityFeed } from '@/components/realtime/live-activity-feed'
 
 const CT = { fontSize: 12, borderRadius: 10, border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }
 import Link from 'next/link'
@@ -123,6 +125,16 @@ export default function FinanceDashboardPage() {
             <KPICard title="Unpaid Bills" value={formatCurrency(data!.unpaidSuppliers)} icon={VehicleTruckRegular} color="white" />
             <KPICard title="Cash in Bank" value={formatCurrency(data!.cashInBank)} icon={BuildingBankRegular} color="white" />
           </>}
+        </div>
+
+        {/* Row 2.5 — Live activity */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-1">
+            <RealtimeKPIDashboard />
+          </div>
+          <div className="lg:col-span-2">
+            <RealtimeLiveActivityFeed />
+          </div>
         </div>
 
         {/* Row 3 — Charts */}

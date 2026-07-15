@@ -25,11 +25,11 @@ export function ThemeToggle() {
     <button
       type="button"
       onClick={toggle}
-      className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-foreground hover:bg-muted rounded-md transition-colors duration-200"
+      title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className="p-2 rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors duration-200"
       aria-label="Toggle dark mode"
     >
-      {dark ? <WeatherSunnyRegular className="h-4 w-4" /> : <WeatherMoonRegular className="h-4 w-4" />}
-      {dark ? 'Light Mode' : 'Dark Mode'}
+      {dark ? <WeatherSunnyRegular className="h-5 w-5" /> : <WeatherMoonRegular className="h-5 w-5" />}
     </button>
   )
 }

@@ -13,7 +13,7 @@ export function MobileNav({ open, onClose, role }: MobileNavProps) {
   return (
     <Sheet open={open} onOpenChange={(v) => !v && onClose()}>
       <SheetContent side="left" className="p-0 w-64">
-        <Sidebar role={role} onClose={onClose} />
+        <Sidebar role={role} onClose={onClose} collapsible={false} />
       </SheetContent>
     </Sheet>
   )

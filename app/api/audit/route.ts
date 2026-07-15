@@ -41,5 +41,19 @@ export async function GET(req: NextRequest) {
     prisma.auditTrail.count({ where }),
   ])
 
-  return NextResponse.json({ logs, total, page, pageSize: PAGE_SIZE })
+  const parsedLogs = logs.map((log) => ({
+    ...log,
+    oldValues: log.oldValues ? safeJsonParse(log.oldValues) : null,
+    newValues: log.newValues ? safeJsonParse(log.newValues) : null,
+  }))
+
+  return NextResponse.json({ logs: parsedLogs, total, page, pageSize: PAGE_SIZE })
+}
+
+function safeJsonParse(value: string): unknown {
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
 }

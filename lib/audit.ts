@@ -22,8 +22,8 @@ export async function logAudit(params: {
         action: params.action,
         module: params.module,
         recordId: params.recordId,
-        oldValues: params.oldValues as never,
-        newValues: params.newValues as never,
+        oldValues: params.oldValues !== undefined ? JSON.stringify(params.oldValues) : null,
+        newValues: params.newValues !== undefined ? JSON.stringify(params.newValues) : null,
         ipAddress: params.ipAddress,
       },
     })

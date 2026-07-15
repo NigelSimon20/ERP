@@ -1441,6 +1441,20 @@ model Notification {
   @@map("notifications")
 }
 
+model Message {
+  id          String   @id
+  companyId   String
+  senderId    String
+  recipientId String
+  body        String   @db.Text
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  @@index([companyId, recipientId, read])
+  @@index([companyId, senderId, recipientId, createdAt])
+  @@map("messages")
+}
+
 model FileRecord {
   id String @id
   companyId String
@@ -1576,4 +1590,21 @@ model OccurrenceEntry {
   @@index([siteId])
   @@index([occurredAt])
   @@map("occurrence_entries")
+}
+
+// Stores the OAuth refresh token for a company's connected Google Drive
+// account, used by the Backup & Restore feature to sync exported backups.
+// One connection per company -- companyId is unique, not just indexed.
+model GoogleDriveConnection {
+  id                  String    @id
+  companyId           String    @unique
+  accessToken         String    @db.Text
+  refreshToken        String    @db.Text
+  expiresAt           DateTime
+  folderId            String?
+  connectedByUserId   String
+  connectedAt         DateTime  @default(now())
+  lastBackupAt        DateTime?
+
+  @@map("google_drive_connections")
 }

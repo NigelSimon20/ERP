@@ -248,14 +248,130 @@ function AccessControlTab() {
 }
 
 function BackupRestoreTab() {
+  const [downloading, setDownloading] = useState(false)
+  const [restoring, setRestoring] = useState(false)
+  const [preview, setPreview] = useState<{ file: File; counts: Record<string, number>; data: Record<string, unknown[]> } | null>(null)
+
+  const downloadBackup = async () => {
+    setDownloading(true)
+    try {
+      const res = await fetch('/api/settings/backup/export')
+      if (!res.ok) { const j = await res.json().catch(() => ({})); toast.error(j.error ?? 'Backup failed'); return }
+      const blob = await res.blob()
+      const disposition = res.headers.get('Content-Disposition') ?? ''
+      const match = disposition.match(/filename="(.+)"/)
+      const filename = match?.[1] ?? `ravenshield-backup-${new Date().toISOString().slice(0, 10)}.json`
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('Backup downloaded')
+    } catch {
+      toast.error('Network error downloading backup')
+    } finally {
+      setDownloading(false)
+    }
+  }
+
+  const handleFileSelected = async (file: File) => {
+    try {
+      const text = await file.text()
+      const parsed = JSON.parse(text)
+      if (!parsed || typeof parsed.data !== 'object') {
+        toast.error('Not a recognized Ravenshield backup file')
+        return
+      }
+      const res = await fetch('/api/settings/backup/restore?dryRun=1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: parsed.data }),
+      })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Could not read backup file'); return }
+      setPreview({ file, counts: json.counts, data: parsed.data })
+    } catch {
+      toast.error('Could not parse that file as JSON')
+    }
+  }
+
+  const confirmRestore = async () => {
+    if (!preview) return
+    setRestoring(true)
+    try {
+      const res = await fetch('/api/settings/backup/restore', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: preview.data }),
+      })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Restore failed'); return }
+      const totalRestored = Object.values(json.results as Record<string, { restored: number; failed: number }>).reduce((sum, r) => sum + r.restored, 0)
+      const totalFailed = Object.values(json.results as Record<string, { restored: number; failed: number }>).reduce((sum, r) => sum + r.failed, 0)
+      toast.success(`Restored ${totalRestored} records${totalFailed ? ` (${totalFailed} failed)` : ''}`)
+      setPreview(null)
+    } catch {
+      toast.error('Network error during restore')
+    } finally {
+      setRestoring(false)
+    }
+  }
+
+  const nonZeroCounts = preview ? Object.entries(preview.counts).filter(([, n]) => n > 0) : []
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <p className="text-sm leading-6 text-slate-600">
-        Backup and restore tools help protect your company settings and stored configuration data.
+        Download a full backup of your company&apos;s data at any time, or restore from a previously downloaded backup file. Restoring never deletes existing records — it only adds or updates.
       </p>
-      <div className="rounded-2xl border border-slate-200 bg-card p-6">
-        <div className="text-sm font-medium text-slate-900">Backup & restore placeholder</div>
-        <p className="mt-2 text-sm text-slate-500">Download backups, schedule restores, and keep company configuration data safe.</p>
+
+      <div className="rounded-2xl border border-slate-200 bg-card p-6 space-y-3">
+        <div className="text-sm font-medium text-slate-900">Local backup</div>
+        <p className="text-sm text-slate-500">Download every table in your company&apos;s data as a single JSON file.</p>
+        <button type="button" disabled={downloading} onClick={downloadBackup} className="btn btn-primary">
+          {downloading ? 'Preparing…' : 'Download Backup Now'}
+        </button>
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-card p-6 space-y-3">
+        <div className="text-sm font-medium text-slate-900">Restore from file</div>
+        <p className="text-sm text-slate-500">Choose a Ravenshield backup JSON file. You&apos;ll see a preview of what will be restored before anything is written.</p>
+        <input
+          type="file"
+          accept="application/json"
+          onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelected(f) }}
+          className="text-sm text-slate-600 file:mr-3 file:rounded-full file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+        />
+
+        {preview && (
+          <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+            <p className="text-sm font-medium text-slate-900">Ready to restore from &quot;{preview.file.name}&quot;</p>
+            <div className="max-h-48 overflow-y-auto text-sm text-slate-600 grid grid-cols-2 gap-x-6 gap-y-1">
+              {nonZeroCounts.length === 0
+                ? <p className="col-span-2 text-slate-500">No recognized records found in this file.</p>
+                : nonZeroCounts.map(([table, count]) => (
+                  <div key={table} className="flex justify-between">
+                    <span>{table}</span>
+                    <span className="font-medium text-slate-900">{count}</span>
+                  </div>
+                ))}
+            </div>
+            <div className="flex gap-2">
+              <button type="button" disabled={restoring || nonZeroCounts.length === 0} onClick={confirmRestore} className="btn btn-primary">
+                {restoring ? 'Restoring…' : 'Confirm Restore'}
+              </button>
+              <button type="button" disabled={restoring} onClick={() => setPreview(null)} className="rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 bg-card p-6 space-y-2">
+        <div className="text-sm font-medium text-slate-900">Google Drive sync</div>
+        <p className="text-sm text-slate-500">Not connected yet — Google Drive backup sync is being set up and will appear here once configured.</p>
       </div>
     </div>
   )

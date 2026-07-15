@@ -63,12 +63,12 @@ export function SearchPalette() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex items-center gap-2 px-3 py-1.5 text-sm text-muted-foreground bg-muted rounded-lg hover:bg-muted/70 transition-colors"
+        className="flex items-center gap-2 w-full max-w-xs px-3 py-1.5 text-sm text-muted-foreground bg-muted rounded-lg hover:bg-muted/70 transition-colors"
         aria-label="Search (Ctrl+K)"
       >
-        <SearchRegular className="h-4 w-4" />
-        <span className="hidden sm:inline">Search…</span>
-        <kbd className="hidden sm:inline text-[10px] bg-card border border-border rounded px-1 py-0.5 font-mono">⌃K</kbd>
+        <SearchRegular className="h-4 w-4 flex-shrink-0" />
+        <span className="hidden sm:inline truncate">Search anything…</span>
+        <kbd className="hidden sm:inline ml-auto text-[10px] bg-card border border-border rounded px-1 py-0.5 font-mono flex-shrink-0">⌘K</kbd>
       </button>
     )
   }

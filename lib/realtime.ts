@@ -106,12 +106,12 @@ export async function subscribeToFinancialUpdates(
   callback: ChangeCallback
 ) {
   const tables = [
-    'salesInvoice',
-    'purchaseInvoice',
-    'payment',
-    'customer',
-    'supplier',
-    'bankAccount',
+    'sales_invoices',
+    'purchase_invoices',
+    'payments',
+    'customers',
+    'suppliers',
+    'bank_accounts',
   ]
 
   const channels = await Promise.all(
@@ -134,7 +134,7 @@ export async function subscribeToHRUpdates(
   companyId: string,
   callback: ChangeCallback
 ) {
-  const tables = ['payroll', 'attendance', 'leaveRequest']
+  const tables = ['payroll_runs', 'attendance', 'leave_requests']
 
   const channels = await Promise.all(
     tables.map(table =>
@@ -155,7 +155,7 @@ export async function subscribeToOperationsUpdates(
   companyId: string,
   callback: ChangeCallback
 ) {
-  const tables = ['deployment', 'site', 'equipment']
+  const tables = ['deployments', 'sites', 'equipment']
 
   const channels = await Promise.all(
     tables.map(table =>
