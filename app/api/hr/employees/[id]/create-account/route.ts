@@ -8,6 +8,7 @@ import { logAudit } from '@/lib/audit'
 import crypto from 'crypto'
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER']
+const ELEVATED_ROLES = ['SUPER_ADMIN', 'ADMIN']
 
 function generateSecurePassword(): string {
   // 12 chars: uppercase + lowercase + digit + symbol
@@ -61,6 +62,9 @@ export async function POST(
   // Parse optional overrides from body
   const body = await req.json().catch(() => ({}))
   const role: string = body.role ?? 'GUARD'
+  if (ELEVATED_ROLES.includes(role) && !ELEVATED_ROLES.includes(session.role)) {
+    return NextResponse.json({ error: 'Only Admin or Super Admin can grant that role' }, { status: 403 })
+  }
   const emailRaw: string | undefined = body.email ?? guard.email ?? undefined
 
   if (!emailRaw) {

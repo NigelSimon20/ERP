@@ -30,6 +30,25 @@ const STATUS_STYLES: Record<string, string> = { Active: 'bg-green-100 text-green
 const DEPARTMENTS = ['Operations', 'Finance', 'Business Development', 'HR', 'Admin']
 const RANKS = ['Guard', 'Senior Guard', 'Supervisor', 'Team Leader', 'Manager', 'Admin']
 
+const ROLE_OPTIONS = ['SUPER_ADMIN', 'ADMIN', 'FINANCE_MANAGER', 'OPERATIONS_MANAGER', 'HR_MANAGER', 'BD_MANAGER', 'STAFF', 'GUARD', 'READ_ONLY']
+const ROLE_LABELS: Record<string, string> = {
+  SUPER_ADMIN: 'Super Admin', ADMIN: 'Admin', FINANCE_MANAGER: 'Finance Manager', OPERATIONS_MANAGER: 'Operations Manager',
+  HR_MANAGER: 'HR Manager', BD_MANAGER: 'Business Dev. Manager', STAFF: 'Staff', GUARD: 'Guard', READ_ONLY: 'Read Only',
+}
+const DEPARTMENT_MANAGER_ROLE: Record<string, string> = {
+  Operations: 'OPERATIONS_MANAGER', Finance: 'FINANCE_MANAGER', HR: 'HR_MANAGER', 'Business Development': 'BD_MANAGER', Admin: 'ADMIN',
+}
+
+// Portal-only ranks (Guard/Senior Guard/Team Leader) always default to GUARD — department alone
+// must never silently grant module-manager access. Only an employee explicitly ranked Manager
+// (or Supervisor, one step down) gets a department-scoped elevated default, and it's still just
+// a pre-fill: the admin picks the final role in the dialog before the account is created.
+function defaultRoleFor(g: Guard): string {
+  if (g.rank === 'Manager') return DEPARTMENT_MANAGER_ROLE[g.department ?? ''] ?? 'STAFF'
+  if (g.rank === 'Supervisor') return 'STAFF'
+  return 'GUARD'
+}
+
 export default function EmployeesPage() {
   const [guards, setGuards] = useState<Guard[]>([])
   const [loading, setLoading] = useState(true)
@@ -40,6 +59,8 @@ export default function EmployeesPage() {
   const [editing, setEditing] = useState<Guard | null>(null)
   const [credentials, setCredentials] = useState<CredentialsData | null>(null)
   const [creatingAccount, setCreatingAccount] = useState<string | null>(null)
+  const [accountTarget, setAccountTarget] = useState<Guard | null>(null)
+  const [accountRole, setAccountRole] = useState('GUARD')
 
   const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<FormValues>({
     defaultValues: { name: '', idNumber: '', phone: '', email: '', address: '', department: '', position: '', rank: 'Guard', dailyRate: '', status: 'Active', dateOfBirth: '', dateHired: '', whatsapp: '' },
@@ -94,18 +115,25 @@ export default function EmployeesPage() {
     toast.success('Employee deleted'); fetchGuards()
   }
 
-  async function createAccount(g: Guard) {
-    if (creatingAccount) return
+  function openAccountDialog(g: Guard) {
+    setAccountRole(defaultRoleFor(g))
+    setAccountTarget(g)
+  }
+
+  async function createAccount() {
+    const g = accountTarget
+    if (!g || creatingAccount) return
     setCreatingAccount(g.id)
     try {
       const res = await fetch(`/api/hr/employees/${g.id}/create-account`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ role: 'GUARD' }),
+        body: JSON.stringify({ role: accountRole }),
       })
       const json = await res.json()
       if (!res.ok) { toast.error(json.error ?? 'Failed to create account'); return }
       toast.success('Login account created!')
+      setAccountTarget(null)
       setCredentials({
         guardId: g.id,
         guardName: g.name,
@@ -240,7 +268,7 @@ Please change your password on first login.
                     <td className="px-4 py-3">
                       <button
                         type="button"
-                        onClick={() => createAccount(g)}
+                        onClick={() => openAccountDialog(g)}
                         disabled={creatingAccount === g.id}
                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white text-xs font-semibold transition-colors disabled:opacity-50"
                         title="Create login account for this employee"
@@ -320,6 +348,38 @@ Please change your password on first login.
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Create Account — role picker */}
+      {accountTarget && (
+        <Dialog open onOpenChange={(open) => !open && setAccountTarget(null)}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Create Login Account</DialogTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">For {accountTarget.name} ({accountTarget.department ?? 'no department'})</p>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-1.5">
+                <Label>Role</Label>
+                <Select value={accountRole} onValueChange={setAccountRole}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{ROLE_OPTIONS.map(r => <SelectItem key={r} value={r}>{ROLE_LABELS[r]}</SelectItem>)}</SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  {accountRole === 'GUARD'
+                    ? 'Guard portal access only.'
+                    : `Full access to the ${ROLE_LABELS[accountRole]} dashboard and module, in addition to portal access.`}
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAccountTarget(null)}>Cancel</Button>
+              <Button type="button" disabled={creatingAccount === accountTarget.id} onClick={createAccount} className="bg-primary hover:bg-brand-red-dark text-white">
+                {creatingAccount === accountTarget.id ? 'Creating…' : 'Create Account'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Credentials Delivery Modal */}
       {credentials && (
