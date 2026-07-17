@@ -13,8 +13,8 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { AddRegular, ArrowDownloadRegular, ChatRegular, CopyRegular, DeleteRegular, EditRegular, KeyRegular, MailRegular, PeopleRegular, PersonAddRegular, PrintRegular } from '@fluentui/react-icons';
 
-interface Guard { id: string; employeeNumber: string; name: string; idNumber: string | null; phone: string | null; email: string | null; department: string | null; rank: string | null; status: string; hourlyRate: number; dateHired: string | null; whatsapp: string | null }
-type FormValues = { name: string; idNumber: string; phone: string; email: string; address: string; department: string; position: string; rank: string; hourlyRate: string; status: string; dateOfBirth: string; dateHired: string; whatsapp: string }
+interface Guard { id: string; employeeNumber: string; name: string; idNumber: string | null; phone: string | null; email: string | null; department: string | null; rank: string | null; status: string; dailyRate: number; dateHired: string | null; whatsapp: string | null }
+type FormValues = { name: string; idNumber: string; phone: string; email: string; address: string; department: string; position: string; rank: string; dailyRate: string; status: string; dateOfBirth: string; dateHired: string; whatsapp: string }
 
 interface CredentialsData {
   guardId: string
@@ -26,9 +26,9 @@ interface CredentialsData {
   role: string
 }
 
-const STATUS_STYLES: Record<string, string> = { ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', INACTIVE: 'bg-muted text-muted-foreground', SUSPENDED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', TERMINATED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
-const DEPARTMENTS = ['Security', 'Operations', 'Administration', 'Management', 'Support']
-const RANKS = ['Guard', 'Senior Guard', 'Supervisor', 'Team Leader', 'Manager']
+const STATUS_STYLES: Record<string, string> = { Active: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', Resigned: 'bg-muted text-muted-foreground', Blacklisted: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', Terminated: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const DEPARTMENTS = ['Operations', 'Finance', 'Business Development', 'HR', 'Admin']
+const RANKS = ['Guard', 'Senior Guard', 'Supervisor', 'Team Leader', 'Manager', 'Admin']
 
 export default function EmployeesPage() {
   const [guards, setGuards] = useState<Guard[]>([])
@@ -42,7 +42,7 @@ export default function EmployeesPage() {
   const [creatingAccount, setCreatingAccount] = useState<string | null>(null)
 
   const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<FormValues>({
-    defaultValues: { name: '', idNumber: '', phone: '', email: '', address: '', department: '', position: '', rank: 'Guard', hourlyRate: '', status: 'ACTIVE', dateOfBirth: '', dateHired: '', whatsapp: '' },
+    defaultValues: { name: '', idNumber: '', phone: '', email: '', address: '', department: '', position: '', rank: 'Guard', dailyRate: '', status: 'Active', dateOfBirth: '', dateHired: '', whatsapp: '' },
   })
 
   async function fetchGuards() {
@@ -66,20 +66,20 @@ export default function EmployeesPage() {
 
   function openCreate() {
     setEditing(null)
-    reset({ name: '', idNumber: '', phone: '', email: '', address: '', department: '', position: '', rank: 'Guard', hourlyRate: '', status: 'ACTIVE', dateOfBirth: '', dateHired: new Date().toISOString().split('T')[0], whatsapp: '' })
+    reset({ name: '', idNumber: '', phone: '', email: '', address: '', department: '', position: '', rank: 'Guard', dailyRate: '', status: 'Active', dateOfBirth: '', dateHired: new Date().toISOString().split('T')[0], whatsapp: '' })
     setShowDialog(true)
   }
 
   function openEdit(g: Guard) {
     setEditing(g)
-    reset({ name: g.name, idNumber: g.idNumber ?? '', phone: g.phone ?? '', email: g.email ?? '', address: '', department: g.department ?? '', position: '', rank: g.rank ?? 'Guard', hourlyRate: String(Number(g.hourlyRate)), status: g.status, dateOfBirth: '', dateHired: g.dateHired?.split('T')[0] ?? '', whatsapp: g.whatsapp ?? '' })
+    reset({ name: g.name, idNumber: g.idNumber ?? '', phone: g.phone ?? '', email: g.email ?? '', address: '', department: g.department ?? '', position: '', rank: g.rank ?? 'Guard', dailyRate: String(Number(g.dailyRate)), status: g.status, dateOfBirth: '', dateHired: g.dateHired?.split('T')[0] ?? '', whatsapp: g.whatsapp ?? '' })
     setShowDialog(true)
   }
 
   async function onSubmit(data: FormValues) {
     const url = editing ? `/api/hr/employees/${editing.id}` : '/api/hr/employees'
     const method = editing ? 'PUT' : 'POST'
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, hourlyRate: Number(data.hourlyRate) || 0 }) })
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, dailyRate: Number(data.dailyRate) || 0 }) })
     const json = await res.json()
     if (!res.ok) { toast.error(json.error); return }
     toast.success(editing ? 'Employee updated' : `Employee created — ${json.guard?.employeeNumber}`)
@@ -167,8 +167,8 @@ Please change your password on first login.
 
   function exportCsv() {
     const rows = [
-      ['Emp#', 'Name', 'ID Number', 'Phone', 'Rank', 'Department', 'Status', 'Hourly Rate', 'Date Hired'],
-      ...guards.map(g => [g.employeeNumber, g.name, g.idNumber ?? '', g.phone ?? '', g.rank ?? '', g.department ?? '', g.status, Number(g.hourlyRate).toFixed(2), g.dateHired ? formatDate(new Date(g.dateHired)) : '']),
+      ['Emp#', 'Name', 'ID Number', 'Phone', 'Rank', 'Department', 'Status', 'Daily Rate', 'Date Hired'],
+      ...guards.map(g => [g.employeeNumber, g.name, g.idNumber ?? '', g.phone ?? '', g.rank ?? '', g.department ?? '', g.status, Number(g.dailyRate).toFixed(2), g.dateHired ? formatDate(new Date(g.dateHired)) : '']),
     ]
     const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
     const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `employees-${new Date().toISOString().split('T')[0]}.csv`; a.click()
@@ -189,10 +189,10 @@ Please change your password on first login.
           <SelectTrigger className="w-36"><SelectValue placeholder="All statuses" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="">All statuses</SelectItem>
-            <SelectItem value="ACTIVE">Active</SelectItem>
-            <SelectItem value="INACTIVE">Inactive</SelectItem>
-            <SelectItem value="SUSPENDED">Suspended</SelectItem>
-            <SelectItem value="TERMINATED">Terminated</SelectItem>
+            <SelectItem value="Active">Active</SelectItem>
+            <SelectItem value="Resigned">Resigned</SelectItem>
+            <SelectItem value="Terminated">Terminated</SelectItem>
+            <SelectItem value="Blacklisted">Blacklisted</SelectItem>
           </SelectContent>
         </Select>
         <Select value={filterDept} onValueChange={setFilterDept}>
@@ -221,7 +221,7 @@ Please change your password on first login.
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Rank</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Department</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Hourly Rate</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Daily Rate</th>
                   <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Account</th>
                   <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
                 </tr>
@@ -236,7 +236,7 @@ Please change your password on first login.
                     <td className="px-4 py-3 text-muted-foreground text-xs">{g.rank ?? '—'}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{g.department ?? '—'}</td>
                     <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[g.status] ?? 'bg-muted text-muted-foreground'}`}>{g.status}</span></td>
-                    <td className="px-4 py-3 text-right text-foreground">{formatCurrency(Number(g.hourlyRate))}/hr</td>
+                    <td className="px-4 py-3 text-right text-foreground">{formatCurrency(Number(g.dailyRate))}/day</td>
                     <td className="px-4 py-3">
                       <button
                         type="button"
@@ -300,15 +300,15 @@ Please change your password on first login.
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ACTIVE">Active</SelectItem>
-                      <SelectItem value="INACTIVE">Inactive</SelectItem>
-                      <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                      <SelectItem value="TERMINATED">Terminated</SelectItem>
+                      <SelectItem value="Active">Active</SelectItem>
+                      <SelectItem value="Resigned">Resigned</SelectItem>
+                      <SelectItem value="Terminated">Terminated</SelectItem>
+                      <SelectItem value="Blacklisted">Blacklisted</SelectItem>
                     </SelectContent>
                   </Select>
                 )} />
               </div>
-              <div className="space-y-1.5"><Label>Hourly Rate *</Label><Input type="number" step="0.01" min="0" placeholder="0.00" {...register('hourlyRate', { required: true })} /></div>
+              <div className="space-y-1.5"><Label>Daily Rate *</Label><Input type="number" step="0.01" min="0" placeholder="0.00" {...register('dailyRate', { required: true })} /></div>
               <div className="space-y-1.5"><Label>Date of Birth</Label><Input type="date" {...register('dateOfBirth')} /></div>
               <div className="space-y-1.5"><Label>Date Hired</Label><Input type="date" {...register('dateHired')} /></div>
               <div className="col-span-2 space-y-1.5"><Label>Address</Label><Input placeholder="Residential address" {...register('address')} /></div>

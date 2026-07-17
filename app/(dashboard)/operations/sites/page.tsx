@@ -9,18 +9,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { AddRegular, ChevronDownRegular, ChevronRightRegular, DeleteRegular, EditRegular, LocationRegular } from '@fluentui/react-icons';
 
 interface Site {
   id: string; name: string; address: string | null; guardsRequired: number
-  contractValue: number | null; contractStart: string | null; contractEnd: string | null
+  contractStart: string | null; contractEnd: string | null
   status: string; activeDeploymentCount: number; customerName: string | null; customerId: string | null
   deployments?: { id: string; guard: { name: string; employeeNumber: string }; shift: string; startDate: string }[]
 }
 interface Customer { id: string; name: string }
-type FormValues = { name: string; customerId: string; address: string; guardsRequired: string; contractValue: string; contractStart: string; contractEnd: string; status: string }
+type FormValues = { name: string; customerId: string; address: string; guardsRequired: string; contractStart: string; contractEnd: string; status: string }
 
 const CONTRACT_EXPIRY_WARN_DAYS = 30
 
@@ -40,7 +40,7 @@ export default function SitesPage() {
   const [expandedDeployments, setExpandedDeployments] = useState<Site['deployments']>([])
 
   const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<FormValues>({
-    defaultValues: { name: '', customerId: '', address: '', guardsRequired: '1', contractValue: '', contractStart: '', contractEnd: '', status: 'ACTIVE' },
+    defaultValues: { name: '', customerId: '', address: '', guardsRequired: '1', contractStart: '', contractEnd: '', status: 'Active' },
   })
 
   async function fetchSites() {
@@ -64,10 +64,10 @@ export default function SitesPage() {
       .catch((err) => console.error(err))
   }, [])
 
-  function openCreate() { setEditing(null); reset({ name: '', customerId: '', address: '', guardsRequired: '1', contractValue: '', contractStart: '', contractEnd: '', status: 'ACTIVE' }); setShowDialog(true) }
+  function openCreate() { setEditing(null); reset({ name: '', customerId: '', address: '', guardsRequired: '1', contractStart: '', contractEnd: '', status: 'Active' }); setShowDialog(true) }
   function openEdit(s: Site) {
     setEditing(s)
-    reset({ name: s.name, customerId: s.customerId ?? '', address: s.address ?? '', guardsRequired: String(s.guardsRequired), contractValue: s.contractValue != null ? String(Number(s.contractValue)) : '', contractStart: s.contractStart?.split('T')[0] ?? '', contractEnd: s.contractEnd?.split('T')[0] ?? '', status: s.status })
+    reset({ name: s.name, customerId: s.customerId ?? '', address: s.address ?? '', guardsRequired: String(s.guardsRequired), contractStart: s.contractStart?.split('T')[0] ?? '', contractEnd: s.contractEnd?.split('T')[0] ?? '', status: s.status })
     setShowDialog(true)
   }
 
@@ -90,7 +90,7 @@ export default function SitesPage() {
     const method = editing ? 'PUT' : 'POST'
     const res = await fetch(url, {
       method, headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...data, guardsRequired: Number(data.guardsRequired), contractValue: data.contractValue ? Number(data.contractValue) : null, customerId: data.customerId || null, contractStart: data.contractStart || null, contractEnd: data.contractEnd || null }),
+      body: JSON.stringify({ ...data, guardsRequired: Number(data.guardsRequired), customerId: data.customerId || null, contractStart: data.contractStart || null, contractEnd: data.contractEnd || null }),
     })
     const json = await res.json()
     if (!res.ok) { toast.error(json.error); return }
@@ -133,7 +133,6 @@ export default function SitesPage() {
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Customer</th>
                   <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Guards Req.</th>
                   <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Active Deps.</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Contract Value</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Contract End</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
                   <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
@@ -152,10 +151,9 @@ export default function SitesPage() {
                       <td className="px-4 py-3 text-right">
                         <span className={`font-medium ${s.activeDeploymentCount >= s.guardsRequired ? 'text-green-600' : 'text-amber-600'}`}>{s.activeDeploymentCount}</span>
                       </td>
-                      <td className="px-4 py-3 text-right text-muted-foreground">{s.contractValue != null ? formatCurrency(Number(s.contractValue)) : '—'}</td>
                       <td className={`px-4 py-3 text-sm ${isExpiringSoon(s.contractEnd) ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-muted-foreground'}`}>{s.contractEnd ? formatDate(new Date(s.contractEnd)) : '—'}</td>
                       <td className="px-4 py-3">
-                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${s.status === 'ACTIVE' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>{s.status}</span>
+                        <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${s.status === 'Active' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-muted text-muted-foreground'}`}>{s.status}</span>
                       </td>
                       <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-1">
@@ -166,7 +164,7 @@ export default function SitesPage() {
                     </tr>
                     {expandedId === s.id && (
                       <tr key={`${s.id}-expanded`} className="bg-muted/50 border-b border-border">
-                        <td colSpan={9} className="px-8 py-3">
+                        <td colSpan={8} className="px-8 py-3">
                           <p className="text-xs font-semibold text-muted-foreground mb-2">Active Deployments</p>
                           {expandedDeployments?.length === 0 ? (
                             <p className="text-xs text-brand-muted-light">No active deployments at this site</p>
@@ -212,8 +210,7 @@ export default function SitesPage() {
               <div className="space-y-1.5"><Label>Guards Required</Label><Input type="number" min="1" {...register('guardsRequired')} /></div>
             </div>
             <div className="space-y-1.5"><Label>Address</Label><Input placeholder="Physical address" {...register('address')} /></div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1.5"><Label>Contract Value</Label><Input type="number" step="0.01" placeholder="0.00" {...register('contractValue')} /></div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5"><Label>Start Date</Label><Input type="date" {...register('contractStart')} /></div>
               <div className="space-y-1.5"><Label>End Date</Label><Input type="date" {...register('contractEnd')} /></div>
             </div>
@@ -222,7 +219,7 @@ export default function SitesPage() {
               <Controller control={control} name="status" render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="ACTIVE">Active</SelectItem><SelectItem value="INACTIVE">Inactive</SelectItem><SelectItem value="SUSPENDED">Suspended</SelectItem></SelectContent>
+                  <SelectContent><SelectItem value="Active">Active</SelectItem><SelectItem value="Terminated">Terminated</SelectItem></SelectContent>
                 </Select>
               )} />
             </div>

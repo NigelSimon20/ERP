@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { toSiteDto } from '@/lib/sites'
 import crypto from 'crypto'
 
 export async function GET() {
@@ -13,13 +14,15 @@ export async function GET() {
   const { } = session
 
   const sites = await prisma.site.findMany({ orderBy: { site_name: 'asc' } })
+  const activeCounts = await prisma.deployment.groupBy({
+    by: ['siteId'],
+    where: { siteId: { in: sites.map((s) => s.id) }, status: 'ACTIVE' },
+    _count: true,
+  })
+  const countBySite = new Map(activeCounts.map((c) => [c.siteId, c._count]))
 
   return NextResponse.json({
-    sites: sites.map((s) => ({
-      ...s,
-      customerName: s.customer_name ?? null,
-      activeDeploymentCount: 0,
-    })),
+    sites: sites.map((s) => toSiteDto(s, countBySite.get(s.id) ?? 0)),
   })
 }
 
@@ -29,7 +32,7 @@ export async function POST(req: NextRequest) {
 
   const { companyId, userId, name: userName } = session
   const body = await req.json()
-  const { name, customerId, address, guardsRequired, contractValue, contractStart, contractEnd, status, billingRateDay, billingRateNight } = body
+  const { name, customerId, address, guardsRequired, contractStart, contractEnd, status, billingRateDay, billingRateNight } = body
 
   if (!name) return NextResponse.json({ error: 'Site name is required' }, { status: 400 })
 
@@ -46,7 +49,7 @@ export async function POST(req: NextRequest) {
       day_shift_required: Number(guardsRequired) || 1,
       contract_start_date: contractStart || null,
       contract_end_date: contractEnd || null,
-      status: status || 'ACTIVE',
+      status: status || 'Active',
       billing_rate_day: billingRateDay !== undefined ? Number(billingRateDay) : null,
       billing_rate_night: billingRateNight !== undefined ? Number(billingRateNight) : null,
     },
@@ -54,5 +57,5 @@ export async function POST(req: NextRequest) {
 
   await logAudit({ companyId, userId, userName, action: 'CREATE', module: 'Site', recordId: site.id, newValues: site })
 
-  return NextResponse.json({ site }, { status: 201 })
+  return NextResponse.json({ site: toSiteDto(site) }, { status: 201 })
 }

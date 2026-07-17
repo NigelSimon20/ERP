@@ -10,6 +10,7 @@ export interface GuardDto {
   address: string | null
   department: string | null
   position: string | null
+  rank: string | null
   status: string | null
   dailyRate: number | null
   dateOfBirth: string | null
@@ -27,6 +28,7 @@ export function toGuardDto(guard: Guard): GuardDto {
     address: guard.address,
     department: guard.department,
     position: guard.position,
+    rank: guard.employee_type,
     status: guard.status,
     dailyRate: guard.daily_rate,
     dateOfBirth: guard.date_of_birth,

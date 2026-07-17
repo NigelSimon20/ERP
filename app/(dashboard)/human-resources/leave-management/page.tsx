@@ -21,7 +21,7 @@ type RejectForm = { rejectionNote: string }
 
 const STATUS_TABS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED']
 const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
-const LEAVE_TYPES = ['ANNUAL', 'SICK', 'MATERNITY', 'PATERNITY', 'UNPAID', 'COMPASSIONATE', 'STUDY']
+const LEAVE_TYPES = ['ANNUAL', 'SICK', 'MATERNITY', 'PATERNITY', 'UNPAID', 'COMPASSIONATE', 'STUDY', 'CASH_IN_LIEU']
 
 export default function LeaveManagementPage() {
   const [requests, setRequests] = useState<LeaveRequest[]>([])

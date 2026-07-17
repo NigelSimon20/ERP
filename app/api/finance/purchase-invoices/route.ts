@@ -61,6 +61,7 @@ export async function GET(req: NextRequest) {
     invoices: invoices.map((i) => ({
       id: i.id,
       billNumber: i.invoiceNumber,
+      reference: i.reference,
       issueDate: i.issueDate,
       dueDate: i.dueDate,
       totalAmount: Number(i.totalAmount),
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { supplierId, issueDate, dueDate, description, lineItems, notes } = body
+  const { supplierId, issueDate, dueDate, description, lineItems, notes, reference } = body
   const { companyId } = session
 
   if (!supplierId || !issueDate || !dueDate) return NextResponse.json({ error: 'supplierId, issueDate, dueDate required' }, { status: 400 })
@@ -119,6 +120,7 @@ export async function POST(req: NextRequest) {
           companyId,
           supplierId,
           invoiceNumber: billNumber,
+          reference: reference || null,
           issueDate: issue,
           dueDate: due,
           notes: description || notes || null,
@@ -167,6 +169,7 @@ export async function POST(req: NextRequest) {
       invoice: {
         id: invoice.id,
         billNumber: invoice.invoiceNumber,
+        reference: invoice.reference,
         issueDate: invoice.issueDate,
         dueDate: invoice.dueDate,
         totalAmount: Number(invoice.totalAmount),

@@ -8,7 +8,7 @@ import { z } from 'zod'
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
   type: z.enum(['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE']).optional(),
-  parentId: z.string().uuid().nullable().optional(),
+  parentId: z.string().min(1).nullable().optional(),
   active: z.boolean().optional(),
 })
 

@@ -300,6 +300,8 @@ enum LeaveType {
   PATERNITY
   COMPASSIONATE
   UNPAID
+  STUDY
+  CASH_IN_LIEU
 }
 
 enum LeaveStatus {
@@ -848,6 +850,7 @@ model PurchaseInvoice {
   companyId    String
   supplierId   String
   invoiceNumber String  @unique
+  reference    String?
   issueDate    DateTime
   dueDate      DateTime
   subtotal     Float

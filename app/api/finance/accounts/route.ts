@@ -9,7 +9,7 @@ const accountSchema = z.object({
   accountCode: z.string().min(1, 'Code required'),
   name: z.string().min(1, 'Name required'),
   type: z.enum(['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE']),
-  parentId: z.string().uuid().optional().nullable(),
+  parentId: z.string().min(1).optional().nullable(),
   active: z.boolean().default(true),
 })
 

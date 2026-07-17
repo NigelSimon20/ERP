@@ -13,11 +13,11 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { AddRegular, DeleteRegular, DocumentRegular, PaymentRegular, ProhibitedRegular } from '@fluentui/react-icons';
 
-interface Invoice { id: string; billNumber: string; issueDate: string; dueDate: string; totalAmount: number; paidAmount: number; balanceDue: number; status: string; supplier: { id: string; name: string } }
+interface Invoice { id: string; billNumber: string; reference: string | null; issueDate: string; dueDate: string; totalAmount: number; paidAmount: number; balanceDue: number; status: string; supplier: { id: string; name: string } }
 interface Supplier { id: string; name: string }
 interface BankAccount { id: string; bankName: string; accountNumber: string }
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
-type InvoiceForm = { supplierId: string; issueDate: string; dueDate: string; description: string; lineItems: LineItem[] }
+type InvoiceForm = { supplierId: string; reference: string; issueDate: string; dueDate: string; description: string; lineItems: LineItem[] }
 type PaymentForm = { bankAccountId: string; amount: string; paymentDate: string; notes: string }
 
 const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-foreground', UNPAID: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', PARTIAL: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', VOID: 'bg-muted text-brand-muted-light' }
@@ -38,7 +38,7 @@ export default function PurchaseInvoicesPage() {
   const [paymentTarget, setPaymentTarget] = useState<Invoice | null>(null)
 
   const { register: invReg, handleSubmit: invSubmit, control: invCtrl, reset: invReset, formState: { isSubmitting: invSubmitting } } = useForm<InvoiceForm>({
-    defaultValues: { supplierId: '', issueDate: '', dueDate: '', description: '', lineItems: [BLANK_LINE] },
+    defaultValues: { supplierId: '', reference: '', issueDate: '', dueDate: '', description: '', lineItems: [BLANK_LINE] },
   })
   const { fields, append, remove } = useFieldArray({ control: invCtrl, name: 'lineItems' })
   const watchedItems = useWatch({ control: invCtrl, name: 'lineItems' }) ?? []
@@ -135,6 +135,7 @@ export default function PurchaseInvoicesPage() {
               <thead className="bg-muted/50 border-b border-border">
                 <tr>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Bill #</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Reference</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Supplier</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Issue Date</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Due Date</th>
@@ -149,6 +150,7 @@ export default function PurchaseInvoicesPage() {
                 {invoices.map((inv) => (
                   <tr key={inv.id} className={`hover:bg-muted/50 ${inv.status === 'OVERDUE' ? 'bg-red-50/30' : ''}`}>
                     <td className="px-4 py-3 font-mono text-xs text-primary font-semibold">{inv.billNumber}</td>
+                    <td className="px-4 py-3 text-muted-foreground text-xs">{inv.reference ?? '—'}</td>
                     <td className="px-4 py-3 font-medium text-foreground">{inv.supplier?.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{formatDate(new Date(inv.issueDate))}</td>
                     <td className="px-4 py-3 text-muted-foreground">{formatDate(new Date(inv.dueDate))}</td>
@@ -189,6 +191,7 @@ export default function PurchaseInvoicesPage() {
                   </Select>
                 )} />
               </div>
+              <div className="space-y-1.5"><Label>Reference</Label><Input placeholder="Supplier reference #" {...invReg('reference')} /></div>
               <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Bill description" {...invReg('description')} /></div>
               <div className="space-y-1.5"><Label>Issue Date *</Label><Input type="date" {...invReg('issueDate', { required: true })} /></div>
               <div className="space-y-1.5"><Label>Due Date *</Label><Input type="date" {...invReg('dueDate', { required: true })} /></div>

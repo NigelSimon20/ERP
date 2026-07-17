@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { toSiteDto } from '@/lib/sites'
 import crypto from 'crypto'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -11,9 +12,23 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const site = await prisma.site.findUnique({ where: { id: params.id } })
-
   if (!site) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ site })
+
+  const deployments = await prisma.deployment.findMany({ where: { siteId: params.id, status: 'ACTIVE' } })
+  const guards = await prisma.guard.findMany({ where: { id: { in: deployments.map((d) => d.guardId) } } })
+  const guardById = new Map(guards.map((g) => [g.id, g]))
+
+  return NextResponse.json({
+    site: {
+      ...toSiteDto(site, deployments.length),
+      deployments: deployments.map((d) => ({
+        id: d.id,
+        guard: { name: guardById.get(d.guardId)?.full_name ?? null, employeeNumber: guardById.get(d.guardId)?.employee_code ?? null },
+        shift: d.shiftType,
+        startDate: d.startDate,
+      })),
+    },
+  })
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
@@ -25,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
-  const { name, customerId, address, guardsRequired, contractValue, contractStart, contractEnd, status } = body
+  const { name, customerId, address, guardsRequired, contractStart, contractEnd, status } = body
 
   if (contractStart && contractEnd && new Date(contractEnd) <= new Date(contractStart)) {
     return NextResponse.json({ error: 'Contract end must be after start' }, { status: 400 })
@@ -44,7 +59,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   })
 
   await logAudit({ companyId, userId, userName, action: 'UPDATE', module: 'Site', recordId: site.id, oldValues: existing, newValues: site })
-  return NextResponse.json({ site })
+  return NextResponse.json({ site: toSiteDto(site) })
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {

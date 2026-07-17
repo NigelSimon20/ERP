@@ -8,8 +8,8 @@ import { calculateTransferImpact, calculateNewBankBalance } from '@/lib/calculat
 import { z } from 'zod'
 
 const transferSchema = z.object({
-  fromAccountId: z.string().uuid(),
-  toAccountId: z.string().uuid(),
+  fromAccountId: z.string().min(1),
+  toAccountId: z.string().min(1),
   amount: z.coerce.number().positive('Amount must be greater than 0'),
   date: z.string(),
   notes: z.string().optional(),

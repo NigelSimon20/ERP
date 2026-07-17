@@ -16,11 +16,11 @@ import { recalculateSupplierOutstandingBalance } from '@/lib/finance-recalculati
 import { z } from 'zod'
 
 const paymentSchema = z.object({
-  bankAccountId: z.string().uuid(),
+  bankAccountId: z.string().min(1),
   amount: z.coerce.number().positive('Amount must be greater than 0'),
   paymentDate: z.string(),
   entityType: z.string().optional(),
-  entityId: z.string().uuid().optional(),
+  entityId: z.string().min(1).optional(),
   notes: z.string().optional(),
   payee: z.string().optional(),
 })
