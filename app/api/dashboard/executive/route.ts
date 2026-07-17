@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
 
 function monthKey(d: Date | string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
@@ -50,23 +51,23 @@ export async function GET() {
     guardsOnDutyToday, pendingTasks, overdueInvoices, lastPayroll,
     rawReceipts, rawPayments, incidentGroups, allActiveSites, recentActivity,
   ] = await Promise.all([
-    prisma.salesInvoice.aggregate({ where: { invoice_date: { gte: fiscalStart.toISOString().split('T')[0] }, status: { not: 'VOID' } }, _sum: { total_amount: true } }),
-    prisma.salesInvoice.aggregate({ where: { status: { in: ['UNPAID', 'PARTIAL', 'OVERDUE'] } }, _sum: { balance_due: true } }),
+    prisma.salesInvoice.aggregate({ where: { invoice_date: { gte: fiscalStart.toISOString().split('T')[0] }, status: { not: DB_STATUS_VOID } }, _sum: { total_amount: true } }),
+    prisma.salesInvoice.aggregate({ where: { status: { in: DB_STATUS_OUTSTANDING } }, _sum: { balance_due: true } }),
     prisma.payment.aggregate({ where: { payment_type: { not: 'Customer Receipt' }, payment_date: { gte: fiscalStart.toISOString().split('T')[0] } }, _sum: { amount: true } }),
     prisma.bankAccount.aggregate({ where: { is_active: true }, _sum: { current_balance: true } }),
-    prisma.guard.count({ where: { companyId, status: 'ACTIVE' } }),
-    prisma.site.count({ where: { status: 'ACTIVE' } }),
+    prisma.guard.count({ where: { companyId, status: 'Active' } }),
+    prisma.site.count({ where: { status: 'Active' } }),
     prisma.incident.count({ where: { status: { in: ['OPEN', 'INVESTIGATING'] } } }),
     prisma.incident.count({ where: { severity: 'CRITICAL', status: { not: 'CLOSED' } } }),
     prisma.attendance.count({ where: { guard: { companyId }, date: { gte: today, lt: todayEnd }, status: 'PRESENT' } }),
     prisma.task.count({ where: { companyId, status: { in: ['PENDING', 'IN_PROGRESS'] } } }),
-    prisma.salesInvoice.count({ where: { status: 'OVERDUE' } }),
+    prisma.salesInvoice.count({ where: { status: { in: DB_STATUS_OUTSTANDING }, due_date: { lt: now.toISOString() }, balance_due: { gt: 0 } } }),
     prisma.payrollRun.findFirst({ where: { companyId }, orderBy: { createdAt: 'desc' }, select: { totalNet: true, periodStart: true, periodEnd: true } }),
     prisma.payment.findMany({ where: { companyId, payment_type: 'Customer Receipt', payment_date: { gte: sixMonthsAgo.toISOString().split('T')[0] } }, select: { payment_date: true, amount: true } }),
     prisma.payment.findMany({ where: { payment_type: { not: 'Customer Receipt' }, payment_date: { gte: sixMonthsAgo.toISOString().split('T')[0] } }, select: { payment_date: true, amount: true } }),
     prisma.incident.groupBy({ by: ['severity'], _count: { _all: true } }),
     prisma.site.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'Active' },
       select: { id: true, site_name: true, status: true, billing_rate_day: true, billing_rate_night: true, day_shift_assigned: true, night_shift_assigned: true },
     }),
     prisma.auditTrail.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 10, select: { action: true, module: true, userName: true, createdAt: true, recordId: true } }),

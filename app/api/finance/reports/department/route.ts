@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
       select: { id: true },
     }),
     prisma.guard.findMany({
-      where: { companyId, status: 'ACTIVE', ...(department === 'All' ? {} : { department }) },
+      where: { companyId, status: 'Active', ...(department === 'All' ? {} : { department }) },
       select: { id: true },
     }),
   ])

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
 
 const NORMAL_DEBIT = ['ASSET', 'EXPENSE']
 function computeBalance(type: string, debit: number, credit: number) {
@@ -111,7 +112,7 @@ export async function GET(req: NextRequest) {
 
   if (type === 'TAX_SUMMARY') {
     const [salesAgg, purchaseAgg] = await Promise.all([
-      prisma.salesInvoice.aggregate({ where: { companyId, status: { not: 'VOID' }, invoice_date: { gte: startDate, lte: endDate } }, _sum: { tax_amount: true } }),
+      prisma.salesInvoice.aggregate({ where: { companyId, status: { not: DB_STATUS_VOID }, invoice_date: { gte: startDate, lte: endDate } }, _sum: { tax_amount: true } }),
       prisma.purchaseInvoice.aggregate({ where: { companyId, status: { not: 'VOID' }, issueDate: { gte: new Date(startDate), lte: new Date(endDate) } }, _sum: { taxAmount: true } }),
     ])
     const outputTax = Number(salesAgg._sum.tax_amount ?? 0)
@@ -128,7 +129,7 @@ export async function GET(req: NextRequest) {
   if (type === 'AGED_RECEIVABLES' || type === 'AGED_PAYABLES') {
     if (type === 'AGED_RECEIVABLES') {
       const customers = await prisma.customer.findMany({ where: { companyId } })
-      const invoices = await prisma.salesInvoice.findMany({ where: { companyId, status: { notIn: ['VOID', 'PAID'] } }, select: { customer_id: true, due_date: true, balance_due: true } })
+      const invoices = await prisma.salesInvoice.findMany({ where: { companyId, status: { in: DB_STATUS_OUTSTANDING } }, select: { customer_id: true, due_date: true, balance_due: true } })
       const byCustomer = new Map<string, typeof invoices>()
       for (const inv of invoices) {
         const cid = inv.customer_id ?? ''

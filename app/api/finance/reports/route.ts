@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { DB_STATUS_OUTSTANDING } from '@/lib/invoice-status'
 
 const NORMAL_DEBIT = ['ASSET', 'EXPENSE']
 
@@ -137,7 +138,7 @@ export async function GET(req: NextRequest) {
     const now = new Date()
     const customers = await prisma.customer.findMany({ where: { companyId } })
     const invoices = await prisma.salesInvoice.findMany({
-      where: { companyId, status: { notIn: ['VOID', 'PAID'] } as any },
+      where: { companyId, status: { in: DB_STATUS_OUTSTANDING } },
       select: { id: true, customer_id: true, due_date: true, balance_due: true },
     })
     const invoicesByCustomer = invoices.reduce((acc: Record<string, typeof invoices>, inv) => {

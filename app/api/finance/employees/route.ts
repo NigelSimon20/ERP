@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   if (fiscalStart > now) fiscalStart.setFullYear(fiscalStart.getFullYear() - 1)
 
   const guards = await prisma.guard.findMany({
-    where: { companyId, status: 'ACTIVE' },
+    where: { companyId, status: 'Active' },
     select: { id: true, employee_code: true, first_name: true, last_name: true, department: true, daily_rate: true },
     orderBy: { last_name: 'asc' },
   })
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   const ytdPayslips = await prisma.payslip.groupBy({
     by: ['employee_id'],
     where: {
-      status: 'PAID',
+      status: 'Approved',
       created_date: { gte: fiscalStart.toISOString().split('T')[0] },
     },
     _sum: { net_pay: true, total_earnings: true },
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
   // Most recent payslip amount
   const recentPayslips = await prisma.payslip.findMany({
-    where: { status: 'PAID' },
+    where: { status: 'Approved' },
     orderBy: { created_date: 'desc' },
     distinct: ['employee_id'],
     select: { employee_id: true, net_pay: true, created_date: true },

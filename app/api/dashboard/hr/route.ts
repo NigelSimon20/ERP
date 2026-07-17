@@ -31,8 +31,11 @@ export async function GET() {
     recentLeave, upcomingBirthdays,
   ] = await Promise.all([
     prisma.guard.count({ where: { companyId } }),
-    prisma.guard.count({ where: { companyId, status: 'ACTIVE' } }),
-    prisma.guard.count({ where: { companyId, status: 'SUSPENDED' } }),
+    prisma.guard.count({ where: { companyId, status: 'Active' } }),
+    // Real Guard.status has no "Suspended" value (only Active/Resigned/
+    // Terminated/Blacklisted) — Blacklisted is the closest equivalent
+    // "flagged" concept, unlike Resigned/Terminated which just mean departed.
+    prisma.guard.count({ where: { companyId, status: 'Blacklisted' } }),
     // hire_date is a free-text String column (not DateTime, and not
     // guaranteed to be in one consistent format given this data's import
     // history), so the month filter happens in JS after fetching — same
@@ -48,7 +51,7 @@ export async function GET() {
     prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: monthStart }, status: 'PRESENT' } }),
     prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: monthStart } } }),
     prisma.attendance.aggregate({ where: { guardId: { in: guardIds }, date: { gte: monthStart } }, _sum: { overtimeHours: true } }),
-    prisma.guard.groupBy({ by: ['department'], where: { companyId, status: 'ACTIVE', department: { not: null } }, _count: { _all: true } }),
+    prisma.guard.groupBy({ by: ['department'], where: { companyId, status: 'Active', department: { not: null } }, _count: { _all: true } }),
     prisma.leaveRequest.groupBy({ by: ['leaveType'], where: { companyId }, _count: { _all: true } }),
     prisma.leaveRequest.findMany({
       where: { companyId, status: 'PENDING' },
@@ -59,7 +62,7 @@ export async function GET() {
     prisma.guard.findMany({
       where: {
         companyId,
-        status: 'ACTIVE',
+        status: 'Active',
         date_of_birth: { not: null },
       },
       select: { id: true, full_name: true, date_of_birth: true, department: true },

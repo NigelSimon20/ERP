@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
 
 function monthKey(d: Date | string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
@@ -42,17 +43,17 @@ export async function GET() {
     invoicesDueSoon, recentReceipts,
     lowInventoryCount, paymentsAgg, debtorAgg,
   ] = await Promise.all([
-    prisma.salesInvoice.aggregate({ where: { companyId, status: { not: 'VOID' } }, _sum: { total_amount: true } }),
+    prisma.salesInvoice.aggregate({ where: { companyId, status: { not: DB_STATUS_VOID } }, _sum: { total_amount: true } }),
     prisma.payment.aggregate({ where: { companyId, payment_type: 'Customer Receipt', payment_date: { gte: fiscalStart.toISOString().split('T')[0] } }, _sum: { amount: true } }),
-    prisma.salesInvoice.aggregate({ where: { companyId, status: { in: ['UNPAID', 'PARTIAL', 'OVERDUE'] } }, _sum: { balance_due: true } }),
-    prisma.salesInvoice.aggregate({ where: { companyId, status: 'OVERDUE' }, _sum: { balance_due: true } }),
-    prisma.salesInvoice.count({ where: { companyId, status: 'OVERDUE' } }),
+    prisma.salesInvoice.aggregate({ where: { companyId, status: { in: DB_STATUS_OUTSTANDING } }, _sum: { balance_due: true } }),
+    prisma.salesInvoice.aggregate({ where: { companyId, status: { in: DB_STATUS_OUTSTANDING }, due_date: { lt: now.toISOString() }, balance_due: { gt: 0 } }, _sum: { balance_due: true } }),
+    prisma.salesInvoice.count({ where: { companyId, status: { in: DB_STATUS_OUTSTANDING }, due_date: { lt: now.toISOString() }, balance_due: { gt: 0 } } }),
     prisma.purchaseInvoice.aggregate({ where: { companyId, status: { not: 'PAID' } }, _sum: { balanceDue: true } }),
     prisma.payrollRun.findFirst({ where: { companyId }, orderBy: { createdAt: 'desc' }, select: { totalNet: true, periodStart: true, periodEnd: true } }),
     prisma.payment.findMany({ where: { companyId, payment_type: 'Customer Receipt', payment_date: { gte: sixMonthsAgo.toISOString().split('T')[0] } }, select: { payment_date: true, amount: true }, take: 100 }),
     prisma.bankAccount.findMany({ where: { companyId }, select: { id: true, bank_name: true, account_number: true, current_balance: true }, take: 10 }),
     prisma.salesInvoice.findMany({
-      where: { companyId, status: { in: ['UNPAID', 'PARTIAL'] }, due_date: { lte: sevenDaysOut.toISOString() } },
+      where: { companyId, status: { in: DB_STATUS_OUTSTANDING }, due_date: { lte: sevenDaysOut.toISOString() } },
       orderBy: { due_date: 'asc' },
       take: 10,
       select: { invoice_number: true, due_date: true, balance_due: true, customer_id: true },
@@ -62,7 +63,7 @@ export async function GET() {
     prisma.payment.aggregate({ where: { companyId, payment_type: { not: 'Customer Receipt' }, payment_date: { gte: fiscalStart.toISOString().split('T')[0] } }, _sum: { amount: true } }),
     prisma.salesInvoice.groupBy({
       by: ['customer_id'],
-      where: { companyId, status: { notIn: ['VOID', 'PAID'] } },
+      where: { companyId, status: { in: DB_STATUS_OUTSTANDING } },
       _sum: { balance_due: true },
       _min: { due_date: true },
     }),

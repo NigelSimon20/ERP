@@ -110,7 +110,9 @@ export async function POST(req: NextRequest) {
 
       // create posted journal entry and update GL
       const bankLedger = await tx.bankAccount.findUnique({ where: { id: data.bankAccountId }, select: { chart_account_id: true } }).catch(() => null)
-      const apAccount = await tx.chartOfAccount.findFirst({ where: { account_type: 'LIABILITY', account_name: { contains: 'Payable' }, companyId: session.companyId }, select: { id: true } }).catch(() => null)
+      // 'Payable' alone also matches unrelated liability accounts like "PAYE
+      // Payable" (payroll tax) - match the real control-account name specifically.
+      const apAccount = await tx.chartOfAccount.findFirst({ where: { account_type: 'LIABILITY', account_name: { contains: 'Accounts Payable' }, companyId: session.companyId }, select: { id: true } }).catch(() => null)
       if (bankLedger?.chart_account_id && apAccount) {
         const bankGLId = bankLedger.chart_account_id
         const je = await tx.journalEntry.create({
@@ -154,7 +156,7 @@ export async function POST(req: NextRequest) {
       }
 
       return { payment: p, newBankBalance, updatedInvoice, newInvoiceBalance, newInvoiceStatus }
-    })
+    }, { timeout: 15000 })
 
     await logAudit({
       companyId: session.companyId,

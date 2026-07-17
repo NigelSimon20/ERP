@@ -165,7 +165,10 @@ export async function POST(req: NextRequest) {
 
       // STEP e: Create Journal Entry (auto-POSTED) and update GL balances
       const bankLedger = await tx.bankAccount.findUnique({ where: { id: data.bankAccountId }, select: { chart_account_id: true } }).catch(() => null)
-      const arAccount = await tx.chartOfAccount.findFirst({ where: { account_type: 'ASSET', account_name: { contains: 'Receivable' }, companyId: session.companyId }, select: { id: true } }).catch(() => null)
+      // Match the real control-account name specifically, not just any
+      // ASSET account containing "Receivable" — same fragile-match class of
+      // bug found and fixed for the AP side in payments/route.ts.
+      const arAccount = await tx.chartOfAccount.findFirst({ where: { account_type: 'ASSET', account_name: { contains: 'Accounts Receivable' }, companyId: session.companyId }, select: { id: true } }).catch(() => null)
 
       if (bankLedger?.chart_account_id && arAccount) {
         const bankGLId = bankLedger.chart_account_id

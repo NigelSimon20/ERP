@@ -5,6 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { nextInvoiceNumber } from '@/lib/auto-numbers'
+import { toDbInvoiceStatus } from '@/lib/invoice-status'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -52,7 +53,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         customer_id: existing.customerId,
         invoice_date: new Date().toISOString().split('T')[0],
         due_date: dueDate.toISOString().split('T')[0],
-        status: 'UNPAID',
+        status: toDbInvoiceStatus('UNPAID'),
         subtotal: Number(existing.subtotal),
         tax_amount: Number(existing.tax),
         total_amount: Number(existing.total),

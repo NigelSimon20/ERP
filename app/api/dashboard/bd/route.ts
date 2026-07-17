@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { DB_STATUS_OUTSTANDING } from '@/lib/invoice-status'
 
 function monthKey(d: Date | string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
@@ -39,7 +40,7 @@ export async function GET() {
     // the executive dashboard: monthly billing estimated from real
     // billing-rate + shift-assignment columns.
     prisma.site.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'Active' },
       select: { billing_rate_day: true, billing_rate_night: true, day_shift_assigned: true, night_shift_assigned: true },
     }),
     prisma.lead.groupBy({ by: ['status'], where: { companyId }, _count: { _all: true } }),
@@ -55,7 +56,7 @@ export async function GET() {
     // invoice balance, same aggregation the Finance dashboard already uses.
     prisma.salesInvoice.groupBy({
       by: ['customer_id'],
-      where: { companyId, status: { notIn: ['VOID', 'PAID'] } },
+      where: { companyId, status: { in: DB_STATUS_OUTSTANDING } },
       _sum: { balance_due: true },
     }),
   ])

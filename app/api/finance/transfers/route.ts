@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       }
 
       return { transfer: t, updatedFromAccount, updatedToAccount }
-    })
+    }, { timeout: 15000 })
 
     await logAudit({
       companyId: session.companyId,

@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   const [balanceAggs, invoiceCountAggs] = await Promise.all([
     prisma.salesInvoice.groupBy({
       by: ['customer_id'],
-      where: { status: { not: 'VOID' }, companyId: session.companyId },
+      where: { status: { not: 'Void' }, companyId: session.companyId },
       _sum: { balance_due: true },
     }),
     prisma.salesInvoice.groupBy({

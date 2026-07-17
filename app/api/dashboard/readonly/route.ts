@@ -12,8 +12,8 @@ export async function GET() {
   const { companyId } = session
 
   const [activeGuards, activeSites, openIncidents, pendingTasks, recentActivity] = await Promise.all([
-    prisma.guard.count({ where: { companyId, status: 'ACTIVE' } }),
-    prisma.site.count({ where: { status: 'ACTIVE' } }),
+    prisma.guard.count({ where: { companyId, status: 'Active' } }),
+    prisma.site.count({ where: { status: 'Active' } }),
     prisma.incident.count({ where: { status: { in: ['OPEN', 'INVESTIGATING'] } } }),
     prisma.task.count({ where: { companyId, status: { in: ['PENDING', 'IN_PROGRESS'] } } }),
     prisma.auditTrail.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 10, select: { action: true, module: true, userName: true, createdAt: true } }),

@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     if (end <= start) return NextResponse.json({ error: 'periodEnd must be after periodStart' }, { status: 400 })
 
     const [guards, payslipItems, company] = await Promise.all([
-      prisma.guard.findMany({ where: { companyId, status: 'ACTIVE' } }),
+      prisma.guard.findMany({ where: { companyId, status: 'Active' } }),
       prisma.payslipItem.findMany({ where: { companyId, active: true } }),
       prisma.company.findUnique({ where: { id: companyId }, select: { standardHoursPerMonth: true } }),
     ])
@@ -110,14 +110,22 @@ export async function POST(req: NextRequest) {
     const runId = crypto.randomUUID()
     const journalId = crypto.randomUUID()
 
+    // Match real chart-of-account names exactly rather than guessing by
+    // substring — the previous 'alary'/'bank' substring tricks assumed
+    // singular "Salary" (real account is plural "Salaries Expense") and
+    // never matched anything for "bank" at all (real accounts are
+    // capitalized "Bank ..."), and the liability lookup had no name filter
+    // whatsoever, matching whichever LIABILITY account sorted first.
     const [expenseAccount, liabilityAccount] = await Promise.all([
-      prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'EXPENSE', account_name: { contains: 'alary' } } }),
-      prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'LIABILITY' } }),
+      prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'EXPENSE', account_name: 'Salaries Expense' } }),
+      prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'LIABILITY', account_name: 'Payroll Liabilities' } }),
     ])
 
-    const bankChartAccount = await prisma.chartOfAccount.findFirst({
-      where: { companyId, account_type: 'ASSET', account_name: { contains: 'bank' } },
-    })
+    // Use the disbursement bank account's own linked GL account, same as
+    // receipts/payments/transfers already do, instead of guessing by name.
+    const bankChartAccount = bankAccount.chart_account_id
+      ? await prisma.chartOfAccount.findUnique({ where: { id: bankAccount.chart_account_id } })
+      : null
 
     await prisma.$transaction(async (tx) => {
       await tx.payrollRun.create({
@@ -135,7 +143,7 @@ export async function POST(req: NextRequest) {
           data: {
             id: payslipId, payroll_run_id: runId, employee_id: g.guardId, payslip_number: `PS-${payslipId.substring(0, 8)}`,
             basic_salary: g.basicSalary, net_pay: g.netPay, total_deductions: g.totalDeductions,
-            total_earnings: g.grossPay, status: 'PAID', created_by_id: userId,
+            total_earnings: g.grossPay, status: 'Approved', created_by_id: userId,
           },
         })
         const allLines = [...(g.earningsLines ?? []), ...(g.deductionLines ?? [])]

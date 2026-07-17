@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const customerIds = customers.map((c) => c.id)
   const balances = await prisma.salesInvoice.groupBy({
     by: ['customer_id'],
-    where: { customer_id: { in: customerIds }, status: { not: 'VOID' } },
+    where: { customer_id: { in: customerIds }, status: { not: 'Void' } },
     _sum: { balance_due: true },
   })
   const balanceMap = Object.fromEntries(balances.map((b) => [b.customer_id, Number(b._sum.balance_due ?? 0)]))

@@ -30,8 +30,8 @@ export async function GET() {
     incidentGroups, topSiteAttendance,
     recentIncidents, upcomingPatrols,
   ] = await Promise.all([
-    prisma.guard.count({ where: { companyId, status: 'ACTIVE' } }),
-    prisma.site.count({ where: { status: 'ACTIVE' } }),
+    prisma.guard.count({ where: { companyId, status: 'Active' } }),
+    prisma.site.count({ where: { status: 'Active' } }),
     prisma.deployment.findMany({ where: { guardId: { in: guardIds }, status: 'ACTIVE', startDate: { lte: todayEnd } }, select: { guardId: true } }),
     prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: today, lt: todayEnd }, status: 'PRESENT' } }),
     prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: today, lt: todayEnd }, status: 'ABSENT' } }),
@@ -45,7 +45,7 @@ export async function GET() {
     prisma.equipment.aggregate({ _sum: { quantity_in_stock: true } }),
     prisma.equipment.aggregate({ _sum: { quantity_issued: true } }),
     prisma.incident.groupBy({ by: ['severity'], where: { siteId: { in: siteIds }, reportedAt: { gte: monthStart } }, _count: { _all: true } }),
-    prisma.site.findMany({ where: { status: 'ACTIVE' }, take: 10, select: { id: true, site_name: true } }),
+    prisma.site.findMany({ where: { status: 'Active' }, take: 10, select: { id: true, site_name: true } }),
     prisma.incident.findMany({
       where: { siteId: { in: siteIds } },
       orderBy: { reportedAt: 'desc' },

@@ -29,3 +29,10 @@ export function fromDbInvoiceStatus(dbStatus: string | null | undefined, dueDate
   if (dueDate && Number(balanceDue ?? 0) > 0 && new Date() > new Date(dueDate)) return 'OVERDUE'
   return mapped
 }
+
+// Real stored SalesInvoice.status values that mean "not yet fully paid"
+// (OVERDUE has no stored equivalent — it's purely a function of due date,
+// see fromDbInvoiceStatus above — so any Prisma query for "overdue" needs an
+// explicit due_date/balance_due condition, not a status match).
+export const DB_STATUS_OUTSTANDING = ['Sent', 'Partial']
+export const DB_STATUS_VOID = 'Void'
