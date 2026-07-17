@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  const leave = await prisma.leaveRequest.findMany({
+  const rows = await prisma.leaveRequest.findMany({
     where: monthStart && monthEnd ? {
       AND: [
         where,
@@ -46,9 +46,15 @@ export async function GET(req: NextRequest) {
     } : where,
     include: {
       guard: { select: { id: true, full_name: true, employee_code: true, leave_days_entitled: true } },
+      approvedByUser: { select: { id: true, name: true } },
     },
     orderBy: { createdAt: 'desc' },
   })
+
+  const leave = rows.map((l) => ({
+    ...l,
+    guard: l.guard ? { id: l.guard.id, name: l.guard.full_name, employeeNumber: l.guard.employee_code } : null,
+  }))
 
   // If guardId provided, compute leave balance for that guard
   let balance = null
@@ -70,7 +76,7 @@ export async function GET(req: NextRequest) {
     calendar = leave.map(l => ({
       id: l.id,
       guardId: l.guardId,
-      guardName: l.guard?.full_name,
+      guardName: l.guard?.name,
       leaveType: l.leaveType,
       startDate: l.startDate,
       endDate: l.endDate,

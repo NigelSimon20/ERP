@@ -92,9 +92,11 @@ export async function GET(req: NextRequest) {
   }
 
   if (type === 'CASHFLOW') {
+    // Customer Receipts live in `payments` (payment_type = 'Customer Receipt'),
+    // not the separate/unused `Receipt` model.
     const [receipts, payments] = await Promise.all([
-      prisma.receipt.findMany({ where: { companyId, receiptDate: { gte: new Date(startDate), lte: new Date(endDate) } }, select: { amount: true } }),
-      prisma.payment.findMany({ where: { companyId, payment_date: { gte: startDate, lte: endDate } }, select: { amount: true } }),
+      prisma.payment.findMany({ where: { companyId, payment_type: 'Customer Receipt', payment_date: { gte: startDate, lte: endDate } }, select: { amount: true } }),
+      prisma.payment.findMany({ where: { companyId, payment_type: { not: 'Customer Receipt' }, payment_date: { gte: startDate, lte: endDate } }, select: { amount: true } }),
     ])
     const totalInflows = receipts.reduce((s, r) => s + Number(r.amount ?? 0), 0)
     const totalOutflows = payments.reduce((s, p) => s + Number(p.amount ?? 0), 0)

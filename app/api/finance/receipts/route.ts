@@ -8,18 +8,33 @@ import {
   determineInvoiceStatus,
   calculateNewBankBalance,
   calculateBalanceDue,
-  calculateCustomerOutstandingBalance,
   round2dp,
 } from '@/lib/calculations'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
+import { toDbInvoiceStatus } from '@/lib/invoice-status'
 import { z } from 'zod'
 
+// Payment.status in the live DB uses Title Case ("Posted"), not the
+// SCREAMING_CASE the rest of the finance code assumes elsewhere — keep new
+// writes consistent with existing data.
+const METHOD_LABELS: Record<string, string> = {
+  BANK_TRANSFER: 'Bank Transfer',
+  CASH: 'Cash',
+  CHEQUE: 'Cheque',
+  CARD: 'Card',
+  MOBILE_MONEY: 'Mobile Money',
+  OTHER: 'Other',
+}
+
+// IDs in this DB are opaque strings from the legacy import (24-char hex,
+// not UUID-formatted) — .uuid() would reject every real record.
 const receiptSchema = z.object({
-  bankAccountId: z.string().uuid(),
+  bankAccountId: z.string().min(1),
   amount: z.coerce.number().positive('Amount must be greater than 0'),
   receiptDate: z.string(),
-  customerId: z.string().uuid().optional(),
-  invoiceId: z.string().uuid().optional(),
+  method: z.string().optional(),
+  customerId: z.string().min(1).optional(),
+  invoiceId: z.string().min(1).optional(),
   notes: z.string().optional(),
   payer: z.string().optional(),
 })
@@ -34,10 +49,41 @@ export async function GET(req: NextRequest) {
   const session = await getSession(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const receipts = await prisma.receipt.findMany({
-    where: { companyId: session.companyId },
-    orderBy: { receiptDate: 'desc' },
+  // Customer Receipts live in `payments` (payment_type = 'Customer Receipt'),
+  // not the separate/unused `Receipt` model — see project memory on the
+  // dual-model drift found during the 2026-07-16 Excel audit.
+  const rows = await prisma.payment.findMany({
+    where: { companyId: session.companyId, payment_type: 'Customer Receipt' },
+    orderBy: { payment_date: 'desc' },
   })
+
+  const bankAccountIds = Array.from(new Set(rows.map((r) => r.bank_account_id).filter(Boolean))) as string[]
+  const customerIds = Array.from(new Set(rows.map((r) => r.customer_id).filter(Boolean))) as string[]
+  const [banks, customers] = await Promise.all([
+    bankAccountIds.length
+      ? prisma.bankAccount.findMany({ where: { id: { in: bankAccountIds } }, select: { id: true, bank_name: true, account_number: true } })
+      : Promise.resolve([]),
+    customerIds.length
+      ? prisma.customer.findMany({ where: { id: { in: customerIds } }, select: { id: true, company_name: true } })
+      : Promise.resolve([]),
+  ])
+  const bankMap = Object.fromEntries(banks.map((b) => [b.id, b]))
+  const customerMap = Object.fromEntries(customers.map((c) => [c.id, c]))
+
+  const receipts = rows.map((r) => ({
+    id: r.id,
+    reference: r.payment_number,
+    receiptDate: r.payment_date,
+    payer: r.party_name,
+    amount: Number(r.amount ?? 0),
+    method: r.payment_method ?? 'Other',
+    bankAccount: {
+      bankName: r.bank_account_name ?? bankMap[r.bank_account_id ?? '']?.bank_name ?? '',
+      accountNumber: bankMap[r.bank_account_id ?? '']?.account_number ?? '',
+    },
+    customer: r.customer_id ? { name: customerMap[r.customer_id]?.company_name ?? '' } : null,
+  }))
+
   return NextResponse.json({ receipts })
 }
 
@@ -56,27 +102,41 @@ export async function POST(req: NextRequest) {
     if (data.invoiceId) {
       invoice = await prisma.salesInvoice.findFirst({ where: { id: data.invoiceId, companyId: session.companyId } })
       if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
-      if ((invoice.status as string) === 'PAID') return NextResponse.json({ error: 'Invoice is already fully paid' }, { status: 400 })
+      if (invoice.status === 'Paid') return NextResponse.json({ error: 'Invoice is already fully paid' }, { status: 400 })
       if (Number(data.amount) > Number(invoice.balance_due ?? 0)) {
-        return NextResponse.json({ error: `Receipt amount (${round2dp(data.amount)}) exceeds invoice balance due (${round2dp(Number(invoice.balanceDue))})` }, { status: 400 })
+        return NextResponse.json({ error: `Receipt amount (${round2dp(data.amount)}) exceeds invoice balance due (${round2dp(Number(invoice.balance_due ?? 0))})` }, { status: 400 })
       }
     }
 
     const reference = await nextReceiptReference(session.companyId)
+    const methodLabel = METHOD_LABELS[data.method ?? 'OTHER'] ?? data.method ?? 'Other'
 
     const receipt = await prisma.$transaction(async (tx) => {
-      // STEP a: create receipt record
-      const r = await tx.receipt.create({
+      // STEP a: create the receipt as a Payment record (payment_type =
+      // 'Customer Receipt') — this is where the real, reported data lives.
+      const r = await tx.payment.create({
         data: {
           id: crypto.randomUUID(),
           companyId: session.companyId,
-          bankAccountId: data.bankAccountId,
-          reference,
+          bank_account_id: data.bankAccountId,
+          bank_account_name: bankAccount.account_name ?? '',
+          payment_number: reference,
+          payment_type: 'Customer Receipt',
+          party_name: data.payer ?? '',
           amount: data.amount,
-          receiptDate: new Date(data.receiptDate),
-          customerId: data.customerId ?? '',
-          invoiceId: data.invoiceId ?? null,
-          notes: data.notes ?? '',
+          payment_date: data.receiptDate,
+          payment_method: methodLabel,
+          customer_id: data.customerId ?? null,
+          currency: bankAccount.currency ?? 'USD',
+          description: data.notes ?? '',
+          allocations: data.invoiceId
+            ? JSON.stringify([{ invoice_id: data.invoiceId, invoice_number: invoice?.invoice_number ?? '', amount: data.amount }])
+            : '[]',
+          status: 'Posted',
+          created_by_id: session.userId,
+          created_by: session.name,
+          created_date: new Date().toISOString(),
+          updated_date: new Date().toISOString(),
         },
       })
 
@@ -90,9 +150,10 @@ export async function POST(req: NextRequest) {
 
       // STEP c: if linked invoice, update paidAmount, balanceDue, status
       if (data.invoiceId && invoice) {
-        const newPaidAmount = round2dp(Number(invoice.paidAmount ?? invoice.amount_paid ?? 0) + Number(data.amount))
-        newInvoiceBalance = calculateBalanceDue(Number(invoice.totalAmount ?? invoice.total_amount ?? 0), newPaidAmount)
-        newInvoiceStatus = determineInvoiceStatus(Number(invoice.totalAmount ?? invoice.total_amount ?? 0), newPaidAmount, new Date(invoice.dueDate ?? invoice.due_date ?? invoice.due_date))
+        const newPaidAmount = round2dp(Number(invoice.amount_paid ?? 0) + Number(data.amount))
+        newInvoiceBalance = calculateBalanceDue(Number(invoice.total_amount ?? 0), newPaidAmount)
+        const rawStatus = determineInvoiceStatus(Number(invoice.total_amount ?? 0), newPaidAmount, new Date(invoice.due_date ?? Date.now()))
+        newInvoiceStatus = toDbInvoiceStatus(rawStatus)
         updatedInvoice = await tx.salesInvoice.update({ where: { id: data.invoiceId }, data: { amount_paid: newPaidAmount, balance_due: newInvoiceBalance, status: newInvoiceStatus } })
       }
 
@@ -149,7 +210,7 @@ export async function POST(req: NextRequest) {
       }
 
       return { receipt: r, newBankBalance, updatedInvoice, newInvoiceStatus, newInvoiceBalance }
-    })
+    }, { timeout: 15000 })
 
     // Log audit with updated balances
     await logAudit({
@@ -169,7 +230,7 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({
-      receipt: receipt.receipt,
+      receipt: { ...receipt.receipt, reference: receipt.receipt.payment_number },
       updatedBankBalance: receipt.newBankBalance,
       updatedInvoiceStatus: receipt.newInvoiceStatus,
       updatedInvoiceBalance: receipt.newInvoiceBalance,

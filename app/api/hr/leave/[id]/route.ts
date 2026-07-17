@@ -40,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         update: { status: 'LEAVE' },
         create: {
           id: crypto.randomUUID(), guardId: leave.guardId,
-          siteId: 'leave', date: day, status: 'LEAVE' as const, hoursWorked: 0, overtimeHours: 0,
+          date: day, status: 'LEAVE' as const, hoursWorked: 0, overtimeHours: 0,
         },
       })
     ))

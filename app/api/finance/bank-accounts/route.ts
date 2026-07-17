@@ -32,20 +32,20 @@ export async function GET(req: NextRequest) {
   const ids = accounts.map((a) => a.id)
 
   const [receiptAggs, paymentAggs] = await Promise.all([
-    prisma.receipt.groupBy({
-      by: ['bankAccountId'],
-      where: { bankAccountId: { in: ids }, companyId: session.companyId },
+    prisma.payment.groupBy({
+      by: ['bank_account_id'],
+      where: { bank_account_id: { in: ids }, companyId: session.companyId, payment_type: 'Customer Receipt' },
       _sum: { amount: true },
     }),
     prisma.payment.groupBy({
       by: ['bank_account_id'],
-      where: { bank_account_id: { in: ids } },
+      where: { bank_account_id: { in: ids }, payment_type: { not: 'Customer Receipt' } },
       _sum: { amount: true },
     }),
   ])
 
   const receiptMap = Object.fromEntries(
-    receiptAggs.map((r) => [r.bankAccountId, Number(r._sum.amount ?? 0)]),
+    receiptAggs.map((r) => [r.bank_account_id, Number(r._sum.amount ?? 0)]),
   )
   const paymentMap = Object.fromEntries(
     paymentAggs.map((p) => [p.bank_account_id, Number(p._sum.amount ?? 0)]),
@@ -53,6 +53,9 @@ export async function GET(req: NextRequest) {
 
   const result = accounts.map((a) => ({
     ...a,
+    bankName: a.bank_name,
+    accountNumber: a.account_number,
+    accountType: a.account_type,
     openingBalance: Number(a.opening_balance),
     currentBalance: Number(a.current_balance),
     calculatedBalance:

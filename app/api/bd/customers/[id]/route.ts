@@ -17,10 +17,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       orderBy: { invoice_date: 'desc' },
       select: { id: true, invoice_number: true, invoice_date: true, due_date: true, total_amount: true, amount_paid: true, balance_due: true, status: true },
     }),
-    prisma.receipt.findMany({
-      where: { customerId: params.id },
-      orderBy: { receiptDate: 'desc' },
-      select: { id: true, reference: true, receiptDate: true, amount: true },
+    prisma.payment.findMany({
+      where: { customer_id: params.id, payment_type: 'Customer Receipt' },
+      orderBy: { payment_date: 'desc' },
+      select: { id: true, payment_number: true, payment_date: true, amount: true, payment_method: true },
     }),
     prisma.site.findMany({
       where: { customer_id: params.id },
@@ -32,5 +32,13 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   const outstandingBalance = invoices.reduce((s, i) => s + Number(i.balance_due), 0)
 
-  return NextResponse.json({ customer, invoices, receipts, sites, outstandingBalance })
+  const mappedReceipts = receipts.map((r) => ({
+    id: r.id,
+    reference: r.payment_number,
+    date: r.payment_date,
+    amount: Number(r.amount ?? 0),
+    paymentMethod: r.payment_method,
+  }))
+
+  return NextResponse.json({ customer, invoices, receipts: mappedReceipts, sites, outstandingBalance })
 }

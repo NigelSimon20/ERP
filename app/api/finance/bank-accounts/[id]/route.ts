@@ -20,8 +20,8 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
   if (!account) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const [receiptsTotal, paymentsTotal] = await Promise.all([
-    prisma.receipt.aggregate({ where: { bankAccountId: params.id }, _sum: { amount: true } }),
-    prisma.payment.aggregate({ where: { bank_account_id: params.id }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { bank_account_id: params.id, payment_type: 'Customer Receipt' }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { bank_account_id: params.id, payment_type: { not: 'Customer Receipt' } }, _sum: { amount: true } }),
   ])
 
   return NextResponse.json({
@@ -70,8 +70,8 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!account) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const [payments, receipts, transfersFrom, transfersTo] = await Promise.all([
-    prisma.payment.count({ where: { bank_account_id: params.id } }),
-    prisma.receipt.count({ where: { bankAccountId: params.id } }),
+    prisma.payment.count({ where: { bank_account_id: params.id, payment_type: { not: 'Customer Receipt' } } }),
+    prisma.payment.count({ where: { bank_account_id: params.id, payment_type: 'Customer Receipt' } }),
     prisma.bankTransfer.count({ where: { fromAccountId: params.id } }),
     prisma.bankTransfer.count({ where: { toAccountId: params.id } }),
   ])

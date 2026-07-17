@@ -58,7 +58,18 @@ export async function GET(req: NextRequest) {
   })
 
   return NextResponse.json({
-    invoices: invoices.map((i) => ({ ...i, totalAmount: Number(i.totalAmount), paidAmount: Number(i.paidAmount), balanceDue: Number(i.balanceDue) })),
+    invoices: invoices.map((i) => ({
+      id: i.id,
+      billNumber: i.invoiceNumber,
+      issueDate: i.issueDate,
+      dueDate: i.dueDate,
+      totalAmount: Number(i.totalAmount),
+      paidAmount: Number(i.paidAmount),
+      balanceDue: Number(i.balanceDue),
+      status: i.status,
+      notes: i.notes,
+      supplier: { id: i.supplier.id, name: i.supplier.company_name ?? '' },
+    })),
     total,
     page,
     summary: {
@@ -110,7 +121,7 @@ export async function POST(req: NextRequest) {
           invoiceNumber: billNumber,
           issueDate: issue,
           dueDate: due,
-          notes: notes || null,
+          notes: description || notes || null,
           subtotal: totals.subtotal,
           taxAmount: totals.taxAmount,
           totalAmount: totals.totalAmount,
@@ -152,7 +163,19 @@ export async function POST(req: NextRequest) {
       await recalculateSupplierOutstandingBalance(tx, supplierId, companyId)
     })
 
-    return NextResponse.json({ invoice }, { status: 201 })
+    return NextResponse.json({
+      invoice: {
+        id: invoice.id,
+        billNumber: invoice.invoiceNumber,
+        issueDate: invoice.issueDate,
+        dueDate: invoice.dueDate,
+        totalAmount: Number(invoice.totalAmount),
+        paidAmount: Number(invoice.paidAmount),
+        balanceDue: Number(invoice.balanceDue),
+        status: invoice.status,
+        supplier: { id: supplier.id, name: supplier.company_name ?? '' },
+      },
+    }, { status: 201 })
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
   }

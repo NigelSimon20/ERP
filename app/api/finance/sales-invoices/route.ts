@@ -8,6 +8,7 @@ import { nextInvoiceNumber } from '@/lib/auto-numbers'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals, determineInvoiceStatus } from '@/lib/calculations'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
 import { salesInvoiceSchema } from '@/lib/validators'
+import { fromDbInvoiceStatus, toDbInvoiceStatus } from '@/lib/invoice-status'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -25,10 +26,17 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get('from')
   const to = searchParams.get('to')
   const page = Number(searchParams.get('page') ?? '1')
+  const now = new Date().toISOString()
+
+  const statusFilter: any =
+    status === 'OVERDUE' ? { status: 'Sent', due_date: { lt: now }, balance_due: { gt: 0 } }
+    : status === 'UNPAID' ? { status: 'Sent', OR: [{ due_date: { gte: now } }, { due_date: null }, { balance_due: { lte: 0 } }] }
+    : status ? { status: toDbInvoiceStatus(status) }
+    : {}
 
   const where: any = {
     companyId: session.companyId,
-    ...(status && { status }),
+    ...statusFilter,
     ...(customerId && { customer_id: customerId }),
     ...(from || to
       ? {
@@ -40,7 +48,7 @@ export async function GET(req: NextRequest) {
       : {}),
   }
 
-  const [invoices, total] = await Promise.all([
+  const [rows, total] = await Promise.all([
     prisma.salesInvoice.findMany({
       where: where as any,
       orderBy: { invoice_date: 'desc' },
@@ -48,6 +56,25 @@ export async function GET(req: NextRequest) {
     }),
     prisma.salesInvoice.count({ where: where as any }),
   ])
+
+  const customerIds = Array.from(new Set(rows.map((r) => r.customer_id).filter(Boolean))) as string[]
+  const customers = customerIds.length
+    ? await prisma.customer.findMany({ where: { id: { in: customerIds } }, select: { id: true, company_name: true } })
+    : []
+  const customerMap = Object.fromEntries(customers.map((c) => [c.id, c.company_name]))
+
+  const invoices = rows.map((r) => ({
+    id: r.id,
+    invoiceNumber: r.invoice_number,
+    issueDate: r.invoice_date,
+    dueDate: r.due_date,
+    totalAmount: Number(r.total_amount ?? 0),
+    paidAmount: Number(r.amount_paid ?? 0),
+    balanceDue: Number(r.balance_due ?? 0),
+    status: fromDbInvoiceStatus(r.status, r.due_date, Number(r.balance_due ?? 0)),
+    notes: r.overall_description,
+    customer: { id: r.customer_id ?? '', name: (r.customer_id && customerMap[r.customer_id]) || r.customer_name || '' },
+  }))
 
   return NextResponse.json({ invoices, total, page })
 }
@@ -87,7 +114,7 @@ export async function POST(req: NextRequest) {
     })
 
     const { subTotal, taxTotal, totalAmount } = calculateInvoiceTotals(lines)
-    const status = determineInvoiceStatus(totalAmount, 0, dueDate)
+    const status = toDbInvoiceStatus(determineInvoiceStatus(totalAmount, 0, dueDate))
 
     const invoice = await prisma.$transaction(async (tx) => {
       const inv = await tx.salesInvoice.create({
@@ -98,7 +125,7 @@ export async function POST(req: NextRequest) {
           invoice_number: invoiceNumber,
           invoice_date: issueDate.toISOString(),
           due_date: dueDate.toISOString(),
-          overall_description: data.notes ?? '',
+          overall_description: data.description ?? '',
           subtotal: subTotal,
           tax_amount: taxTotal,
           total_amount: totalAmount,
@@ -135,7 +162,19 @@ export async function POST(req: NextRequest) {
       newValues: { invoiceNumber, customer: customer?.company_name ?? '', totalAmount },
     })
 
-    return NextResponse.json({ invoice }, { status: 201 })
+    return NextResponse.json({
+      invoice: {
+        id: invoice.id,
+        invoiceNumber: invoice.invoice_number,
+        issueDate: invoice.invoice_date,
+        dueDate: invoice.due_date,
+        totalAmount: Number(invoice.total_amount ?? 0),
+        paidAmount: Number(invoice.amount_paid ?? 0),
+        balanceDue: Number(invoice.balance_due ?? 0),
+        status: fromDbInvoiceStatus(invoice.status, invoice.due_date, Number(invoice.balance_due ?? 0)),
+        customer: { id: customer.id, name: customer.company_name ?? '' },
+      },
+    }, { status: 201 })
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
   }

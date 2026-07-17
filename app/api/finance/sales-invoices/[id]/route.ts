@@ -42,8 +42,8 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
     where: { id: params.id, companyId: session.companyId },
   })
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if ((invoice.status as string) !== 'DRAFT') {
-    return NextResponse.json({ error: 'Only DRAFT invoices can be edited' }, { status: 400 })
+  if (invoice.status === 'Void' || Number(invoice.amount_paid ?? 0) > 0) {
+    return NextResponse.json({ error: 'Only unpaid invoices can be edited' }, { status: 400 })
   }
 
   try {
@@ -86,7 +86,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   if (action === 'void') {
-    if ((invoice.status as string) === 'VOID') {
+    if (invoice.status === 'Void') {
       return NextResponse.json({ error: 'Invoice already voided' }, { status: 400 })
     }
 
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     await prisma.$transaction(async (tx) => {
       await tx.salesInvoice.update({
         where: { id: params.id },
-        data: { status: 'VOID', updated_date: new Date().toISOString() },
+        data: { status: 'Void', updated_date: new Date().toISOString() },
       })
       if (customerId) {
         await recalculateCustomerOutstandingBalance(tx, customerId)
@@ -130,8 +130,8 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
     where: { id: params.id, companyId: session.companyId },
   })
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if ((invoice.status as string) !== 'DRAFT') {
-    return NextResponse.json({ error: 'Only DRAFT invoices can be deleted' }, { status: 400 })
+  if (invoice.status === 'Void' || Number(invoice.amount_paid ?? 0) > 0) {
+    return NextResponse.json({ error: 'Only unpaid invoices can be deleted' }, { status: 400 })
   }
 
   const customerId = invoice.customer_id

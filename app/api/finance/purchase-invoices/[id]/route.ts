@@ -72,8 +72,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       data: {
         ...(issueDate && { issueDate: new Date(issueDate) }),
         ...(dueDate && { dueDate: new Date(dueDate) }),
-        ...(description !== undefined && { description }),
-        ...(notes !== undefined && { notes }),
+        ...((description !== undefined || notes !== undefined) && { notes: description ?? notes }),
         ...(totals && {
           subtotal: totals.subtotal,
           taxAmount: totals.taxAmount,
@@ -121,7 +120,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
 
   const invoice = await prisma.purchaseInvoice.findFirst({ where: { id: params.id, companyId: session.companyId } })
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if ((invoice.status as string) !== 'DRAFT') return NextResponse.json({ error: 'Can only delete DRAFT invoices' }, { status: 400 })
+  if (invoice.status !== 'UNPAID') return NextResponse.json({ error: 'Can only delete unpaid invoices' }, { status: 400 })
 
   await prisma.$transaction(async (tx) => {
     await tx.purchaseInvoiceLineItem.deleteMany({ where: { purchaseInvoiceId: params.id } })

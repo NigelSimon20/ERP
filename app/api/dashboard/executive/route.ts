@@ -52,7 +52,7 @@ export async function GET() {
   ] = await Promise.all([
     prisma.salesInvoice.aggregate({ where: { invoice_date: { gte: fiscalStart.toISOString().split('T')[0] }, status: { not: 'VOID' } }, _sum: { total_amount: true } }),
     prisma.salesInvoice.aggregate({ where: { status: { in: ['UNPAID', 'PARTIAL', 'OVERDUE'] } }, _sum: { balance_due: true } }),
-    prisma.payment.aggregate({ where: { payment_date: { gte: fiscalStart.toISOString().split('T')[0] } }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { payment_type: { not: 'Customer Receipt' }, payment_date: { gte: fiscalStart.toISOString().split('T')[0] } }, _sum: { amount: true } }),
     prisma.bankAccount.aggregate({ where: { is_active: true }, _sum: { current_balance: true } }),
     prisma.guard.count({ where: { companyId, status: 'ACTIVE' } }),
     prisma.site.count({ where: { status: 'ACTIVE' } }),
@@ -62,8 +62,8 @@ export async function GET() {
     prisma.task.count({ where: { companyId, status: { in: ['PENDING', 'IN_PROGRESS'] } } }),
     prisma.salesInvoice.count({ where: { status: 'OVERDUE' } }),
     prisma.payrollRun.findFirst({ where: { companyId }, orderBy: { createdAt: 'desc' }, select: { totalNet: true, periodStart: true, periodEnd: true } }),
-    prisma.receipt.findMany({ where: { companyId, receiptDate: { gte: sixMonthsAgo } }, select: { receiptDate: true, amount: true } }),
-    prisma.payment.findMany({ where: { payment_date: { gte: sixMonthsAgo.toISOString().split('T')[0] } }, select: { payment_date: true, amount: true } }),
+    prisma.payment.findMany({ where: { companyId, payment_type: 'Customer Receipt', payment_date: { gte: sixMonthsAgo.toISOString().split('T')[0] } }, select: { payment_date: true, amount: true } }),
+    prisma.payment.findMany({ where: { payment_type: { not: 'Customer Receipt' }, payment_date: { gte: sixMonthsAgo.toISOString().split('T')[0] } }, select: { payment_date: true, amount: true } }),
     prisma.incident.groupBy({ by: ['severity'], _count: { _all: true } }),
     prisma.site.findMany({
       where: { status: 'ACTIVE' },
@@ -110,7 +110,7 @@ export async function GET() {
       periodEnd:   lastPayroll.periodEnd.toISOString(),
     } : null,
     monthlyChart: buildMonthlyChart(
-      rawReceipts,
+      rawReceipts.map(r => ({ receiptDate: new Date(r.payment_date!), amount: r.amount })),
       rawPayments.map(p => ({ paymentDate: new Date(p.payment_date!), amount: p.amount }))
     ),
     incidentsBySeverity: incidentGroups.map(g => ({ severity: g.severity, count: g._count._all })),
