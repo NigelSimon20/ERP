@@ -16,6 +16,9 @@ const TYPE_COLORS: Record<string, string> = {
   PATROL:      'bg-brand-navy/10 text-brand-navy dark:bg-white/10 dark:text-white',
   VISITOR:     'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
   PAYROLL:     'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
+  PAYMENT:     'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  CONTRACT:    'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+  STOCK:       'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
   SYSTEM:      'bg-muted text-foreground',
 }
 

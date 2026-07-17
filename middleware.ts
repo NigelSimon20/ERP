@@ -63,7 +63,9 @@ export async function middleware(req: NextRequest) {
   }
 
   const isAuthPage = pathname === '/login' || pathname === '/register'
-  const isPublicApi = pathname.startsWith('/api/auth/')
+  // /api/cron/* has no session — Vercel's scheduler calls it directly with a
+  // Bearer token, authenticated by each route handler itself (isValidCronRequest).
+  const isPublicApi = pathname.startsWith('/api/auth/') || pathname.startsWith('/api/cron/')
 
   const res = NextResponse.next()
   const session = await getIronSession<SessionData>(req, res, sessionOptions)
