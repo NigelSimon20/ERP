@@ -6,8 +6,62 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { nextJournalReference } from '@/lib/auto-numbers'
 import { calculateBasicSalary, calculateOvertimePay, calculatePayslipItem } from '@/lib/calculations'
+import { checkLockDate } from '@/lib/lock-dates'
 
 function r2(n: number) { return Math.round(n * 100) / 100 }
+
+// Shared by preview and confirm so a payroll run is always paid out exactly
+// what preview showed — confirm previously trusted client-submitted amounts
+// wholesale, letting a tampered/inflated request body pay out more than
+// earned and post it as a legitimate, balanced GL entry with no cross-check.
+async function computePayrollPreviews(companyId: string, start: Date, end: Date) {
+  const [guards, payslipItems, company] = await Promise.all([
+    prisma.guard.findMany({ where: { companyId, status: 'Active' } }),
+    prisma.payslipItem.findMany({ where: { companyId, active: true } }),
+    prisma.company.findUnique({ where: { id: companyId }, select: { standardHoursPerMonth: true } }),
+  ])
+  const standardHoursPerMonth = company?.standardHoursPerMonth ?? 160
+
+  const earningItems = payslipItems.filter((i) => i.itemType === 'EARNING')
+  const deductionItems = payslipItems.filter((i) => i.itemType === 'DEDUCTION')
+
+  return Promise.all(guards.map(async (guard) => {
+    const attendance = await prisma.attendance.findMany({
+      where: { guardId: guard.id, date: { gte: start, lte: end } },
+      select: { hoursWorked: true, overtimeHours: true },
+    })
+
+    const hoursWorked = r2(attendance.reduce((s, a) => s + Number(a.hoursWorked), 0))
+    const overtimeHours = r2(attendance.reduce((s, a) => s + Number(a.overtimeHours), 0))
+    const hourlyRate = Number(guard.basic_salary ?? 0) / standardHoursPerMonth // estimate from basic salary, using the company's configured standard monthly hours
+
+    const basicSalary = calculateBasicSalary(hoursWorked, hourlyRate)
+    const overtimePay = calculateOvertimePay(overtimeHours, hourlyRate)
+
+    const earningsLines = earningItems.map((item) => ({
+      payslipItemId: item.id, name: item.name, type: 'EARNING',
+      amount: calculatePayslipItem(item, basicSalary, 0),
+      calculationMethod: item.calculationMethod,
+    }))
+    const totalEarnings = r2(earningsLines.reduce((s, l) => s + l.amount, 0))
+    const grossPay = r2(basicSalary + overtimePay + totalEarnings)
+
+    const deductionLines = deductionItems.map((item) => ({
+      payslipItemId: item.id, name: item.name, type: 'DEDUCTION',
+      amount: calculatePayslipItem(item, basicSalary, grossPay),
+      calculationMethod: item.calculationMethod,
+    }))
+    const totalDeductions = r2(deductionLines.reduce((s, l) => s + l.amount, 0))
+    const netPay = r2(grossPay - totalDeductions)
+
+    return {
+      guardId: guard.id, guardName: guard.full_name ?? '', employeeNumber: guard.employee_code ?? '',
+      whatsapp: guard.phone, hoursWorked, overtimeHours, hourlyRate,
+      basicSalary, overtimePay, totalEarnings, grossPay, totalDeductions, netPay,
+      earningsLines, deductionLines,
+    }
+  }))
+}
 
 export async function GET() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -18,7 +72,28 @@ export async function GET() {
     orderBy: { runDate: 'desc' },
   })
 
-  return NextResponse.json({ runs })
+  const [users, bankAccounts] = await Promise.all([
+    prisma.user.findMany({ where: { id: { in: runs.map((r) => r.processedBy) } }, select: { id: true, name: true } }),
+    prisma.bankAccount.findMany({ where: { id: { in: runs.map((r) => r.bankAccountId).filter((v): v is string => !!v) } }, select: { id: true, bank_name: true } }),
+  ])
+  const userById = new Map(users.map((u) => [u.id, u]))
+  const bankById = new Map(bankAccounts.map((b) => [b.id, b]))
+
+  return NextResponse.json({
+    runs: runs.map((r) => ({
+      id: r.id,
+      reference: null,
+      payPeriodStart: r.periodStart.toISOString(),
+      payPeriodEnd: r.periodEnd.toISOString(),
+      runDate: r.runDate.toISOString(),
+      status: r.status,
+      totalGross: Number(r.totalGross),
+      totalDeductions: Number(r.totalDeductions),
+      totalNet: Number(r.totalNet),
+      processedBy: userById.get(r.processedBy) ? { name: userById.get(r.processedBy)!.name } : null,
+      bankAccount: r.bankAccountId && bankById.get(r.bankAccountId) ? { name: bankById.get(r.bankAccountId)!.bank_name } : null,
+    })),
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -38,52 +113,7 @@ export async function POST(req: NextRequest) {
     const end = new Date(periodEnd)
     if (end <= start) return NextResponse.json({ error: 'periodEnd must be after periodStart' }, { status: 400 })
 
-    const [guards, payslipItems, company] = await Promise.all([
-      prisma.guard.findMany({ where: { companyId, status: 'Active' } }),
-      prisma.payslipItem.findMany({ where: { companyId, active: true } }),
-      prisma.company.findUnique({ where: { id: companyId }, select: { standardHoursPerMonth: true } }),
-    ])
-    const standardHoursPerMonth = company?.standardHoursPerMonth ?? 160
-
-    const earningItems = payslipItems.filter((i) => i.itemType === 'EARNING')
-    const deductionItems = payslipItems.filter((i) => i.itemType === 'DEDUCTION')
-
-    const previews = await Promise.all(guards.map(async (guard) => {
-      const attendance = await prisma.attendance.findMany({
-        where: { guardId: guard.id, date: { gte: start, lte: end } },
-        select: { hoursWorked: true, overtimeHours: true },
-      })
-
-      const hoursWorked = r2(attendance.reduce((s, a) => s + Number(a.hoursWorked), 0))
-      const overtimeHours = r2(attendance.reduce((s, a) => s + Number(a.overtimeHours), 0))
-      const hourlyRate = Number(guard.basic_salary ?? 0) / standardHoursPerMonth // estimate from basic salary, using the company's configured standard monthly hours
-
-      const basicSalary = calculateBasicSalary(hoursWorked, hourlyRate)
-      const overtimePay = calculateOvertimePay(overtimeHours, hourlyRate)
-
-      const earningsLines = earningItems.map((item) => ({
-        payslipItemId: item.id, name: item.name, type: 'EARNING',
-        amount: calculatePayslipItem(item, basicSalary, 0),
-        calculationMethod: item.calculationMethod,
-      }))
-      const totalEarnings = r2(earningsLines.reduce((s, l) => s + l.amount, 0))
-      const grossPay = r2(basicSalary + overtimePay + totalEarnings)
-
-      const deductionLines = deductionItems.map((item) => ({
-        payslipItemId: item.id, name: item.name, type: 'DEDUCTION',
-        amount: calculatePayslipItem(item, basicSalary, grossPay),
-        calculationMethod: item.calculationMethod,
-      }))
-      const totalDeductions = r2(deductionLines.reduce((s, l) => s + l.amount, 0))
-      const netPay = r2(grossPay - totalDeductions)
-
-      return {
-        guardId: guard.id, guardName: guard.full_name ?? '', employeeNumber: guard.employee_code ?? '',
-        whatsapp: guard.phone, hoursWorked, overtimeHours, hourlyRate,
-        basicSalary, overtimePay, totalEarnings, grossPay, totalDeductions, netPay,
-        earningsLines, deductionLines,
-      }
-    }))
+    const previews = await computePayrollPreviews(companyId, start, end)
 
     const totalGross = r2(previews.reduce((s, p) => s + p.grossPay, 0))
     const totalDeductions = r2(previews.reduce((s, p) => s + p.totalDeductions, 0))
@@ -94,13 +124,30 @@ export async function POST(req: NextRequest) {
 
   // ── Confirm ──────────────────────────────────────────────────────────────
   if (action === 'confirm') {
-    const { periodStart, periodEnd, bankAccountId, guardPayslips } = body
-    if (!periodStart || !periodEnd || !bankAccountId || !guardPayslips?.length) {
+    const { periodStart, periodEnd, bankAccountId } = body
+    if (!periodStart || !periodEnd || !bankAccountId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    const start = new Date(periodStart)
+    const end = new Date(periodEnd)
+    if (end <= start) return NextResponse.json({ error: 'periodEnd must be after periodStart' }, { status: 400 })
+
+    const existingRun = await prisma.payrollRun.findFirst({ where: { companyId, periodStart: start, periodEnd: end } })
+    if (existingRun) return NextResponse.json({ error: 'A payroll run for this period has already been processed' }, { status: 409 })
+
+    const lockError = await checkLockDate(companyId, end)
+    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+
     const bankAccount = await prisma.bankAccount.findFirst({ where: { id: bankAccountId, companyId } })
     if (!bankAccount) return NextResponse.json({ error: 'Bank account not found' }, { status: 404 })
+
+    // Recompute from Attendance/guard data rather than trusting whatever the
+    // client submits — this used to accept the request body's grossPay/
+    // netPay/etc. wholesale and post them straight to the GL and bank
+    // balance with no server-side cross-check.
+    const guardPayslips = await computePayrollPreviews(companyId, start, end)
+    if (!guardPayslips.length) return NextResponse.json({ error: 'No active guards found for this period' }, { status: 400 })
 
     const totalGross = r2(guardPayslips.reduce((s: number, p: { grossPay: number }) => s + p.grossPay, 0))
     const totalDeductions = r2(guardPayslips.reduce((s: number, p: { totalDeductions: number }) => s + p.totalDeductions, 0))
@@ -144,6 +191,7 @@ export async function POST(req: NextRequest) {
             id: payslipId, payroll_run_id: runId, employee_id: g.guardId, payslip_number: `PS-${payslipId.substring(0, 8)}`,
             basic_salary: g.basicSalary, net_pay: g.netPay, total_deductions: g.totalDeductions,
             total_earnings: g.grossPay, status: 'Approved', created_by_id: userId,
+            hours_worked: g.hoursWorked ?? null, overtime_hours: g.overtimeHours ?? null, overtime_pay: g.overtimePay ?? null,
           },
         })
         const allLines = [...(g.earningsLines ?? []), ...(g.deductionLines ?? [])]

@@ -3,6 +3,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { checkLockDate } from '@/lib/lock-dates'
 
 const NORMAL_DEBIT = ['ASSET', 'EXPENSE']
 
@@ -68,6 +69,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     if (entry.status !== 'DRAFT') {
       return NextResponse.json({ error: 'Only DRAFT entries can be posted' }, { status: 400 })
     }
+    if (entry.entry_date) {
+      const lockError = await checkLockDate(session.companyId, new Date(entry.entry_date))
+      if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.journalEntry.update({
@@ -105,6 +110,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (action === 'void') {
     if (entry.status === 'VOID') {
       return NextResponse.json({ error: 'Entry is already voided' }, { status: 400 })
+    }
+    if (entry.entry_date) {
+      const lockError = await checkLockDate(session.companyId, new Date(entry.entry_date))
+      if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
     }
 
     const wasPosted = entry.status === 'POSTED'

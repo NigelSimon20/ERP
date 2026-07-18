@@ -9,7 +9,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const incident = await prisma.incident.findUnique({ where: { id: params.id } })
+  const incident = await prisma.incident.findFirst({ where: { id: params.id, companyId: session.companyId } })
   if (!incident) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const [site, guard, reportedByUser] = await Promise.all([
@@ -33,7 +33,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { companyId, userId, name: userName } = session
-  const existing = await prisma.incident.findUnique({ where: { id: params.id } })
+  const existing = await prisma.incident.findFirst({ where: { id: params.id, companyId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()

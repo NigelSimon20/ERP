@@ -10,11 +10,29 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { companyId, userId, name: userName } = session
-  const existing = await prisma.deployment.findUnique({ where: { id: params.id } })
+  const existing = await prisma.deployment.findFirst({ where: { id: params.id, companyId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
   const { status, endDate, hoursPerDay, ratePerHour, shift, shiftType } = body
+
+  const nextStatus = status ?? existing.status
+  const nextEndDate = endDate !== undefined ? (endDate ? new Date(endDate) : null) : existing.endDate
+  if (nextStatus === 'ACTIVE') {
+    const overlap = await prisma.deployment.findFirst({
+      where: {
+        companyId,
+        guardId: existing.guardId,
+        status: 'ACTIVE',
+        id: { not: existing.id },
+        startDate: { lte: nextEndDate ?? new Date('9999-12-31') },
+        OR: [{ endDate: null }, { endDate: { gte: existing.startDate } }],
+      },
+    })
+    if (overlap) {
+      return NextResponse.json({ error: 'Guard is already deployed elsewhere during this period' }, { status: 400 })
+    }
+  }
 
   const deployment = await prisma.deployment.update({
     where: { id: params.id },

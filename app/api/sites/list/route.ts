@@ -13,7 +13,7 @@ export async function GET() {
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const sites = await prisma.site.findMany({
-    where: { site_name: { not: null }, is_active: { not: false } },
+    where: { companyId: session.companyId, site_name: { not: null }, is_active: { not: false } },
     select: { id: true, site_name: true },
     orderBy: { site_name: 'asc' },
   })

@@ -19,7 +19,7 @@ interface Site { id: string; name: string }
 type FormValues = { guardId: string; siteId: string; shift: string; startDate: string; endDate: string; hoursPerDay: string; ratePerHour: string }
 
 const STATUS_STYLES: Record<string, string> = { ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', COMPLETED: 'bg-muted text-muted-foreground', CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
-const SHIFTS = ['DAY', 'NIGHT', 'SWING', 'ROTATING']
+const SHIFTS = ['DAY', 'NIGHT', 'FULLDAY', 'ROTATING']
 
 export default function DeploymentsPage() {
   const [deployments, setDeployments] = useState<Deployment[]>([])

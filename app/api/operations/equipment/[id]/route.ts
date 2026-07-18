@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { companyId, userId, name: userName } = session
-  const existing = await prisma.equipment.findUnique({ where: { id: params.id } })
+  const existing = await prisma.equipment.findFirst({ where: { id: params.id, companyId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
@@ -44,7 +44,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { companyId, userId, name: userName } = session
-  const existing = await prisma.equipment.findUnique({ where: { id: params.id } })
+  const existing = await prisma.equipment.findFirst({ where: { id: params.id, companyId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   await prisma.equipment.delete({ where: { id: params.id } })

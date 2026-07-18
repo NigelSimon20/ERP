@@ -19,7 +19,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     ? await prisma.bankAccount.findUnique({ where: { id: run.bankAccountId }, select: { id: true, bank_name: true, account_name: true } }).catch(() => null)
     : null
   const payslips = await prisma.payslip.findMany({
-    where: { employee_id: { not: null } },
+    where: { payroll_run_id: params.id },
   })
 
   return NextResponse.json({ run: { ...run, processedByUser, bankAccount, payslips } })

@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
 
   const { companyId, userId } = session
   const body = await req.json()
-  const { name, idNumber, phone, email, address, department, position, rank, dailyRate, status, dateOfBirth, dateHired } = body
+  const { name, idNumber, phone, whatsapp, email, address, department, position, rank, dailyRate, basicSalary, status, dateOfBirth, dateHired } = body
 
   if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 
@@ -69,12 +69,14 @@ export async function POST(req: NextRequest) {
       last_name,
       national_id: idNumber || null,
       phone: phone || null,
+      whatsapp: whatsapp || null,
       email: email || null,
       address: address || null,
       department: department || null,
       position: position || null,
       employee_type: rank || null,
       daily_rate: dailyRate != null ? Number(dailyRate) : null,
+      basic_salary: basicSalary != null ? Number(basicSalary) : null,
       date_of_birth: dateOfBirth || null,
       hire_date: dateHired || null,
       status: status || 'Active',

@@ -64,7 +64,10 @@ export async function POST(req: NextRequest) {
 
   const formData = await req.formData()
   const file = formData.get('file') as File | null
-  const folder = ((formData.get('folder') as string) || 'general').toLowerCase().replace(/\s+/g, '-')
+  const rawFolder = ((formData.get('folder') as string) || 'general').toLowerCase().replace(/\s+/g, '-')
+  // Strip anything but a flat folder-name segment — no path separators or
+  // traversal, since this is joined straight into a filesystem path below.
+  const folder = rawFolder.replace(/[^a-z0-9-]/g, '') || 'general'
 
   if (!file) return NextResponse.json({ error: 'No file provided' }, { status: 400 })
   if (file.size > MAX_SIZE) return NextResponse.json({ error: 'File exceeds 10 MB limit' }, { status: 400 })
@@ -79,11 +82,19 @@ export async function POST(req: NextRequest) {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
   const fileName = `${timestamp}-${safeName}`
 
-  const uploadDir = path.join(process.cwd(), 'public', 'uploads', companyId, folder)
+  // Stored outside public/ so files are only reachable through the
+  // authenticated, company-scoped /api/files/[id]/download route below --
+  // anything under public/ is served by Next.js with no auth check at all.
+  const uploadsRoot = path.join(process.cwd(), 'storage', 'uploads')
+  const uploadDir = path.join(uploadsRoot, companyId, folder)
+  const destPath = path.join(uploadDir, fileName)
+  if (!uploadDir.startsWith(uploadsRoot + path.sep) || !destPath.startsWith(uploadDir + path.sep)) {
+    return NextResponse.json({ error: 'Invalid folder or file name' }, { status: 400 })
+  }
   await mkdir(uploadDir, { recursive: true })
-  await writeFile(path.join(uploadDir, fileName), buffer)
+  await writeFile(destPath, buffer)
 
-  const fileUrl = `/uploads/${companyId}/${folder}/${fileName}`
+  const fileUrl = `${companyId}/${folder}/${fileName}`
 
   const record = await prisma.fileRecord.create({
     data: {

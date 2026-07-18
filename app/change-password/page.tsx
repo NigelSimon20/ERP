@@ -11,6 +11,7 @@ import { KeyRegular, ShieldRegular } from '@fluentui/react-icons';
 export default function ChangePasswordPage() {
   const router = useRouter()
   const [checked, setChecked] = useState(false)
+  const [oldPassword, setOldPassword] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -35,7 +36,7 @@ export default function ChangePasswordPage() {
       const res = await fetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password, confirmPassword }),
+        body: JSON.stringify({ oldPassword, password, confirmPassword }),
       })
       const json = await res.json()
       if (!res.ok) { toast.error(json.error ?? 'Failed'); return }
@@ -73,6 +74,17 @@ export default function ChangePasswordPage() {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="oldPassword">Current Password</Label>
+              <Input
+                id="oldPassword"
+                type="password"
+                value={oldPassword}
+                onChange={e => setOldPassword(e.target.value)}
+                placeholder="Your current password"
+                required
+              />
+            </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">New Password</Label>
               <Input

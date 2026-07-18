@@ -7,6 +7,27 @@ function round2dp(value: number): number {
   return Math.round(value * 100) / 100
 }
 
+// Due dates are stored as date-only values, which parse as UTC midnight of
+// that calendar day. Comparing "now > dueDate" directly makes something
+// overdue from the first moment of its own due date in any timezone ahead of
+// UTC (e.g. Zimbabwe, UTC+2, is overdue from 2am local on the due date
+// itself) — a full day early. Give the due date its entire calendar day by
+// only treating a date as overdue once the day *after* it has begun.
+export function overdueThreshold(dueDate: Date | string): Date {
+  return new Date(new Date(dueDate).getTime() + 24 * 60 * 60 * 1000)
+}
+
+export function isPastDue(dueDate: Date | string, reference: Date = new Date()): boolean {
+  return reference >= overdueThreshold(dueDate)
+}
+
+// For Prisma queries filtering `due_date: { lt: ... }` — the bound a stored
+// due_date must be strictly before to count as overdue right now (i.e. the
+// inverse of overdueThreshold, solved for dueDate instead of reference).
+export function overdueQueryCutoff(reference: Date = new Date()): Date {
+  return new Date(reference.getTime() - 24 * 60 * 60 * 1000)
+}
+
 // ----------------------
 // 1.1 INVOICE CALCULATIONS
 // ----------------------
@@ -69,7 +90,7 @@ export function determineInvoiceStatus(totalAmount: number, paidAmount: number, 
   const pa = Number(paidAmount) || 0
   if (pa >= ta && ta > 0) return 'PAID'
   if (pa > 0 && pa < ta) return 'PARTIAL'
-  if (new Date() > new Date(dueDate) && pa === 0) return 'OVERDUE'
+  if (isPastDue(dueDate) && pa === 0) return 'OVERDUE'
   return 'UNPAID'
 }
 

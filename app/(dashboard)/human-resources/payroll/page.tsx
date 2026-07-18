@@ -18,7 +18,7 @@ interface PreviewResult { previews: GuardPreview[]; totalGross: number; totalDed
 interface PayrollRun { id: string; reference: string; payPeriodStart: string; payPeriodEnd: string; runDate: string; totalGross: number; totalDeductions: number; totalNet: number; status: string; processedBy: { name: string } | null; bankAccount: { name: string } | null }
 type SetupForm = { periodStart: string; periodEnd: string; bankAccountId: string }
 
-const STATUS_STYLES: Record<string, string> = { CONFIRMED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', DRAFT: 'bg-muted text-muted-foreground', CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const STATUS_STYLES: Record<string, string> = { PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', CONFIRMED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', DRAFT: 'bg-muted text-muted-foreground' }
 
 export default function PayrollPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
@@ -80,7 +80,7 @@ export default function PayrollPage() {
     try {
       const res = await fetch('/api/hr/payroll?action=confirm', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ periodStart: setupData.periodStart, periodEnd: setupData.periodEnd, bankAccountId: setupData.bankAccountId, guardPayslips: preview.previews }),
+        body: JSON.stringify({ periodStart: setupData.periodStart, periodEnd: setupData.periodEnd, bankAccountId: setupData.bankAccountId }),
       })
       const json = await res.json()
       if (!res.ok) { toast.error(json.error); return }

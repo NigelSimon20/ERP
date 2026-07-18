@@ -5,6 +5,19 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 
+// Leave balance is deducted in working days, not calendar days — a
+// Friday-to-Monday request should cost 2 days, not 4.
+function countWeekdays(start: Date, end: Date): number {
+  let count = 0
+  const cur = new Date(start)
+  while (cur <= end) {
+    const day = cur.getDay()
+    if (day !== 0 && day !== 6) count++
+    cur.setDate(cur.getDate() + 1)
+  }
+  return count
+}
+
 export async function GET(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -100,7 +113,7 @@ export async function POST(req: NextRequest) {
 
   const start = new Date(startDate)
   const end = endDate ? new Date(endDate) : new Date(startDate)
-  const days = Math.ceil((end.getTime() - start.getTime()) / 86400000) + 1
+  const days = Math.max(1, countWeekdays(start, end))
 
   const request = await prisma.leaveRequest.create({
     data: {

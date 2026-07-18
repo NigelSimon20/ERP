@@ -13,6 +13,7 @@ import {
   round2dp,
 } from '@/lib/calculations'
 import { recalculateSupplierOutstandingBalance } from '@/lib/finance-recalculation'
+import { checkLockDate } from '@/lib/lock-dates'
 import { z } from 'zod'
 
 const paymentSchema = z.object({
@@ -49,6 +50,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const data = paymentSchema.parse(await req.json())
+
+    const lockError = await checkLockDate(session.companyId, new Date(data.paymentDate))
+    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
 
     const bankAccount = await prisma.bankAccount.findFirst({ where: { id: data.bankAccountId, companyId: session.companyId } })
     if (!bankAccount) return NextResponse.json({ error: 'Bank account not found' }, { status: 404 })

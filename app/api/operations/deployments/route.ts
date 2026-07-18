@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { companyId } = session
   const { searchParams } = new URL(req.url)
   const siteId = searchParams.get('siteId')
   const guardId = searchParams.get('guardId')
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
 
   const deployments = await prisma.deployment.findMany({
     where: {
+      companyId,
       ...(siteId ? { siteId } : {}),
       ...(guardId ? { guardId } : {}),
       ...(status ? { status } : {}),
@@ -25,7 +27,20 @@ export async function GET(req: NextRequest) {
     orderBy: { startDate: 'desc' },
   })
 
-  return NextResponse.json({ deployments })
+  const [guards, sites] = await Promise.all([
+    prisma.guard.findMany({ where: { id: { in: deployments.map((d) => d.guardId) } }, select: { id: true, full_name: true, employee_code: true } }),
+    prisma.site.findMany({ where: { id: { in: deployments.map((d) => d.siteId) } }, select: { id: true, site_name: true } }),
+  ])
+  const guardById = new Map(guards.map((g) => [g.id, g]))
+  const siteById = new Map(sites.map((s) => [s.id, s]))
+
+  return NextResponse.json({
+    deployments: deployments.map((d) => ({
+      ...d,
+      guard: guardById.get(d.guardId) ? { name: guardById.get(d.guardId)!.full_name, employeeNumber: guardById.get(d.guardId)!.employee_code } : null,
+      site: siteById.get(d.siteId) ? { name: siteById.get(d.siteId)!.site_name } : null,
+    })),
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -44,9 +59,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'End date must be after start date' }, { status: 400 })
   }
 
+  const site = await prisma.site.findFirst({ where: { id: siteId, companyId } })
+  if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+  if (site.status && site.status !== 'Active' && site.status !== 'ACTIVE') {
+    return NextResponse.json({ error: `Cannot deploy to a ${site.status} site` }, { status: 400 })
+  }
+
   // Overlap check
   const overlap = await prisma.deployment.findFirst({
     where: {
+      companyId,
       guardId,
       status: 'ACTIVE',
       startDate: { lte: endDate ? new Date(endDate) : new Date('9999-12-31') },
@@ -64,6 +86,7 @@ export async function POST(req: NextRequest) {
   const deployment = await prisma.deployment.create({
     data: {
       id: crypto.randomUUID(),
+      companyId,
       guardId,
       siteId,
       shiftType: (shift || shiftType) || 'DAY',

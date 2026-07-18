@@ -7,6 +7,11 @@ import { logAudit } from '@/lib/audit'
 import { nextInvoiceNumber } from '@/lib/auto-numbers'
 import { toDbInvoiceStatus } from '@/lib/invoice-status'
 
+function mapQuotation(q: { subtotal: unknown; tax: unknown; total: unknown; [k: string]: unknown }) {
+  const { subtotal, tax, total, ...rest } = q
+  return { ...rest, subtotal: Number(subtotal), taxAmount: Number(tax), totalAmount: Number(total) }
+}
+
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -16,7 +21,15 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
     include: { lead: true },
   })
   if (!quotation) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ quotation })
+
+  const items = await prisma.quotationItem.findMany({ where: { quotationId: quotation.id } })
+
+  return NextResponse.json({
+    quotation: {
+      ...mapQuotation(quotation),
+      items: items.map((i) => ({ id: i.id, description: i.description, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice), taxRate: Number(i.taxRate ?? 0), lineTotal: Number(i.total) })),
+    },
+  })
 }
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
@@ -34,6 +47,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   // ── Convert to Invoice ────────────────────────────────────────────────────
   if (action === 'convert-to-invoice') {
+    if (existing.convertedInvoiceId) {
+      return NextResponse.json({ error: 'This quotation has already been converted to an invoice' }, { status: 409 })
+    }
     if (existing.status !== 'ACCEPTED') {
       return NextResponse.json({ error: 'Only ACCEPTED quotations can be converted to invoices' }, { status: 400 })
     }
@@ -44,10 +60,22 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const invoiceNumber = await nextInvoiceNumber(companyId)
     const dueDate = new Date()
     dueDate.setDate(dueDate.getDate() + 30)
+    const invoiceId = crypto.randomUUID()
+
+    // Claim the quotation atomically before creating the invoice — if two
+    // requests race, only one can flip convertedInvoiceId from null, so only
+    // one invoice is ever created for a given quotation.
+    const claimed = await prisma.quotation.updateMany({
+      where: { id: params.id, convertedInvoiceId: null },
+      data: { convertedInvoiceId: invoiceId },
+    })
+    if (claimed.count === 0) {
+      return NextResponse.json({ error: 'This quotation has already been converted to an invoice' }, { status: 409 })
+    }
 
     const invoice = await prisma.salesInvoice.create({
       data: {
-        id: crypto.randomUUID(),
+        id: invoiceId,
         companyId,
         invoice_number: invoiceNumber,
         customer_id: existing.customerId,
@@ -63,7 +91,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       },
     })
 
-    await prisma.quotation.update({ where: { id: params.id }, data: { status: 'ACCEPTED' } })
     await logAudit({ companyId, userId, userName: 'System', action: 'CREATE', module: 'BD', recordId: invoice.id, newValues: { source: 'quotation', quoteNumber: existing.quoteNumber } })
     return NextResponse.json({ invoiceId: invoice.id, invoiceNumber })
   }
@@ -72,15 +99,15 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (existing.status !== 'DRAFT') {
     // Allow status update for non-draft (e.g., SENT→ACCEPTED)
     const body = await req.json()
-    if (body.status && ['SENT', 'ACCEPTED', 'DECLINED', 'EXPIRED'].includes(body.status)) {
+    if (body.status && ['SENT', 'ACCEPTED', 'REJECTED', 'EXPIRED'].includes(body.status)) {
       const updated = await prisma.quotation.update({ where: { id: params.id }, data: { status: body.status } })
-      return NextResponse.json({ quotation: updated })
+      return NextResponse.json({ quotation: mapQuotation(updated) })
     }
     return NextResponse.json({ error: 'Only DRAFT quotations can be fully edited' }, { status: 409 })
   }
 
   const body = await req.json()
-  const { customerId, leadId, issueDate, validUntil, notes, status, subtotal, tax, total } = body
+  const { customerId, leadId, issueDate, validUntil, notes, status, subtotal, tax, taxAmount, total, totalAmount } = body
 
   const updated = await prisma.quotation.update({
     where: { id: params.id },
@@ -92,14 +119,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       ...(notes !== undefined ? { notes: notes || null } : {}),
       ...(status ? { status } : {}),
       ...(subtotal !== undefined ? { subtotal: Number(subtotal) } : {}),
-      ...(tax !== undefined ? { tax: Number(tax) } : {}),
-      ...(total !== undefined ? { total: Number(total) } : {}),
+      ...((tax ?? taxAmount) !== undefined ? { tax: Number(tax ?? taxAmount) } : {}),
+      ...((total ?? totalAmount) !== undefined ? { total: Number(total ?? totalAmount) } : {}),
     },
     include: { lead: { select: { companyName: true } } },
   })
 
   await logAudit({ companyId, userId, userName: session.name || 'System', action: 'UPDATE', module: 'BD', recordId: params.id, oldValues: { status: existing.status }, newValues: { status: updated.status } })
-  return NextResponse.json({ quotation: updated })
+  return NextResponse.json({ quotation: mapQuotation(updated) })
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: { id: string } }) {

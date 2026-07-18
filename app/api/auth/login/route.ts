@@ -84,9 +84,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!valid) {
-      if (!user) {
-        await recordFail(lowerEmail)
-      }
+      await recordFail(lowerEmail)
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 

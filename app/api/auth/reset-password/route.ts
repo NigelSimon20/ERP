@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, generateOTP } from '@/lib/auth'
+import { sendWhatsAppMessage } from '@/lib/whatsapp'
 
 const requestSchema = z.object({ email: z.string().email() })
 
@@ -22,12 +23,12 @@ export async function POST(req: NextRequest) {
 
       const user = await prisma.user.findUnique({
         where: { email: lowerEmail },
-        select: { id: true },
+        select: { id: true, whatsapp: true, phone: true },
       })
 
-      // Always return success to avoid email enumeration
-      if (!user) {
-        return NextResponse.json({ success: true, otp: null })
+      // Always return the same response to avoid account enumeration
+      if (!user || (!user.whatsapp && !user.phone)) {
+        return NextResponse.json({ success: true })
       }
 
       // Invalidate any prior OTPs for this email
@@ -46,7 +47,12 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      return NextResponse.json({ success: true, otp })
+      await sendWhatsAppMessage({
+        to: (user.whatsapp || user.phone) as string,
+        message: `Your Ravenshield ERP password reset code is ${otp}. It expires in 15 minutes. If you didn't request this, ignore this message.`,
+      })
+
+      return NextResponse.json({ success: true })
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to generate OTP'
       return NextResponse.json({ error: message }, { status: 400 })

@@ -1,3 +1,5 @@
+import { isPastDue } from '@/lib/calculations'
+
 // SalesInvoice.status in the live DB is plain Title-Case text imported from
 // the legacy system ("Sent", "Partial", "Paid", "Void" — no "Draft" or
 // "Unpaid" ever appears), while the rest of the finance code/UI was written
@@ -26,7 +28,7 @@ export function toDbInvoiceStatus(uiStatus: string): string {
 export function fromDbInvoiceStatus(dbStatus: string | null | undefined, dueDate?: string | Date | null, balanceDue?: number): string {
   const mapped = dbStatus ? (FROM_DB[dbStatus] ?? dbStatus.toUpperCase()) : 'UNPAID'
   if (mapped === 'VOID' || mapped === 'PAID') return mapped
-  if (dueDate && Number(balanceDue ?? 0) > 0 && new Date() > new Date(dueDate)) return 'OVERDUE'
+  if (dueDate && Number(balanceDue ?? 0) > 0 && isPastDue(dueDate)) return 'OVERDUE'
   return mapped
 }
 

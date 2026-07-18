@@ -10,18 +10,26 @@ export async function GET(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const { companyId } = session
   const { searchParams } = new URL(req.url)
   const category = searchParams.get('category')
   const active = searchParams.get('active')
+  const status = searchParams.get('status')
   const equipment = await prisma.equipment.findMany({
     where: {
+      companyId,
       ...(category ? { category } : {}),
       ...(active ? { is_active: active === 'true' } : {}),
+      ...(status === 'AVAILABLE' ? { is_active: true } : {}),
     },
     orderBy: { equipment_name: 'asc' },
   })
 
-  return NextResponse.json({ equipment: equipment.map(toEquipmentDto) })
+  const filtered = status === 'AVAILABLE'
+    ? equipment.filter((e) => (e.quantity_in_stock ?? 0) - (e.quantity_issued ?? 0) - (e.quantity_damaged ?? 0) - (e.quantity_lost ?? 0) > 0)
+    : equipment
+
+  return NextResponse.json({ equipment: filtered.map(toEquipmentDto) })
 }
 
 export async function POST(req: NextRequest) {
@@ -37,6 +45,7 @@ export async function POST(req: NextRequest) {
   const item = await prisma.equipment.create({
     data: {
       id: crypto.randomUUID(),
+      companyId,
       equipment_name: name,
       equipment_code: code || null,
       equipment_class: equipmentClass || null,

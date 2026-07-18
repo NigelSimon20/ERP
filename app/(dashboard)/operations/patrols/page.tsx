@@ -19,7 +19,7 @@ interface Guard { id: string; name: string }
 type ScheduleForm = { siteId: string; guardId: string; scheduledTime: string; notes: string }
 type CompletionForm = { actualTime: string; status: string; notes: string }
 
-const STATUS_STYLES: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', MISSED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', PARTIAL: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
+const STATUS_STYLES: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', MISSED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', DELAYED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
 
 function fmtTime(dt: string | null) { return dt ? new Date(dt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—' }
 
@@ -193,7 +193,7 @@ export default function PatrolsPage() {
               <Label>Outcome</Label>
               <select className="w-full h-9 rounded-md border border-border px-3 text-sm" {...cr('status')} aria-label="Patrol outcome">
                 <option value="COMPLETED">Completed</option>
-                <option value="PARTIAL">Partial</option>
+                <option value="DELAYED">Delayed</option>
                 <option value="MISSED">Missed</option>
               </select>
             </div>

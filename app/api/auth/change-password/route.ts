@@ -3,7 +3,7 @@ import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
-import { hashPassword } from '@/lib/auth'
+import { hashPassword, verifyPassword } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
 
 export async function POST(req: NextRequest) {
@@ -12,13 +12,21 @@ export async function POST(req: NextRequest) {
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { password, confirmPassword } = await req.json()
+    const { oldPassword, password, confirmPassword } = await req.json()
 
+    if (!oldPassword) {
+      return NextResponse.json({ error: 'Current password is required' }, { status: 400 })
+    }
     if (!password || password.length < 8) {
       return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 })
     }
     if (password !== confirmPassword) {
       return NextResponse.json({ error: 'Passwords do not match' }, { status: 400 })
+    }
+
+    const current = await prisma.user.findUnique({ where: { id: session.userId }, select: { password: true } })
+    if (!current || !(await verifyPassword(oldPassword, current.password))) {
+      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 400 })
     }
 
     const hashed = await hashPassword(password)

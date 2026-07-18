@@ -16,8 +16,9 @@ import { AddRegular, DeleteRegular, DocumentRegular, PaymentRegular, ProhibitedR
 interface Invoice { id: string; billNumber: string; reference: string | null; issueDate: string; dueDate: string; totalAmount: number; paidAmount: number; balanceDue: number; status: string; supplier: { id: string; name: string } }
 interface Supplier { id: string; name: string }
 interface BankAccount { id: string; bankName: string; accountNumber: string }
+interface GLAccount { id: string; account_name: string; account_code: string; account_type: string }
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
-type InvoiceForm = { supplierId: string; reference: string; issueDate: string; dueDate: string; description: string; lineItems: LineItem[] }
+type InvoiceForm = { supplierId: string; reference: string; issueDate: string; dueDate: string; description: string; expenseAccountId: string; lineItems: LineItem[] }
 type PaymentForm = { bankAccountId: string; amount: string; paymentDate: string; notes: string }
 
 const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-foreground', UNPAID: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', PARTIAL: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', VOID: 'bg-muted text-brand-muted-light' }
@@ -32,13 +33,15 @@ export default function PurchaseInvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+  const [glAccounts, setGlAccounts] = useState<GLAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [statusTab, setStatusTab] = useState('ALL')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [paymentTarget, setPaymentTarget] = useState<Invoice | null>(null)
+  const expenseAccounts = useMemo(() => glAccounts.filter((a) => a.account_type === 'EXPENSE'), [glAccounts])
 
   const { register: invReg, handleSubmit: invSubmit, control: invCtrl, reset: invReset, formState: { isSubmitting: invSubmitting } } = useForm<InvoiceForm>({
-    defaultValues: { supplierId: '', reference: '', issueDate: '', dueDate: '', description: '', lineItems: [BLANK_LINE] },
+    defaultValues: { supplierId: '', reference: '', issueDate: '', dueDate: '', description: '', expenseAccountId: '', lineItems: [BLANK_LINE] },
   })
   const { fields, append, remove } = useFieldArray({ control: invCtrl, name: 'lineItems' })
   const watchedItems = useWatch({ control: invCtrl, name: 'lineItems' }) ?? []
@@ -72,9 +75,10 @@ export default function PurchaseInvoicesPage() {
 
   useEffect(() => { fetchInvoices() }, [statusTab])
   useEffect(() => {
-    Promise.all([fetch('/api/finance/suppliers').then(r => r.json()), fetch('/api/finance/bank-accounts').then(r => r.json())]).then(([s, b]) => {
+    Promise.all([fetch('/api/finance/suppliers').then(r => r.json()), fetch('/api/finance/bank-accounts').then(r => r.json()), fetch('/api/finance/accounts').then(r => r.json())]).then(([s, b, g]) => {
       setSuppliers(s.suppliers ?? [])
       setBankAccounts(b.accounts ?? [])
+      setGlAccounts(g.accounts ?? [])
     }).catch((err) => console.error(err))
   }, [])
 
@@ -195,6 +199,17 @@ export default function PurchaseInvoicesPage() {
               <div className="space-y-1.5"><Label>Description</Label><Input placeholder="Bill description" {...invReg('description')} /></div>
               <div className="space-y-1.5"><Label>Issue Date *</Label><Input type="date" {...invReg('issueDate', { required: true })} /></div>
               <div className="space-y-1.5"><Label>Due Date *</Label><Input type="date" {...invReg('dueDate', { required: true })} /></div>
+              <div className="space-y-1.5 col-span-2">
+                <Label>Expense Account</Label>
+                <Controller control={invCtrl} name="expenseAccountId" render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Default expense account" /></SelectTrigger>
+                    <SelectContent>
+                      {expenseAccounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.account_code} — {a.account_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
             </div>
 
             <div>

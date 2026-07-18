@@ -91,6 +91,7 @@ export async function middleware(req: NextRequest) {
     pathname.startsWith('/ai-helpdesk') ||
     pathname.startsWith('/external-portals') ||
     pathname.startsWith('/settings') ||
+    pathname.startsWith('/portal') ||
     isApiRoute(pathname)
 
   if (!isProtected) return res

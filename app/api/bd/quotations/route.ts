@@ -6,6 +6,11 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { nextQuoteNumber } from '@/lib/auto-numbers'
 
+function mapQuotation(q: { subtotal: unknown; tax: unknown; total: unknown; [k: string]: unknown }) {
+  const { subtotal, tax, total, ...rest } = q
+  return { ...rest, subtotal: Number(subtotal), taxAmount: Number(tax), totalAmount: Number(total) }
+}
+
 export async function GET() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -18,7 +23,7 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   })
 
-  return NextResponse.json({ quotations })
+  return NextResponse.json({ quotations: quotations.map(mapQuotation) })
 }
 
 export async function POST(req: NextRequest) {
@@ -47,18 +52,36 @@ export async function POST(req: NextRequest) {
   taxAmount = Math.round(taxAmount * 100) / 100
   const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100
 
-  const quotation = await prisma.quotation.create({
-    data: {
-      id: crypto.randomUUID(), companyId, quoteNumber,
-      customerId: customerId || null, leadId: leadId || null,
-      issueDate: new Date(issueDate), validUntil: new Date(validUntil || new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
-      status: 'DRAFT', subtotal, tax: taxAmount, total: totalAmount,
-      notes: notes || null,
-      updatedAt: new Date(),
-    },
-    include: { lead: { select: { companyName: true } } },
+  const quotationId = crypto.randomUUID()
+
+  const quotation = await prisma.$transaction(async (tx) => {
+    const created = await tx.quotation.create({
+      data: {
+        id: quotationId, companyId, quoteNumber,
+        customerId: customerId || null, leadId: leadId || null,
+        issueDate: new Date(issueDate), validUntil: new Date(validUntil || new Date().getTime() + 30 * 24 * 60 * 60 * 1000),
+        status: 'DRAFT', subtotal, tax: taxAmount, total: totalAmount,
+        notes: notes || null,
+        updatedAt: new Date(),
+      },
+      include: { lead: { select: { companyName: true } } },
+    })
+
+    await tx.quotationItem.createMany({
+      data: processedItems.map((item) => ({
+        id: crypto.randomUUID(),
+        quotationId,
+        description: item.description,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        taxRate: item.taxRate ?? 0,
+        total: item.lineTotal,
+      })),
+    })
+
+    return created
   })
 
   await logAudit({ companyId, userId, userName: session.name || 'System', action: 'CREATE', module: 'BD', recordId: quotation.id, newValues: { quoteNumber, total: totalAmount } })
-  return NextResponse.json({ quotation }, { status: 201 })
+  return NextResponse.json({ quotation: { ...mapQuotation(quotation), items: processedItems } }, { status: 201 })
 }

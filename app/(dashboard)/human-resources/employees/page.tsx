@@ -13,8 +13,8 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { AddRegular, ArrowDownloadRegular, ChatRegular, CopyRegular, DeleteRegular, EditRegular, KeyRegular, MailRegular, PeopleRegular, PersonAddRegular, PrintRegular } from '@fluentui/react-icons';
 
-interface Guard { id: string; employeeNumber: string; name: string; idNumber: string | null; phone: string | null; email: string | null; department: string | null; rank: string | null; status: string; dailyRate: number; dateHired: string | null; whatsapp: string | null }
-type FormValues = { name: string; idNumber: string; phone: string; email: string; address: string; department: string; position: string; rank: string; dailyRate: string; status: string; dateOfBirth: string; dateHired: string; whatsapp: string }
+interface Guard { id: string; employeeNumber: string; name: string; idNumber: string | null; phone: string | null; email: string | null; department: string | null; rank: string | null; status: string; dailyRate: number; basicSalary: number | null; dateHired: string | null; whatsapp: string | null }
+type FormValues = { name: string; idNumber: string; phone: string; email: string; address: string; department: string; position: string; rank: string; dailyRate: string; basicSalary: string; status: string; dateOfBirth: string; dateHired: string; whatsapp: string }
 
 interface CredentialsData {
   guardId: string
@@ -63,7 +63,7 @@ export default function EmployeesPage() {
   const [accountRole, setAccountRole] = useState('GUARD')
 
   const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<FormValues>({
-    defaultValues: { name: '', idNumber: '', phone: '', email: '', address: '', department: '', position: '', rank: 'Guard', dailyRate: '', status: 'Active', dateOfBirth: '', dateHired: '', whatsapp: '' },
+    defaultValues: { name: '', idNumber: '', phone: '', email: '', address: '', department: '', position: '', rank: 'Guard', dailyRate: '', basicSalary: '', status: 'Active', dateOfBirth: '', dateHired: '', whatsapp: '' },
   })
 
   async function fetchGuards() {
@@ -87,20 +87,20 @@ export default function EmployeesPage() {
 
   function openCreate() {
     setEditing(null)
-    reset({ name: '', idNumber: '', phone: '', email: '', address: '', department: '', position: '', rank: 'Guard', dailyRate: '', status: 'Active', dateOfBirth: '', dateHired: new Date().toISOString().split('T')[0], whatsapp: '' })
+    reset({ name: '', idNumber: '', phone: '', email: '', address: '', department: '', position: '', rank: 'Guard', dailyRate: '', basicSalary: '', status: 'Active', dateOfBirth: '', dateHired: new Date().toISOString().split('T')[0], whatsapp: '' })
     setShowDialog(true)
   }
 
   function openEdit(g: Guard) {
     setEditing(g)
-    reset({ name: g.name, idNumber: g.idNumber ?? '', phone: g.phone ?? '', email: g.email ?? '', address: '', department: g.department ?? '', position: '', rank: g.rank ?? 'Guard', dailyRate: String(Number(g.dailyRate)), status: g.status, dateOfBirth: '', dateHired: g.dateHired?.split('T')[0] ?? '', whatsapp: g.whatsapp ?? '' })
+    reset({ name: g.name, idNumber: g.idNumber ?? '', phone: g.phone ?? '', email: g.email ?? '', address: '', department: g.department ?? '', position: '', rank: g.rank ?? 'Guard', dailyRate: String(Number(g.dailyRate)), basicSalary: g.basicSalary != null ? String(g.basicSalary) : '', status: g.status, dateOfBirth: '', dateHired: g.dateHired?.split('T')[0] ?? '', whatsapp: g.whatsapp ?? '' })
     setShowDialog(true)
   }
 
   async function onSubmit(data: FormValues) {
     const url = editing ? `/api/hr/employees/${editing.id}` : '/api/hr/employees'
     const method = editing ? 'PUT' : 'POST'
-    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, dailyRate: Number(data.dailyRate) || 0 }) })
+    const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...data, dailyRate: Number(data.dailyRate) || 0, basicSalary: data.basicSalary ? Number(data.basicSalary) : undefined }) })
     const json = await res.json()
     if (!res.ok) { toast.error(json.error); return }
     toast.success(editing ? 'Employee updated' : `Employee created — ${json.guard?.employeeNumber}`)
@@ -337,6 +337,11 @@ Please change your password on first login.
                 )} />
               </div>
               <div className="space-y-1.5"><Label>Daily Rate *</Label><Input type="number" step="0.01" min="0" placeholder="0.00" {...register('dailyRate', { required: true })} /></div>
+              <div className="space-y-1.5">
+                <Label>Basic Salary (monthly)</Label>
+                <Input type="number" step="0.01" min="0" placeholder="0.00" {...register('basicSalary')} />
+                <p className="text-xs text-brand-muted-light">Used to calculate payroll — leave blank and payroll will pay $0 for this employee.</p>
+              </div>
               <div className="space-y-1.5"><Label>Date of Birth</Label><Input type="date" {...register('dateOfBirth')} /></div>
               <div className="space-y-1.5"><Label>Date Hired</Label><Input type="date" {...register('dateHired')} /></div>
               <div className="col-span-2 space-y-1.5"><Label>Address</Label><Input placeholder="Residential address" {...register('address')} /></div>

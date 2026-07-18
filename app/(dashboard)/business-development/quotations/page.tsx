@@ -14,13 +14,13 @@ import toast from 'react-hot-toast'
 import { AddRegular, DeleteRegular, DocumentRegular, PrintRegular } from '@fluentui/react-icons';
 
 interface QuotationItem { id: string; description: string; quantity: number; unitPrice: number; taxRate: number; lineTotal: number }
-interface Quotation { id: string; quoteNumber: string; status: string; issueDate: string; validUntil: string | null; subtotal: number; taxAmount: number; totalAmount: number; notes: string | null; customer: { id: string; name: string } | null; lead: { id: string; companyName: string } | null; items: QuotationItem[] }
+interface Quotation { id: string; quoteNumber: string; status: string; issueDate: string; validUntil: string | null; subtotal: number; taxAmount: number; totalAmount: number; notes: string | null; convertedInvoiceId: string | null; customer: { id: string; name: string } | null; lead: { id: string; companyName: string } | null; items?: QuotationItem[] }
 interface Customer { id: string; name: string }
 interface Lead { id: string; companyName: string }
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
 type FormValues = { linkType: 'customer' | 'lead'; customerId: string; leadId: string; issueDate: string; validUntil: string; notes: string; items: LineItem[] }
 
-const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-muted-foreground', SENT: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', ACCEPTED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', DECLINED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', EXPIRED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', CONVERTED: 'bg-brand-navy text-white' }
+const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-muted-foreground', SENT: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', ACCEPTED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', EXPIRED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
 const TAX_RATES = [0, 5, 10, 14.5, 15, 20]
 
 function calcLineTotals(items: LineItem[]) {
@@ -109,7 +109,15 @@ export default function QuotationsPage() {
     toast.success('Quotation deleted'); fetchQuotations()
   }
 
-  function printQuote(q: Quotation) {
+  async function printQuote(q: Quotation) {
+    let items = q.items
+    if (!items) {
+      const res = await fetch(`/api/bd/quotations/${q.id}`)
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Failed to load quotation'); return }
+      items = json.quotation.items ?? []
+    }
+
     const w = window.open('', '_blank')!
     w.document.write(`<!DOCTYPE html><html><head><title>${q.quoteNumber}</title><style>body{font-family:sans-serif;padding:40px;max-width:700px;margin:0 auto}h1{color:#111827}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #E5E7EB;padding:8px 12px;text-align:left}th{background:#F8FAFC}tfoot td{font-weight:bold}.total{font-size:1.2em;color:#DC2626}</style></head><body>
       <h1>QUOTATION</h1><p><strong>Quote #:</strong> ${q.quoteNumber}</p>
@@ -117,7 +125,7 @@ export default function QuotationsPage() {
       ${q.validUntil ? `<p><strong>Valid Until:</strong> ${formatDate(new Date(q.validUntil))}</p>` : ''}
       <p><strong>To:</strong> ${q.customer?.name ?? q.lead?.companyName ?? '—'}</p>
       <table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Tax</th><th>Total</th></tr></thead>
-      <tbody>${q.items.map(i => `<tr><td>${i.description}</td><td>${i.quantity}</td><td>${formatCurrency(Number(i.unitPrice))}</td><td>${i.taxRate}%</td><td>${formatCurrency(Number(i.lineTotal))}</td></tr>`).join('')}</tbody>
+      <tbody>${(items ?? []).map(i => `<tr><td>${i.description}</td><td>${i.quantity}</td><td>${formatCurrency(Number(i.unitPrice))}</td><td>${i.taxRate}%</td><td>${formatCurrency(Number(i.lineTotal))}</td></tr>`).join('')}</tbody>
       <tfoot><tr><td colspan="4">Subtotal</td><td>${formatCurrency(Number(q.subtotal))}</td></tr>
       <tr><td colspan="4">Tax</td><td>${formatCurrency(Number(q.taxAmount))}</td></tr>
       <tr><td colspan="4" class="total">TOTAL</td><td class="total">${formatCurrency(Number(q.totalAmount))}</td></tr></tfoot></table>
@@ -162,7 +170,7 @@ export default function QuotationsPage() {
                           <option value="DRAFT">Draft</option>
                           <option value="SENT">Sent</option>
                           <option value="ACCEPTED">Accepted</option>
-                          <option value="DECLINED">Declined</option>
+                          <option value="REJECTED">Declined</option>
                           <option value="EXPIRED">Expired</option>
                         </select>
                       ) : (
@@ -172,7 +180,7 @@ export default function QuotationsPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button type="button" onClick={() => printQuote(q)} className="p-1 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" aria-label="Print quote"><PrintRegular className="h-3.5 w-3.5" /></button>
-                        {q.status === 'ACCEPTED' && q.customer && (
+                        {q.status === 'ACCEPTED' && q.customer && !q.convertedInvoiceId && (
                           <button type="button" onClick={() => setConvertTarget(q)} className="text-xs text-brand-navy dark:text-white hover:underline font-medium" aria-label="Convert to invoice">→ Invoice</button>
                         )}
                         {q.status === 'DRAFT' && (

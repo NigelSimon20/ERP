@@ -58,7 +58,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   // Auto-create customer when lead becomes WON
   if (status === 'WON' && existing.status !== 'WON') {
     const existingCustomer = existing.contactEmail
-      ? await prisma.customer.findFirst({ where: { email: existing.contactEmail } })
+      ? await prisma.customer.findFirst({ where: { email: existing.contactEmail, companyId } })
       : null
 
     if (!existingCustomer) {

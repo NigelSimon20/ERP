@@ -67,6 +67,7 @@ model Company {
   nextJournalNumber        Int?     @default(1) @map("next_journal_number")
   purchaseInvoicePrefix    String?  @map("purchase_invoice_prefix")
   nextPurchaseInvoiceNumber Int?    @default(1) @map("next_purchase_invoice_number")
+  nextTransferNumber       Int?     @default(1) @map("next_transfer_number")
   nextForceNumber          Int?     @default(1) @map("next_force_number")
   vatAccountId             String?  @map("vat_account_id")
   // Notifications / integrations
@@ -99,6 +100,12 @@ model Company {
   suppliers                Supplier[]
   payments                 Payment[]
   customRoles              RoleDefinition[]
+  sites                    Site[]
+  incidents                Incident[]
+  equipment                Equipment[]
+  deployments              Deployment[]
+  patrols                  Patrol[]
+  coverageRequests         CoverageRequest[]
 
   // Banking details
   bankName                 String?  @map("bank_name")
@@ -275,6 +282,7 @@ model Guard {
   full_name             String?
   blacklist_date        String?
   phone                 String?
+  whatsapp              String?
   next_of_kin_name      String?
   basic_salary          Float?
   next_of_kin_relationship String?
@@ -453,6 +461,8 @@ model HRDocument {
 
 model Site {
   id                    String   @id @map("id")
+  companyId             String
+  company               Company  @relation(fields: [companyId], references: [id])
   billing_rate_day      Float?
   billing_rate_night    Float?
   notes                 String?  @db.Text
@@ -488,6 +498,7 @@ model Site {
   is_sample             Boolean?
   attendances           Attendance[]
 
+  @@index([companyId])
   @@map("sites")
 }
 
@@ -535,6 +546,8 @@ enum IncidentStatus {
 
 model Incident {
   id         String         @id @map("id")
+  companyId  String
+  company    Company        @relation(fields: [companyId], references: [id])
   siteId     String
   guardId    String?
   title      String
@@ -548,6 +561,7 @@ model Incident {
   createdAt  DateTime       @default(now())
   updatedAt  DateTime       @updatedAt
 
+  @@index([companyId])
   @@index([siteId])
   @@index([guardId])
   @@index([severity])
@@ -561,6 +575,8 @@ model Incident {
 
 model Equipment {
   id               String   @id @map("id")
+  companyId        String
+  company          Company  @relation(fields: [companyId], references: [id])
   equipment_name   String?
   reorder_level    Float?
   is_active        Boolean?
@@ -584,6 +600,7 @@ model Equipment {
   created_by       String?
   is_sample        Boolean?
 
+  @@index([companyId])
   @@map("equipment")
 }
 
@@ -748,6 +765,9 @@ model Payslip {
   force_number                  String?
   period                        String?
   days_worked                   Float?
+  hours_worked                  Float?
+  overtime_hours                Float?
+  overtime_pay                  Float?
   total_contributions_employee  Float?
   employee_name                 String?
   earnings                      String?  @db.Text
@@ -860,6 +880,7 @@ model PurchaseInvoice {
   balanceDue   Float
   status       InvoiceStatus @default(UNPAID)
   notes        String?  @db.Text
+  journalEntryId String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime?
   supplier     Supplier @relation(fields: [supplierId], references: [id])
@@ -1051,6 +1072,8 @@ enum MeetingStatus {
 
 model Deployment {
   id String @id
+  companyId String
+  company Company @relation(fields: [companyId], references: [id])
   guardId String
   siteId String
   startDate DateTime
@@ -1063,11 +1086,14 @@ model Deployment {
   createdAt DateTime @default(now())
   updatedAt DateTime
 
+  @@index([companyId])
   @@map("deployments")
 }
 
 model Patrol {
   id String @id
+  companyId String
+  company Company @relation(fields: [companyId], references: [id])
   siteId String
   guardId String
   scheduledTime DateTime
@@ -1077,11 +1103,14 @@ model Patrol {
   createdAt DateTime @default(now())
   updatedAt DateTime
 
+  @@index([companyId])
   @@map("patrols")
 }
 
 model CoverageRequest {
   id String @id
+  companyId String
+  company Company @relation(fields: [companyId], references: [id])
   siteId String
   requestedBy String
   reason String
@@ -1095,6 +1124,7 @@ model CoverageRequest {
   createdAt DateTime @default(now())
   updatedAt DateTime
 
+  @@index([companyId])
   @@map("coverage_requests")
 }
 
@@ -1328,6 +1358,7 @@ model Quotation {
   total Decimal
   status QuoteStatus @default(DRAFT)
   notes String?
+  convertedInvoiceId String?
   createdAt DateTime @default(now())
   updatedAt DateTime
 
@@ -1340,6 +1371,7 @@ model QuotationItem {
   description String
   quantity Decimal
   unitPrice Decimal
+  taxRate Decimal?
   total Decimal
 
   @@map("quotation_items")

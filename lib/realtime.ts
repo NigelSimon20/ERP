@@ -61,6 +61,11 @@ export const realtimeEventBus = new RealtimeEventBus()
  * Subscribe to changes on a specific table for a company
  * Works with Supabase Realtime PostgreSQL subscriptions
  */
+// Tables with no companyId column of their own (e.g. attendance, scoped via
+// guardId -> Guard.companyId) can't be filtered server-side by Realtime's
+// simple column filter — they fall back to the client-side check below only.
+const NO_COMPANY_ID_COLUMN = new Set(['attendance'])
+
 export async function subscribeToTable(
   tableName: string,
   companyId: string,
@@ -74,6 +79,7 @@ export async function subscribeToTable(
         event: '*',
         schema: 'public',
         table: tableName,
+        ...(NO_COMPANY_ID_COLUMN.has(tableName) ? {} : { filter: `companyId=eq.${companyId}` }),
       },
       (payload: RealtimePostgresChangesPayload<any>) => {
         // Parse the change

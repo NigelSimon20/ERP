@@ -291,7 +291,7 @@ async function importEmployees(employees: any[], companyId: string) {
   console.log(`✅ Employees/Guards: ${imported} imported, ${failed} failed`)
 }
 
-async function importSites(sites: any[]) {
+async function importSites(sites: any[], companyId: string) {
   if (!sites || sites.length === 0) {
     console.log('No sites to import')
     return
@@ -316,6 +316,7 @@ async function importSites(sites: any[]) {
         },
         create: {
           id: site.id || generateId(),
+          companyId,
           site_name: site.name,
           address: site.address,
           contract_start_date: mapField(site.contract_start, 'DateTime'),
@@ -520,7 +521,7 @@ async function main() {
     await importSuppliers(data.suppliers, companyId)
 
     await importEmployees(data.employees, companyId)
-    await importSites(data.sites)
+    await importSites(data.sites, companyId)
     await importAttendance(data.attendance)
     await importBankAccounts(data.bankAccounts, companyId)
     await importInvoices(data.invoices, companyId)

@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
   const { skip, take } = paginate(page)
 
   const where = {
+    companyId,
     ...(siteId ? { siteId } : {}),
     ...(severity ? { severity } : {}),
     ...(status ? { status } : {}),
@@ -35,7 +36,22 @@ export async function GET(req: NextRequest) {
     prisma.incident.count({ where }),
   ])
 
-  return NextResponse.json({ incidents, total, page, pages: Math.ceil(total / take) })
+  const [sites, guards, reporters] = await Promise.all([
+    prisma.site.findMany({ where: { id: { in: incidents.map((i) => i.siteId) } }, select: { id: true, site_name: true } }),
+    prisma.guard.findMany({ where: { id: { in: incidents.map((i) => i.guardId).filter((v): v is string => !!v) } }, select: { id: true, full_name: true } }),
+    prisma.user.findMany({ where: { id: { in: incidents.map((i) => i.reportedBy) } }, select: { id: true, name: true } }),
+  ])
+  const siteById = new Map(sites.map((s) => [s.id, s]))
+  const guardById = new Map(guards.map((g) => [g.id, g]))
+  const userById = new Map(reporters.map((u) => [u.id, u]))
+  const enrichedIncidents = incidents.map((i) => ({
+    ...i,
+    site: siteById.get(i.siteId) ? { name: siteById.get(i.siteId)!.site_name } : null,
+    guard: i.guardId && guardById.get(i.guardId) ? { name: guardById.get(i.guardId)!.full_name } : null,
+    reportedByUser: userById.get(i.reportedBy) ? { name: userById.get(i.reportedBy)!.name } : null,
+  }))
+
+  return NextResponse.json({ incidents: enrichedIncidents, total, page, pages: Math.ceil(total / take) })
 }
 
 export async function POST(req: NextRequest) {
@@ -48,9 +64,13 @@ export async function POST(req: NextRequest) {
 
   if (!title || !siteId) return NextResponse.json({ error: 'title and siteId are required' }, { status: 400 })
 
+  const site = await prisma.site.findFirst({ where: { id: siteId, companyId } })
+  if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+
   const incident = await prisma.incident.create({
     data: {
       id: crypto.randomUUID(),
+      companyId,
       title,
       description: description || null,
       siteId,

@@ -89,10 +89,6 @@ export async function nextPurchaseInvoiceNumber(companyId: string): Promise<stri
 
 export async function nextTransferReference(companyId: string): Promise<string> {
   const prefix = await getPrefix(companyId)
-  const last = await prisma.bankTransfer.findFirst({
-    orderBy: { reference: 'desc' },
-    select: { reference: true },
-  })
-  const n = last ? parseNum(last.reference) : 0
-  return `${prefix}TRF-${String(n + 1).padStart(6, '0')}`
+  const n = await claimCounter(companyId, 'nextTransferNumber')
+  return `${prefix}TRF-${String(n).padStart(6, '0')}`
 }

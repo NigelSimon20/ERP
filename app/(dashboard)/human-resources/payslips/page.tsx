@@ -10,8 +10,8 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { DismissRegular, DocumentRegular, PrintRegular } from '@fluentui/react-icons';
 
-interface Payslip { id: string; basicSalary: number; overtimePay: number; grossPay: number; totalDeductions: number; netPay: number; hoursWorked: number; overtimeHours: number; status: string; guard: { name: string; employeeNumber: string }; payrollRun: { id: string; payPeriodStart: string; payPeriodEnd: string; runDate: string } }
-interface PayslipDetail extends Payslip { lines: { id: string; name: string; type: string; amount: number }[]; guard: { name: string; employeeNumber: string; idNumber: string | null; department: string | null; rank: string | null }; payrollRun: { id: string; reference: string; payPeriodStart: string; payPeriodEnd: string; runDate: string; processedBy: { name: string } | null } }
+interface Payslip { id: string; basicSalary: number; overtimePay: number; grossPay: number; totalDeductions: number; netPay: number; hoursWorked: number; overtimeHours: number; status: string; guard: { name: string; employeeNumber: string } | null; payrollRun: { id: string; payPeriodStart: string; payPeriodEnd: string; runDate: string } | null }
+interface PayslipDetail extends Payslip { lines: { id: string; name: string; type: string; amount: number }[]; guard: { name: string; employeeNumber: string; idNumber: string | null; department: string | null; rank: string | null }; payrollRun: { id: string; reference: string | null; payPeriodStart: string; payPeriodEnd: string; runDate: string; processedBy: { name: string } | null } | null }
 interface PayrollRun { id: string; reference: string; payPeriodStart: string; payPeriodEnd: string }
 
 const STATUS_STYLES: Record<string, string> = { PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', CANCELLED: 'bg-muted text-muted-foreground' }
@@ -140,7 +140,9 @@ export default function PayslipsPage() {
                 <div className="text-center pb-3 border-b border-border">
                   <h4 className="text-base font-bold text-foreground">PAYSLIP</h4>
                   <p className="text-xs text-brand-muted-light mt-0.5">{selectedPayslip.payrollRun?.reference}</p>
-                  <p className="text-xs text-muted-foreground">{formatDate(new Date(selectedPayslip.payrollRun.payPeriodStart))} – {formatDate(new Date(selectedPayslip.payrollRun.payPeriodEnd))}</p>
+                  {selectedPayslip.payrollRun && (
+                    <p className="text-xs text-muted-foreground">{formatDate(new Date(selectedPayslip.payrollRun.payPeriodStart))} – {formatDate(new Date(selectedPayslip.payrollRun.payPeriodEnd))}</p>
+                  )}
                 </div>
 
                 {/* Guard info */}
@@ -185,7 +187,7 @@ export default function PayslipsPage() {
                   <span className="text-xl font-bold">{formatCurrency(Number(selectedPayslip.netPay))}</span>
                 </div>
 
-                {selectedPayslip.payrollRun.processedBy && (
+                {selectedPayslip.payrollRun?.processedBy && (
                   <p className="text-xs text-brand-muted-light text-center">Processed by {selectedPayslip.payrollRun.processedBy.name} on {formatDate(new Date(selectedPayslip.payrollRun.runDate))}</p>
                 )}
               </div>

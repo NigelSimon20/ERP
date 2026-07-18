@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { nextTransferReference } from '@/lib/auto-numbers'
 import { calculateTransferImpact, calculateNewBankBalance } from '@/lib/calculations'
+import { checkLockDate } from '@/lib/lock-dates'
 import { z } from 'zod'
 
 const transferSchema = z.object({
@@ -44,6 +45,9 @@ export async function POST(req: NextRequest) {
     if (data.fromAccountId === data.toAccountId) {
       return NextResponse.json({ error: 'Source and destination accounts must differ' }, { status: 400 })
     }
+
+    const lockError = await checkLockDate(session.companyId, new Date(data.date))
+    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
 
     const [fromAccount, toAccount] = await Promise.all([
       prisma.bankAccount.findFirst({ where: { id: data.fromAccountId, companyId: session.companyId } }),

@@ -6,6 +6,7 @@ export interface GuardDto {
   name: string | null
   idNumber: string | null
   phone: string | null
+  whatsapp: string | null
   email: string | null
   address: string | null
   department: string | null
@@ -13,6 +14,7 @@ export interface GuardDto {
   rank: string | null
   status: string | null
   dailyRate: number | null
+  basicSalary: number | null
   dateOfBirth: string | null
   dateHired: string | null
 }
@@ -24,6 +26,7 @@ export function toGuardDto(guard: Guard): GuardDto {
     name: guard.full_name,
     idNumber: guard.national_id,
     phone: guard.phone,
+    whatsapp: guard.whatsapp,
     email: guard.email,
     address: guard.address,
     department: guard.department,
@@ -31,6 +34,7 @@ export function toGuardDto(guard: Guard): GuardDto {
     rank: guard.employee_type,
     status: guard.status,
     dailyRate: guard.daily_rate,
+    basicSalary: guard.basic_salary,
     dateOfBirth: guard.date_of_birth,
     dateHired: guard.hire_date,
   }

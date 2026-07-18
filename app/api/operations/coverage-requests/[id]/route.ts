@@ -10,14 +10,22 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { userId } = session
+  const { userId, companyId } = session
   const { searchParams } = new URL(req.url)
   const action = searchParams.get('action')
 
-  const existing = await prisma.coverageRequest.findUnique({
-    where: { id: params.id },
+  const existing = await prisma.coverageRequest.findFirst({
+    where: { id: params.id, companyId },
   })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  if ((action === 'approve' || action === 'reject') && !['SUPER_ADMIN', 'ADMIN', 'OPERATIONS_MANAGER'].includes(session.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  if ((action === 'approve' || action === 'reject') && existing.status !== 'PENDING') {
+    return NextResponse.json({ error: `Request already ${existing.status.toLowerCase()}` }, { status: 400 })
+  }
 
   if (action === 'approve') {
     const request = await prisma.coverageRequest.update({

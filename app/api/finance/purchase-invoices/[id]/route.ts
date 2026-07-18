@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals, calculateBalanceDue, determineInvoiceStatus } from '@/lib/calculations'
 import { recalculateSupplierOutstandingBalance } from '@/lib/finance-recalculation'
+import { checkLockDate } from '@/lib/lock-dates'
+import { reverseJournalEntry, postPurchaseInvoiceToGL } from '@/lib/gl-posting'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -44,6 +46,10 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const invoice = await prisma.purchaseInvoice.findFirst({ where: { id: params.id, companyId: session.companyId } })
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (!['DRAFT', 'UNPAID'].includes(invoice.status as string)) return NextResponse.json({ error: `Cannot edit a ${invoice.status} invoice` }, { status: 400 })
+  if (invoice.issueDate) {
+    const lockError = await checkLockDate(session.companyId, new Date(invoice.issueDate))
+    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+  }
 
   const body = await req.json()
   const { issueDate, dueDate, description, notes, lineItems } = body
@@ -65,6 +71,28 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       const oldTotal = Number(invoice.totalAmount)
       const newTotal = totals.totalAmount
       await tx.supplier.update({ where: { id: invoice.supplierId }, data: { current_balance: { increment: newTotal - oldTotal } } })
+
+      // The GL entry was posted for the old total — reverse it and post a
+      // fresh one for the new total (same accounts), or it silently goes
+      // stale the moment the invoice is edited.
+      if (invoice.journalEntryId) {
+        const oldLines = await tx.journalLine.findMany({ where: { journalEntryId: invoice.journalEntryId } })
+        const apAccount = await tx.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'LIABILITY', account_name: { contains: 'Accounts Payable' } } })
+        const expenseLine = oldLines.find((l) => apAccount ? l.accountId !== apAccount.id : Number(l.debit) > 0)
+        await reverseJournalEntry(tx, invoice.journalEntryId)
+        if (apAccount && expenseLine) {
+          await postPurchaseInvoiceToGL(tx, {
+            companyId: session.companyId,
+            invoiceId: params.id,
+            invoiceNumber: invoice.invoiceNumber,
+            entryDate: new Date(issueDate ?? invoice.issueDate).toISOString(),
+            totalAmount: newTotal,
+            payableAccountId: apAccount.id,
+            expenseAccountId: expenseLine.accountId,
+            userId: session.userId,
+          })
+        }
+      }
     }
 
     return tx.purchaseInvoice.update({
@@ -101,9 +129,16 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
   if (action === 'void') {
     if ((invoice.status as string) === 'VOID') return NextResponse.json({ error: 'Already voided' }, { status: 400 })
     if (Number(invoice.paidAmount) > 0) return NextResponse.json({ error: 'Cannot void: payments exist' }, { status: 400 })
+    if (invoice.issueDate) {
+      const lockError = await checkLockDate(session.companyId, new Date(invoice.issueDate))
+      if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+    }
 
     const updated = await prisma.$transaction(async (tx) => {
       const inv = await tx.purchaseInvoice.update({ where: { id: params.id }, data: { status: 'VOID' } })
+      if (invoice.journalEntryId) {
+        await reverseJournalEntry(tx, invoice.journalEntryId)
+      }
       await recalculateSupplierOutstandingBalance(tx, invoice.supplierId, session.companyId)
       return inv
     })
@@ -121,8 +156,15 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const invoice = await prisma.purchaseInvoice.findFirst({ where: { id: params.id, companyId: session.companyId } })
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   if (invoice.status !== 'UNPAID') return NextResponse.json({ error: 'Can only delete unpaid invoices' }, { status: 400 })
+  if (invoice.issueDate) {
+    const lockError = await checkLockDate(session.companyId, new Date(invoice.issueDate))
+    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+  }
 
   await prisma.$transaction(async (tx) => {
+    if (invoice.journalEntryId) {
+      await reverseJournalEntry(tx, invoice.journalEntryId)
+    }
     await tx.purchaseInvoiceLineItem.deleteMany({ where: { purchaseInvoiceId: params.id } })
     await tx.purchaseInvoice.delete({ where: { id: params.id } })
     await recalculateSupplierOutstandingBalance(tx, invoice.supplierId, session.companyId)

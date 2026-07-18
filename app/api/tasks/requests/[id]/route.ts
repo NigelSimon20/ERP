@@ -15,6 +15,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const existing = await prisma.request.findFirst({ where: { id: params.id, companyId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+  if (action === 'approve' || action === 'reject') {
+    if (!['SUPER_ADMIN', 'ADMIN'].includes(session.role)) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+    if (existing.requestedBy === userId) {
+      return NextResponse.json({ error: 'You cannot approve or reject your own request' }, { status: 400 })
+    }
+    if (existing.status !== 'PENDING') {
+      return NextResponse.json({ error: 'Request is no longer pending' }, { status: 409 })
+    }
+  }
+
   if (action === 'approve') {
     const request = await prisma.request.update({
       where: { id: params.id },

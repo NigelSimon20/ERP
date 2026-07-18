@@ -17,7 +17,9 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (!record) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   try {
-    await unlink(path.join(process.cwd(), 'public', record.fileUrl))
+    const uploadsRoot = path.join(process.cwd(), 'storage', 'uploads')
+    const filePath = path.join(uploadsRoot, record.fileUrl)
+    if (filePath.startsWith(uploadsRoot + path.sep)) await unlink(filePath)
   } catch {
     // File may already be missing from disk — continue with DB delete
   }

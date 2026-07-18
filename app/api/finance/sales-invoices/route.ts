@@ -5,10 +5,11 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { paginate } from '@/lib/utils'
 import { nextInvoiceNumber } from '@/lib/auto-numbers'
-import { calculateInvoiceLineTotal, calculateInvoiceTotals, determineInvoiceStatus } from '@/lib/calculations'
+import { calculateInvoiceLineTotal, calculateInvoiceTotals, determineInvoiceStatus, overdueQueryCutoff } from '@/lib/calculations'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
 import { salesInvoiceSchema } from '@/lib/validators'
 import { fromDbInvoiceStatus, toDbInvoiceStatus } from '@/lib/invoice-status'
+import { postSalesInvoiceToGL } from '@/lib/gl-posting'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -26,11 +27,11 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get('from')
   const to = searchParams.get('to')
   const page = Number(searchParams.get('page') ?? '1')
-  const now = new Date().toISOString()
+  const overdueCutoff = overdueQueryCutoff().toISOString()
 
   const statusFilter: any =
-    status === 'OVERDUE' ? { status: 'Sent', due_date: { lt: now }, balance_due: { gt: 0 } }
-    : status === 'UNPAID' ? { status: 'Sent', OR: [{ due_date: { gte: now } }, { due_date: null }, { balance_due: { lte: 0 } }] }
+    status === 'OVERDUE' ? { status: 'Sent', due_date: { lt: overdueCutoff }, balance_due: { gt: 0 } }
+    : status === 'UNPAID' ? { status: 'Sent', OR: [{ due_date: { gte: overdueCutoff } }, { due_date: null }, { balance_due: { lte: 0 } }] }
     : status ? { status: toDbInvoiceStatus(status) }
     : {}
 
@@ -116,6 +117,16 @@ export async function POST(req: NextRequest) {
     const { subTotal, taxTotal, totalAmount } = calculateInvoiceTotals(lines)
     const status = toDbInvoiceStatus(determineInvoiceStatus(totalAmount, 0, dueDate))
 
+    const [receivablesAccount, vatAccount, requestedRevenueAccount, defaultRevenueAccount] = await Promise.all([
+      prisma.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'ASSET', account_name: { contains: 'Accounts Receivable' } } }),
+      prisma.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'LIABILITY', account_name: { contains: 'VAT' } } }),
+      data.revenueAccountId
+        ? prisma.chartOfAccount.findFirst({ where: { id: data.revenueAccountId, companyId: session.companyId, account_type: 'REVENUE' } })
+        : Promise.resolve(null),
+      prisma.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'REVENUE' }, orderBy: { account_code: 'asc' } }),
+    ])
+    const revenueAccount = requestedRevenueAccount ?? defaultRevenueAccount
+
     const invoice = await prisma.$transaction(async (tx) => {
       const inv = await tx.salesInvoice.create({
         data: {
@@ -146,6 +157,22 @@ export async function POST(req: NextRequest) {
           lineTotal: l.lineTotal,
         })),
       })
+
+      if (receivablesAccount && revenueAccount) {
+        await postSalesInvoiceToGL(tx, {
+          companyId: session.companyId,
+          invoiceId: inv.id,
+          invoiceNumber,
+          entryDate: issueDate.toISOString(),
+          subtotal: subTotal ?? 0,
+          taxAmount: taxTotal ?? 0,
+          totalAmount,
+          receivablesAccountId: receivablesAccount.id,
+          revenueAccountId: revenueAccount.id,
+          vatAccountId: vatAccount?.id ?? null,
+          userId: session.userId,
+        })
+      }
 
       await recalculateCustomerOutstandingBalance(tx, data.customerId)
 

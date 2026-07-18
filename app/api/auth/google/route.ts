@@ -27,15 +27,37 @@ const ROLE_DASHBOARD: Record<string, string> = {
  */
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { email, name, picture, googleId } = body
-
-    if (!email || !googleId) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+    if (!process.env.GOOGLE_CLIENT_ID) {
+      return NextResponse.json({ error: 'Google sign-in is not configured' }, { status: 501 })
     }
+
+    const body = await req.json()
+    const { idToken } = body
+
+    if (!idToken || typeof idToken !== 'string') {
+      return NextResponse.json({ error: 'Missing idToken' }, { status: 400 })
+    }
+
+    // Verify the ID token with Google rather than trusting client-supplied identity fields.
+    const verifyRes = await fetch(`https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`)
+    if (!verifyRes.ok) {
+      return NextResponse.json({ error: 'Invalid Google token' }, { status: 401 })
+    }
+    const claims = await verifyRes.json()
+
+    if (
+      claims.aud !== process.env.GOOGLE_CLIENT_ID ||
+      claims.email_verified !== 'true' ||
+      !claims.email ||
+      !claims.sub
+    ) {
+      return NextResponse.json({ error: 'Invalid Google token' }, { status: 401 })
+    }
+
+    const email = claims.email as string
+    const name = claims.name as string | undefined
+    const picture = claims.picture as string | undefined
+    const googleId = claims.sub as string
 
     const lowerEmail = email.toLowerCase()
 

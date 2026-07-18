@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get('status') as PatrolStatus | null
 
   const where = {
+    companyId,
     ...(siteId ? { siteId } : {}),
     ...(guardId ? { guardId } : {}),
     ...(status ? { status } : {}),
@@ -31,6 +32,17 @@ export async function GET(req: NextRequest) {
   }
 
   const patrols = await prisma.patrol.findMany({ where, orderBy: { scheduledTime: 'asc' } })
+  const [guards, sites] = await Promise.all([
+    prisma.guard.findMany({ where: { id: { in: patrols.map((p) => p.guardId).filter((v): v is string => !!v) } }, select: { id: true, full_name: true } }),
+    prisma.site.findMany({ where: { id: { in: patrols.map((p) => p.siteId) } }, select: { id: true, site_name: true } }),
+  ])
+  const guardById = new Map(guards.map((g) => [g.id, g]))
+  const siteById = new Map(sites.map((s) => [s.id, s]))
+  const enrichedPatrols = patrols.map((p) => ({
+    ...p,
+    guard: p.guardId && guardById.get(p.guardId) ? { name: guardById.get(p.guardId)!.full_name } : null,
+    site: siteById.get(p.siteId) ? { name: siteById.get(p.siteId)!.site_name } : null,
+  }))
 
   // Compliance rate per site
   const siteStats: Record<string, { total: number; completed: number }> = {}
@@ -43,7 +55,7 @@ export async function GET(req: NextRequest) {
     Object.entries(siteStats).map(([id, s]) => [id, s.total > 0 ? Math.round((s.completed / s.total) * 100) : 0])
   )
 
-  return NextResponse.json({ patrols, complianceRates })
+  return NextResponse.json({ patrols: enrichedPatrols, complianceRates })
 }
 
 export async function POST(req: NextRequest) {
@@ -56,9 +68,13 @@ export async function POST(req: NextRequest) {
 
   if (!siteId || !scheduledTime) return NextResponse.json({ error: 'siteId and scheduledTime are required' }, { status: 400 })
 
+  const site = await prisma.site.findFirst({ where: { id: siteId, companyId } })
+  if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+
   const patrol = await prisma.patrol.create({
     data: {
       id: crypto.randomUUID(),
+      companyId,
       siteId,
       guardId: guardId || null,
       scheduledTime: new Date(scheduledTime),

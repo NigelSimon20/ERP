@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { formatCurrency } from '@/lib/utils'
+import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
 
 export async function POST(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -20,11 +21,7 @@ export async function POST(req: NextRequest) {
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Get IDs for models that lack companyId (schema doesn't include companyId on some models)
-  const [companySiteIds, companyGuardIds] = await Promise.all([
-    prisma.site.findMany({ select: { id: true } }).then(s => s.map(x => x.id)),
-    prisma.guard.findMany({ select: { id: true } }).then(g => g.map(x => x.id)),
-  ])
+  const companyGuardIds = await prisma.guard.findMany({ where: { companyId }, select: { id: true } }).then(g => g.map(x => x.id))
 
   const [
     activeGuards,
@@ -35,12 +32,12 @@ export async function POST(req: NextRequest) {
     pendingTasks,
     todayAttendance,
   ] = await Promise.all([
-    prisma.guard.count({ where: { status: 'Active' } }),
-    prisma.site.count({ where: { status: 'Active' } }),
-    prisma.incident.count({ where: { siteId: { in: companySiteIds }, status: { in: ['OPEN', 'INVESTIGATING'] as never } } }),
-    prisma.salesInvoice.aggregate({ where: { status: { not: 'Paid' as never } }, _sum: { balance_due: true } }),
-    prisma.salesInvoice.aggregate({ where: { status: { not: 'Void' as never } }, _sum: { total_amount: true } }),
-    prisma.task.count({ where: { status: 'PENDING' } }),
+    prisma.guard.count({ where: { companyId, status: 'Active' } }),
+    prisma.site.count({ where: { companyId, status: 'Active' } }),
+    prisma.incident.count({ where: { companyId, status: { in: ['OPEN', 'INVESTIGATING'] } } }),
+    prisma.salesInvoice.aggregate({ where: { companyId, status: { in: DB_STATUS_OUTSTANDING } }, _sum: { balance_due: true } }),
+    prisma.salesInvoice.aggregate({ where: { companyId, status: { not: DB_STATUS_VOID } }, _sum: { total_amount: true } }),
+    prisma.task.count({ where: { companyId, status: 'PENDING' } }),
     prisma.attendance.count({ where: { guardId: { in: companyGuardIds }, date: { gte: today } } }),
   ])
 

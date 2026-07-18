@@ -125,11 +125,22 @@ export async function restoreCompanyData(
   for (let pass = 0; pass < MAX_PASSES && pending.length > 0; pass++) {
     const outcomes = await mapWithConcurrency(pending, CONCURRENCY, async ({ modelName, row }) => {
       const model = modelsByName.get(modelName)!
-      const delegate = (prisma as unknown as Record<string, { upsert: (args: unknown) => Promise<unknown> }>)[modelAccessor(modelName)]
+      const delegate = (prisma as unknown as Record<string, {
+        upsert: (args: unknown) => Promise<unknown>
+        findUnique: (args: unknown) => Promise<{ companyId?: string } | null>
+      }>)[modelAccessor(modelName)]
       if (!delegate?.upsert) return { modelName, row, ok: true } // nothing we can do with it, don't retry forever
 
       const record = coerceRow(model, row)
-      if (hasCompanyId(model)) record.companyId = companyId // never trust the file's tenant id
+      if (hasCompanyId(model)) {
+        record.companyId = companyId // never trust the file's tenant id
+        // A row with this id may already exist and belong to a different
+        // company (e.g. a backup file with foreign/leaked ids) — upserting
+        // by id alone would silently reparent and overwrite that tenant's
+        // record. Only ever create/update rows that are ours.
+        const existing = await delegate.findUnique({ where: { id: record.id }, select: { companyId: true } })
+        if (existing && existing.companyId !== companyId) return { modelName, row, ok: false }
+      }
       try {
         await delegate.upsert({ where: { id: record.id }, update: record, create: record })
         return { modelName, row, ok: true }

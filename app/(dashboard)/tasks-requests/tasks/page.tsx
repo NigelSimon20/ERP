@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { WhatsAppReminderToggle } from '@/components/tasks/WhatsAppReminderToggle'
 import { formatDate } from '@/lib/utils'
+import { isPastDue } from '@/lib/calculations'
 import toast from 'react-hot-toast'
 import { AddRegular, ArrowDownloadRegular, ArrowTrendingRegular, ChatRegular, CheckmarkCircleRegular, CheckmarkRegular, ClipboardTaskListLtrRegular, ClockRegular, DeleteRegular, DismissCircleRegular, EditRegular, FilterRegular, FlagRegular, SearchRegular, WarningRegular } from '@fluentui/react-icons';
 
@@ -34,7 +35,7 @@ const STATUS_CFG: Record<string, { label: string; cls: string }> = {
 }
 
 function isOverdue(task: Task) {
-  return task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && new Date(task.dueDate) < new Date()
+  return task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && isPastDue(task.dueDate)
 }
 
 function initials(name: string) {

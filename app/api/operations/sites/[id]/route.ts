@@ -11,10 +11,10 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const site = await prisma.site.findUnique({ where: { id: params.id } })
+  const site = await prisma.site.findFirst({ where: { id: params.id, companyId: session.companyId } })
   if (!site) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const deployments = await prisma.deployment.findMany({ where: { siteId: params.id, status: 'ACTIVE' } })
+  const deployments = await prisma.deployment.findMany({ where: { companyId: session.companyId, siteId: params.id, status: 'ACTIVE' } })
   const guards = await prisma.guard.findMany({ where: { id: { in: deployments.map((d) => d.guardId) } } })
   const guardById = new Map(guards.map((g) => [g.id, g]))
 
@@ -36,7 +36,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { companyId, userId, name: userName } = session
-  const existing = await prisma.site.findUnique({ where: { id: params.id } })
+  const existing = await prisma.site.findFirst({ where: { id: params.id, companyId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
@@ -67,10 +67,10 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { companyId, userId, name: userName } = session
-  const site = await prisma.site.findUnique({ where: { id: params.id } })
+  const site = await prisma.site.findFirst({ where: { id: params.id, companyId } })
   if (!site) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const activeCount = await prisma.deployment.count({ where: { siteId: params.id, status: 'ACTIVE' } })
+  const activeCount = await prisma.deployment.count({ where: { companyId, siteId: params.id, status: 'ACTIVE' } })
   if (activeCount > 0) {
     return NextResponse.json({ error: `Cannot delete: ${activeCount} active deployment(s) at this site` }, { status: 409 })
   }

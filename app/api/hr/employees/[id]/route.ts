@@ -27,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
-  const { name, idNumber, phone, email, address, department, position, rank, dailyRate, status, dateOfBirth, dateHired } = body
+  const { name, idNumber, phone, whatsapp, email, address, department, position, rank, dailyRate, basicSalary, status, dateOfBirth, dateHired } = body
   const { first_name, last_name } = name ? splitName(name) : { first_name: undefined, last_name: undefined }
 
   const guard = await prisma.guard.update({
@@ -36,12 +36,14 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       ...(name ? { full_name: name, first_name, last_name } : {}),
       ...(idNumber !== undefined ? { national_id: idNumber || null } : {}),
       ...(phone !== undefined ? { phone: phone || null } : {}),
+      ...(whatsapp !== undefined ? { whatsapp: whatsapp || null } : {}),
       ...(email !== undefined ? { email: email || null } : {}),
       ...(address !== undefined ? { address: address || null } : {}),
       ...(department !== undefined ? { department: department || null } : {}),
       ...(position !== undefined ? { position: position || null } : {}),
       ...(rank !== undefined ? { employee_type: rank || null } : {}),
       ...(dailyRate != null ? { daily_rate: Number(dailyRate) } : {}),
+      ...(basicSalary != null ? { basic_salary: Number(basicSalary) } : {}),
       ...(status ? { status } : {}),
       ...(dateOfBirth !== undefined ? { date_of_birth: dateOfBirth || null } : {}),
       ...(dateHired !== undefined ? { hire_date: dateHired || null } : {}),

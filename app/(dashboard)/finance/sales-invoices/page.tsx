@@ -28,9 +28,10 @@ interface Invoice {
 
 interface Customer { id: string; name: string }
 interface BankAccount { id: string; bankName: string; accountNumber: string }
+interface GLAccount { id: string; account_name: string; account_code: string; account_type: string }
 
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
-type InvoiceForm = { customerId: string; issueDate: string; dueDate: string; description: string; lineItems: LineItem[] }
+type InvoiceForm = { customerId: string; issueDate: string; dueDate: string; description: string; revenueAccountId: string; lineItems: LineItem[] }
 type ReceiptForm = { bankAccountId: string; amount: string; receiptDate: string; notes: string }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -52,14 +53,16 @@ export default function SalesInvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+  const [glAccounts, setGlAccounts] = useState<GLAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [statusTab, setStatusTab] = useState('ALL')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [receiptTarget, setReceiptTarget] = useState<Invoice | null>(null)
+  const revenueAccounts = useMemo(() => glAccounts.filter((a) => a.account_type === 'REVENUE'), [glAccounts])
 
   // Invoice form
   const { register: invReg, handleSubmit: invSubmit, control: invCtrl, reset: invReset, formState: { isSubmitting: invSubmitting } } = useForm<InvoiceForm>({
-    defaultValues: { customerId: '', issueDate: '', dueDate: '', description: '', lineItems: [BLANK_LINE] },
+    defaultValues: { customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: '', lineItems: [BLANK_LINE] },
   })
   const { fields, append, remove } = useFieldArray({ control: invCtrl, name: 'lineItems' })
   const watchedItems = useWatch({ control: invCtrl, name: 'lineItems' }) ?? []
@@ -100,14 +103,17 @@ export default function SalesInvoicesPage() {
 
   async function fetchSupporting() {
     try {
-      const [custRes, bankRes] = await Promise.all([
+      const [custRes, bankRes, glRes] = await Promise.all([
         fetch('/api/finance/customers'),
         fetch('/api/finance/bank-accounts'),
+        fetch('/api/finance/accounts'),
       ])
       const custJson = await custRes.json()
       const bankJson = await bankRes.json()
+      const glJson = await glRes.json()
       setCustomers(custJson.customers ?? [])
       setBankAccounts(bankJson.accounts ?? [])
+      setGlAccounts(glJson.accounts ?? [])
     } catch (err) {
       console.error(err)
     }
@@ -193,7 +199,7 @@ export default function SalesInvoicesPage() {
       <PageHeader
         title="Sales Invoices"
         description="Create and manage customer invoices"
-        action={<Button type="button" onClick={() => { invReset({ customerId: '', issueDate: '', dueDate: '', description: '', lineItems: [BLANK_LINE] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Invoice</Button>}
+        action={<Button type="button" onClick={() => { invReset({ customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: '', lineItems: [BLANK_LINE] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Invoice</Button>}
       />
 
       {/* Summary Cards */}
@@ -312,6 +318,17 @@ export default function SalesInvoicesPage() {
               <div className="space-y-1.5">
                 <Label>Due Date *</Label>
                 <Input type="date" {...invReg('dueDate', { required: 'Required' })} />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label>Revenue Account</Label>
+                <Controller control={invCtrl} name="revenueAccountId" render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Default revenue account" /></SelectTrigger>
+                    <SelectContent>
+                      {revenueAccounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.account_code} — {a.account_name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
             </div>
 

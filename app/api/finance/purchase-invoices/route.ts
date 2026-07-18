@@ -7,6 +7,7 @@ import { paginate } from '@/lib/utils'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals, determineInvoiceStatus } from '@/lib/calculations'
 import { recalculateSupplierOutstandingBalance } from '@/lib/finance-recalculation'
 import { nextPurchaseInvoiceNumber } from '@/lib/auto-numbers'
+import { postPurchaseInvoiceToGL } from '@/lib/gl-posting'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { supplierId, issueDate, dueDate, description, lineItems, notes, reference } = body
+  const { supplierId, issueDate, dueDate, description, lineItems, notes, reference, expenseAccountId } = body
   const { companyId } = session
 
   if (!supplierId || !issueDate || !dueDate) return NextResponse.json({ error: 'supplierId, issueDate, dueDate required' }, { status: 400 })
@@ -111,6 +112,15 @@ export async function POST(req: NextRequest) {
   const billNumber = await nextPurchaseInvoiceNumber(companyId)
   const status = determineInvoiceStatus(totals.totalAmount, 0, due)
   const id = crypto.randomUUID()
+
+  const [payableAccount, requestedExpenseAccount, defaultExpenseAccount] = await Promise.all([
+    prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'LIABILITY', account_name: { contains: 'Accounts Payable' } } }),
+    expenseAccountId
+      ? prisma.chartOfAccount.findFirst({ where: { id: expenseAccountId, companyId, account_type: 'EXPENSE' } })
+      : Promise.resolve(null),
+    prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'EXPENSE' }, orderBy: { account_code: 'asc' } }),
+  ])
+  const expenseAccount = requestedExpenseAccount ?? defaultExpenseAccount
 
   try {
     const invoice = await prisma.$transaction(async (tx) => {
@@ -144,6 +154,19 @@ export async function POST(req: NextRequest) {
           },
         },
       })
+
+      if (payableAccount && expenseAccount) {
+        await postPurchaseInvoiceToGL(tx, {
+          companyId,
+          invoiceId: inv.id,
+          invoiceNumber: billNumber,
+          entryDate: issue.toISOString(),
+          totalAmount: totals.totalAmount,
+          payableAccountId: payableAccount.id,
+          expenseAccountId: expenseAccount.id,
+          userId: session.userId,
+        })
+      }
 
       await tx.supplier.update({ where: { id: supplierId }, data: { current_balance: { increment: totals.totalAmount } } })
 

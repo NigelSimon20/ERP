@@ -15,11 +15,26 @@ export async function GET(req: NextRequest) {
   const status = searchParams.get('status')
 
   const requests = await prisma.coverageRequest.findMany({
-    where: { ...(status ? { status: status as any } : {}) },
+    where: { companyId, ...(status ? { status: status as any } : {}) },
     orderBy: { createdAt: 'desc' },
   })
 
-  return NextResponse.json({ requests })
+  const [sites, requesters, approvers] = await Promise.all([
+    prisma.site.findMany({ where: { id: { in: requests.map((r) => r.siteId) } }, select: { id: true, site_name: true } }),
+    prisma.user.findMany({ where: { id: { in: requests.map((r) => r.requestedBy) } }, select: { id: true, name: true } }),
+    prisma.user.findMany({ where: { id: { in: requests.map((r) => r.approvedBy).filter((v): v is string => !!v) } }, select: { id: true, name: true } }),
+  ])
+  const siteById = new Map(sites.map((s) => [s.id, s]))
+  const userById = new Map([...requesters, ...approvers].map((u) => [u.id, u]))
+  const enrichedRequests = requests.map((r) => ({
+    ...r,
+    guardsNeeded: r.requiredGuards,
+    site: siteById.get(r.siteId) ? { name: siteById.get(r.siteId)!.site_name } : null,
+    requestedByUser: userById.get(r.requestedBy) ? { name: userById.get(r.requestedBy)!.name } : null,
+    approvedByUser: r.approvedBy && userById.get(r.approvedBy) ? { name: userById.get(r.approvedBy)!.name } : null,
+  }))
+
+  return NextResponse.json({ requests: enrichedRequests })
 }
 
 export async function POST(req: NextRequest) {
@@ -34,9 +49,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'siteId, reason, startDate, and endDate are required' }, { status: 400 })
   }
 
+  const site = await prisma.site.findFirst({ where: { id: siteId, companyId } })
+  if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+
   const request = await prisma.coverageRequest.create({
     data: {
       id: crypto.randomUUID(),
+      companyId,
       siteId,
       reason,
       requiredGuards: Number(guardsNeeded) || 1,

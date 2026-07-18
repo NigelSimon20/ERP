@@ -11,12 +11,12 @@ export async function GET() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { } = session
+  const { companyId } = session
 
-  const sites = await prisma.site.findMany({ orderBy: { site_name: 'asc' } })
+  const sites = await prisma.site.findMany({ where: { companyId }, orderBy: { site_name: 'asc' } })
   const activeCounts = await prisma.deployment.groupBy({
     by: ['siteId'],
-    where: { siteId: { in: sites.map((s) => s.id) }, status: 'ACTIVE' },
+    where: { companyId, siteId: { in: sites.map((s) => s.id) }, status: 'ACTIVE' },
     _count: true,
   })
   const countBySite = new Map(activeCounts.map((c) => [c.siteId, c._count]))
@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
   const site = await prisma.site.create({
     data: {
       id: crypto.randomUUID(),
+      companyId,
       site_name: name,
       customer_id: customerId || null,
       address: address || null,

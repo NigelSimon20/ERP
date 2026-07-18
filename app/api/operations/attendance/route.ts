@@ -108,15 +108,16 @@ export async function POST(req: NextRequest) {
 
     for (const rec of records) {
       try {
-        const { guardId, siteId, date, status, shift, notes } = rec
+        const { guardId, siteId, date, status, shift, notes, overtimeHours } = rec
         if (!guardId || !date) { results.errors.push('Missing guardId or date for record'); continue }
 
         const hoursWorked = hoursForStatus(status || 'PRESENT')
+        const otHours = overtimeHours != null ? Number(overtimeHours) : 0
 
         await prisma.attendance.upsert({
           where: { guardId_date: { guardId, date: new Date(date) } },
-          update: { siteId: siteId || null, status: status || 'PRESENT', shift: shift || null, hoursWorked, notes: notes || null },
-          create: { id: crypto.randomUUID(), guardId, siteId: siteId || null, date: new Date(date), status: status || 'PRESENT', shift: shift || null, hoursWorked, notes: notes || null },
+          update: { siteId: siteId || null, status: status || 'PRESENT', shift: shift || null, hoursWorked, overtimeHours: otHours, notes: notes || null },
+          create: { id: crypto.randomUUID(), guardId, siteId: siteId || null, date: new Date(date), status: status || 'PRESENT', shift: shift || null, hoursWorked, overtimeHours: otHours, notes: notes || null },
         })
         results.success++
       } catch (e) {
@@ -130,18 +131,19 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { guardId, siteId, date, checkIn, checkOut, status, shift, notes } = body
+  const { guardId, siteId, date, checkIn, checkOut, status, shift, notes, overtimeHours } = body
 
   if (!guardId || !date) return NextResponse.json({ error: 'guardId and date are required' }, { status: 400 })
 
   const hoursWorked = hoursForStatus(status || 'PRESENT')
+  const otHours = overtimeHours != null ? Number(overtimeHours) : 0
 
   const existing = await prisma.attendance.findUnique({ where: { guardId_date: { guardId, date: new Date(date) } } })
 
   const record = await prisma.attendance.upsert({
     where: { guardId_date: { guardId, date: new Date(date) } },
-    update: { siteId: siteId || null, checkIn: checkIn ? new Date(checkIn) : null, checkOut: checkOut ? new Date(checkOut) : null, hoursWorked, status: status || 'PRESENT', shift: shift || null, notes: notes || null },
-    create: { id: crypto.randomUUID(), guardId, siteId: siteId || null, date: new Date(date), checkIn: checkIn ? new Date(checkIn) : null, checkOut: checkOut ? new Date(checkOut) : null, hoursWorked, status: status || 'PRESENT', shift: shift || null, notes: notes || null },
+    update: { siteId: siteId || null, checkIn: checkIn ? new Date(checkIn) : null, checkOut: checkOut ? new Date(checkOut) : null, hoursWorked, overtimeHours: otHours, status: status || 'PRESENT', shift: shift || null, notes: notes || null },
+    create: { id: crypto.randomUUID(), guardId, siteId: siteId || null, date: new Date(date), checkIn: checkIn ? new Date(checkIn) : null, checkOut: checkOut ? new Date(checkOut) : null, hoursWorked, overtimeHours: otHours, status: status || 'PRESENT', shift: shift || null, notes: notes || null },
   })
 
   await logAudit({ companyId, userId, userName, action: existing ? 'UPDATE' : 'CREATE', module: 'AttendanceRecord', recordId: record.id, newValues: record })

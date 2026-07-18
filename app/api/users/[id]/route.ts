@@ -67,3 +67,50 @@ export async function PATCH(
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
   }
 }
+
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
+  if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!['SUPER_ADMIN', 'ADMIN'].includes(session.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  const { id } = await params
+
+  const target = await prisma.user.findFirst({ where: { id, companyId: session.companyId } })
+  if (!target) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+
+  if (id === session.userId) {
+    return NextResponse.json({ error: 'You cannot delete your own account' }, { status: 400 })
+  }
+
+  if (target.role === 'SUPER_ADMIN') {
+    const superAdminCount = await prisma.user.count({
+      where: { companyId: session.companyId, role: 'SUPER_ADMIN' },
+    })
+    if (superAdminCount <= 1) {
+      return NextResponse.json({ error: 'Cannot delete the last Super Admin' }, { status: 400 })
+    }
+  }
+
+  try {
+    await prisma.user.delete({ where: { id } })
+
+    await logAudit({
+      companyId: session.companyId,
+      userId: session.userId,
+      userName: session.name,
+      action: 'DELETE',
+      module: 'Users',
+      recordId: id,
+      oldValues: { name: target.name, email: target.email, role: target.role },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (err: unknown) {
+    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to delete user' }, { status: 400 })
+  }
+}

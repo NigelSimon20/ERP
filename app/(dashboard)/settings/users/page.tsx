@@ -14,7 +14,7 @@ import { useCurrentUser } from '@/lib/user-context'
 import { timeAgo } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import {
-  AddRegular, CheckmarkCircleRegular, CopyRegular, EditRegular, PauseRegular,
+  AddRegular, CheckmarkCircleRegular, CopyRegular, DeleteRegular, EditRegular, PauseRegular,
   PeopleRegular, PlayRegular, SearchRegular,
 } from '@fluentui/react-icons'
 
@@ -76,6 +76,9 @@ export default function UsersSettingsPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editing, setEditing] = useState<AppUser | null>(null)
   const [credentials, setCredentials] = useState<{ name: string; email: string; tempPassword: string } | null>(null)
+  const [deleting, setDeleting] = useState<AppUser | null>(null)
+  const [deleteConfirmText, setDeleteConfirmText] = useState('')
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
 
   const createForm = useForm<CreateFormValues>({
     defaultValues: { name: '', email: '', role: 'STAFF', department: '', phone: '', whatsapp: '' },
@@ -165,6 +168,26 @@ export default function UsersSettingsPage() {
     if (!res.ok) { toast.error(json.error ?? `Failed to ${verb} user`); return }
     toast.success(next ? 'User reactivated' : 'User deactivated')
     fetchUsers()
+  }
+
+  function openDelete(u: AppUser) {
+    setDeleting(u)
+    setDeleteConfirmText('')
+  }
+
+  async function confirmDelete() {
+    if (!deleting) return
+    setDeleteSubmitting(true)
+    try {
+      const res = await fetch(`/api/users/${deleting.id}`, { method: 'DELETE' })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Failed to delete user'); return }
+      toast.success('User deleted')
+      setDeleting(null)
+      fetchUsers()
+    } finally {
+      setDeleteSubmitting(false)
+    }
   }
 
   function copyPassword() {
@@ -278,6 +301,18 @@ export default function UsersSettingsPage() {
                       >
                         {u.active ? <PauseRegular className="h-3.5 w-3.5" /> : <PlayRegular className="h-3.5 w-3.5" />}
                       </button>
+                      {['SUPER_ADMIN', 'ADMIN'].includes(currentUser.role) && (
+                        <button
+                          type="button"
+                          onClick={() => openDelete(u)}
+                          disabled={u.id === currentUser.id}
+                          className="p-1.5 rounded hover:bg-red-50 dark:hover:bg-red-500/10 text-brand-muted-light hover:text-red-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                          aria-label={`Delete ${u.name}`}
+                          title={u.id === currentUser.id ? 'You cannot delete your own account' : 'Delete permanently'}
+                        >
+                          <DeleteRegular className="h-3.5 w-3.5" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -432,6 +467,39 @@ export default function UsersSettingsPage() {
           <DialogFooter>
             <Button type="button" onClick={() => setCredentials(null)} className="bg-primary hover:bg-brand-red-dark text-white">
               Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete User */}
+      <Dialog open={!!deleting} onOpenChange={(open) => !open && setDeleting(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">Delete User Permanently</DialogTitle>
+            <DialogDescription>
+              This will permanently remove <strong>{deleting?.name}</strong> ({deleting?.email}) and cannot be
+              undone. If you just want to revoke access, deactivate the account instead.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label>Type <span className="font-mono">{deleting?.email}</span> to confirm</Label>
+            <Input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder={deleting?.email}
+              autoComplete="off"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setDeleting(null)}>Cancel</Button>
+            <Button
+              type="button"
+              onClick={confirmDelete}
+              disabled={deleteSubmitting || deleteConfirmText !== deleting?.email}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {deleteSubmitting ? 'Deleting…' : 'Delete Permanently'}
             </Button>
           </DialogFooter>
         </DialogContent>

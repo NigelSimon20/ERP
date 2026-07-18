@@ -12,6 +12,7 @@ import {
 } from '@/lib/calculations'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
 import { toDbInvoiceStatus } from '@/lib/invoice-status'
+import { checkLockDate } from '@/lib/lock-dates'
 import { z } from 'zod'
 
 // Payment.status in the live DB uses Title Case ("Posted"), not the
@@ -93,6 +94,9 @@ export async function POST(req: NextRequest) {
 
   try {
     const data = receiptSchema.parse(await req.json())
+
+    const lockError = await checkLockDate(session.companyId, new Date(data.receiptDate))
+    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
 
     const bankAccount = await prisma.bankAccount.findFirst({ where: { id: data.bankAccountId, companyId: session.companyId } })
     if (!bankAccount) return NextResponse.json({ error: 'Bank account not found' }, { status: 404 })

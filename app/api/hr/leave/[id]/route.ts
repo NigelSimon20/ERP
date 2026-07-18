@@ -8,6 +8,9 @@ import { logAudit } from '@/lib/audit'
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!['SUPER_ADMIN', 'ADMIN', 'HR_MANAGER'].includes(session.role)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const { companyId, userId } = session
   const action = new URL(req.url).searchParams.get('action')
@@ -17,16 +20,23 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     include: { guard: { select: { full_name: true, ecocash_number: true, phone: true } } },
   })
   if (!leave) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  if (session.guardId && session.guardId === leave.guardId) {
+    return NextResponse.json({ error: 'You cannot approve or reject your own leave request' }, { status: 400 })
+  }
   if (leave.status !== 'PENDING') return NextResponse.json({ error: 'Leave request is no longer pending' }, { status: 409 })
 
   const startStr = leave.startDate.toLocaleDateString()
   const endStr = leave.endDate?.toLocaleDateString() ?? startStr
 
   if (action === 'approve') {
-    const updated = await prisma.leaveRequest.update({
-      where: { id: params.id },
+    // Conditional on status still being PENDING so two concurrent
+    // approve/reject calls can't both succeed against the same request.
+    const { count } = await prisma.leaveRequest.updateMany({
+      where: { id: params.id, status: 'PENDING' },
       data: { status: 'APPROVED', approvedBy: userId },
     })
+    if (count === 0) return NextResponse.json({ error: 'Leave request is no longer pending' }, { status: 409 })
+    const updated = await prisma.leaveRequest.findUniqueOrThrow({ where: { id: params.id } })
 
     // Create attendance records for each day of leave
     const days: Date[] = []
@@ -59,10 +69,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   if (action === 'reject') {
     const { rejectionNote } = await req.json()
-    const updated = await prisma.leaveRequest.update({
-      where: { id: params.id },
+    const { count } = await prisma.leaveRequest.updateMany({
+      where: { id: params.id, status: 'PENDING' },
       data: { status: 'REJECTED', rejectionNote: rejectionNote || null, approvedBy: userId },
     })
+    if (count === 0) return NextResponse.json({ error: 'Leave request is no longer pending' }, { status: 409 })
+    const updated = await prisma.leaveRequest.findUniqueOrThrow({ where: { id: params.id } })
 
     // WhatsApp notification (fire-and-forget)
     if (leave.guard.phone && process.env.WHATSAPP_WEBHOOK_URL) {

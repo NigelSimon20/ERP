@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { formatDate } from '@/lib/utils'
+import { isPastDue } from '@/lib/calculations'
 import { ChatRegular, CheckmarkCircleRegular, ClockRegular, DeleteRegular, EditRegular, LocationRegular, MoreVerticalRegular, PersonRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface User { id: string; name: string; whatsapp: string | null }
@@ -32,7 +33,7 @@ function initials(name: string) {
 }
 
 function isOverdue(task: Task) {
-  return task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && new Date(task.dueDate) < new Date()
+  return task.status !== 'COMPLETED' && task.status !== 'CANCELLED' && isPastDue(task.dueDate)
 }
 
 interface TaskCardProps {

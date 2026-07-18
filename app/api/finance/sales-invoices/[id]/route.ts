@@ -4,6 +4,8 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
+import { checkLockDate } from '@/lib/lock-dates'
+import { reverseJournalEntry } from '@/lib/gl-posting'
 import { z } from 'zod'
 
 const updateSchema = z.object({
@@ -89,6 +91,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     if (invoice.status === 'Void') {
       return NextResponse.json({ error: 'Invoice already voided' }, { status: 400 })
     }
+    if (invoice.invoice_date) {
+      const lockError = await checkLockDate(session.companyId, new Date(invoice.invoice_date))
+      if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+    }
 
     const customerId = invoice.customer_id
 
@@ -97,6 +103,9 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         where: { id: params.id },
         data: { status: 'Void', updated_date: new Date().toISOString() },
       })
+      if (invoice.journal_entry_id) {
+        await reverseJournalEntry(tx, invoice.journal_entry_id)
+      }
       if (customerId) {
         await recalculateCustomerOutstandingBalance(tx, customerId)
       }
@@ -133,10 +142,17 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
   if (invoice.status === 'Void' || Number(invoice.amount_paid ?? 0) > 0) {
     return NextResponse.json({ error: 'Only unpaid invoices can be deleted' }, { status: 400 })
   }
+  if (invoice.invoice_date) {
+    const lockError = await checkLockDate(session.companyId, new Date(invoice.invoice_date))
+    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+  }
 
   const customerId = invoice.customer_id
 
   await prisma.$transaction(async (tx) => {
+    if (invoice.journal_entry_id) {
+      await reverseJournalEntry(tx, invoice.journal_entry_id)
+    }
     await tx.salesInvoiceLine.deleteMany({ where: { salesInvoiceId: params.id } })
     await tx.salesInvoice.delete({ where: { id: params.id } })
     if (customerId) {

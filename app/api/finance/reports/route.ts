@@ -3,6 +3,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { DB_STATUS_OUTSTANDING } from '@/lib/invoice-status'
+import { convertToReportingCurrency } from '@/lib/currency'
 
 const NORMAL_DEBIT = ['ASSET', 'EXPENSE']
 
@@ -59,8 +60,8 @@ export async function GET(req: NextRequest) {
     const revMap = Object.fromEntries(revLines.map((l) => [l.accountId, l._sum]))
     const expMap = Object.fromEntries(expLines.map((l) => [l.accountId, l._sum]))
 
-    const revenueRows = revAccts.map((a) => ({ ...a, name: a.account_name, code: a.account_code, amount: Number(revMap[a.id]?.credit ?? 0) - Number(revMap[a.id]?.debit ?? 0) }))
-    const expenseRows = expAccts.map((a) => ({ ...a, name: a.account_name, code: a.account_code, amount: Number(expMap[a.id]?.debit ?? 0) - Number(expMap[a.id]?.credit ?? 0) }))
+    const revenueRows = revAccts.map((a) => ({ ...a, name: a.account_name, accountCode: a.account_code, amount: Number(revMap[a.id]?.credit ?? 0) - Number(revMap[a.id]?.debit ?? 0) }))
+    const expenseRows = expAccts.map((a) => ({ ...a, name: a.account_name, accountCode: a.account_code, amount: Number(expMap[a.id]?.debit ?? 0) - Number(expMap[a.id]?.credit ?? 0) }))
     const totalRevenue = revenueRows.reduce((s, r) => s + r.amount, 0)
     const totalExpenses = expenseRows.reduce((s, r) => s + r.amount, 0)
 
@@ -90,6 +91,9 @@ export async function GET(req: NextRequest) {
     const lineMap = Object.fromEntries(lineAggs.map((l) => [l.accountId, l._sum]))
     const rows = accounts.map((a) => ({
       ...a,
+      name: a.account_name,
+      accountCode: a.account_code,
+      type: a.account_type,
       balance: computeBalance(a.account_type ?? 'ASSET', Number(lineMap[a.id]?.debit ?? 0), Number(lineMap[a.id]?.credit ?? 0)),
     }))
 
@@ -124,7 +128,14 @@ export async function GET(req: NextRequest) {
 
     const lineMap = Object.fromEntries(lineAggs.map((l) => [l.accountId, l._sum]))
     const rows = accounts
-      .map((a) => ({ ...a, totalDebit: Number(lineMap[a.id]?.debit ?? 0), totalCredit: Number(lineMap[a.id]?.credit ?? 0) }))
+      .map((a) => ({
+        ...a,
+        name: a.account_name,
+        accountCode: a.account_code,
+        type: a.account_type,
+        totalDebit: Number(lineMap[a.id]?.debit ?? 0),
+        totalCredit: Number(lineMap[a.id]?.credit ?? 0),
+      }))
       .filter((r) => r.totalDebit > 0 || r.totalCredit > 0)
 
     return NextResponse.json({
@@ -136,10 +147,12 @@ export async function GET(req: NextRequest) {
 
   if (type === 'aged-receivables') {
     const now = new Date()
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { currency: true } })
+    const reportingCurrency = company?.currency ?? 'USD'
     const customers = await prisma.customer.findMany({ where: { companyId } })
     const invoices = await prisma.salesInvoice.findMany({
       where: { companyId, status: { in: DB_STATUS_OUTSTANDING } },
-      select: { id: true, customer_id: true, due_date: true, balance_due: true },
+      select: { id: true, customer_id: true, due_date: true, balance_due: true, currency: true },
     })
     const invoicesByCustomer = invoices.reduce((acc: Record<string, typeof invoices>, inv) => {
       const cid = inv.customer_id ?? ''
@@ -147,11 +160,11 @@ export async function GET(req: NextRequest) {
       acc[cid].push(inv)
       return acc
     }, {})
-    const rows = customers.filter((c) => (invoicesByCustomer[c.id]?.length ?? 0) > 0).map((c) => {
+    const rows = await Promise.all(customers.filter((c) => (invoicesByCustomer[c.id]?.length ?? 0) > 0).map(async (c) => {
       const b = { current: 0, days1_30: 0, days31_60: 0, days61_90: 0, days90plus: 0 }
       for (const inv of (invoicesByCustomer[c.id] ?? [])) {
         const days = Math.floor((now.getTime() - new Date(inv.due_date ?? now).getTime()) / 86_400_000)
-        const amt = Number(inv.balance_due ?? 0)
+        const amt = await convertToReportingCurrency(Number(inv.balance_due ?? 0), inv.currency, reportingCurrency)
         if (days <= 0) b.current += amt
         else if (days <= 30) b.days1_30 += amt
         else if (days <= 60) b.days31_60 += amt
@@ -159,7 +172,7 @@ export async function GET(req: NextRequest) {
         else b.days90plus += amt
       }
       return { customer: c.company_name ?? c.id, ...b, total: Object.values(b).reduce((s, v) => s + v, 0) }
-    })
+    }))
 
     const totals = rows.reduce((acc, r) => ({ current: acc.current + r.current, days1_30: acc.days1_30 + r.days1_30, days31_60: acc.days31_60 + r.days31_60, days61_90: acc.days61_90 + r.days61_90, days90plus: acc.days90plus + r.days90plus, total: acc.total + r.total }), { current: 0, days1_30: 0, days31_60: 0, days61_90: 0, days90plus: 0, total: 0 })
     return NextResponse.json({ type, rows, totals })
