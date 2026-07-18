@@ -11,18 +11,19 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, GlobeRegular } from '@fluentui/react-icons';
+import { AddRegular, GlobeRegular, ArrowSyncRegular } from '@fluentui/react-icons';
 
 interface ExchangeRate { id: string; baseCurrency: string; targetCurrency: string; rate: number; effectiveDate: string; createdByUser?: { name: string } | null }
 type FormValues = { baseCurrency: string; targetCurrency: string; rate: string; effectiveDate: string }
 
-const CURRENCIES = ['USD', 'ZWL', 'ZAR', 'EUR', 'GBP', 'ZMW', 'BWP']
+const CURRENCIES = ['USD', 'ZWG', 'ZWL', 'ZAR', 'EUR', 'GBP', 'ZMW', 'BWP']
 
 export default function ExchangeRatesPage() {
   const [rates, setRates] = useState<ExchangeRate[]>([])
   const [currentRates, setCurrentRates] = useState<ExchangeRate[]>([])
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
+  const [syncing, setSyncing] = useState(false)
 
   const { register, handleSubmit, control, reset, watch, formState: { isSubmitting } } = useForm<FormValues>({
     defaultValues: { baseCurrency: 'USD', targetCurrency: 'ZWL', rate: '', effectiveDate: new Date().toISOString().split('T')[0] },
@@ -51,6 +52,19 @@ export default function ExchangeRatesPage() {
 
   useEffect(() => { fetchRates() }, [])
 
+  async function syncFromRbz() {
+    setSyncing(true)
+    try {
+      const res = await fetch('/api/finance/exchange-rates?action=sync-rbz', { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Failed to sync RBZ rates'); return }
+      toast.success(`Synced ${json.count} RBZ rate${json.count === 1 ? '' : 's'}`)
+      fetchRates()
+    } catch {
+      toast.error('Network error syncing RBZ rates')
+    } finally { setSyncing(false) }
+  }
+
   async function onSubmit(data: FormValues) {
     const res = await fetch('/api/finance/exchange-rates', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -64,7 +78,14 @@ export default function ExchangeRatesPage() {
 
   return (
     <div>
-      <PageHeader title="Exchange Rates" description="Manage currency conversion rates" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Rate</Button>} />
+      <PageHeader title="Exchange Rates" description="Manage currency conversion rates — synced daily from RBZ interbank rates" action={
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={syncFromRbz} disabled={syncing}>
+            <ArrowSyncRegular className={`h-4 w-4 mr-1 ${syncing ? 'animate-spin' : ''}`} /> {syncing ? 'Syncing…' : 'Sync from RBZ'}
+          </Button>
+          <Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Rate</Button>
+        </div>
+      } />
 
       {/* Current Rates Cards */}
       {currentRates.length > 0 && (

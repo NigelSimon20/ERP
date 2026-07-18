@@ -4,6 +4,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { syncRbzExchangeRates } from '@/lib/rbz-rates'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -47,6 +48,20 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await getSession(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  if (new URL(req.url).searchParams.get('action') === 'sync-rbz') {
+    try {
+      const result = await syncRbzExchangeRates()
+      await logAudit({
+        companyId: session.companyId, userId: session.userId, userName: session.name,
+        action: 'CREATE', module: 'ExchangeRates', recordId: 'rbz-sync',
+        newValues: { effectiveDate: result.effectiveDate, count: result.count },
+      })
+      return NextResponse.json(result, { status: 201 })
+    } catch (err: unknown) {
+      return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to sync RBZ rates' }, { status: 502 })
+    }
+  }
 
   const body = await req.json()
   const { baseCurrency, targetCurrency, rate, effectiveDate } = body
