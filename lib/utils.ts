@@ -23,6 +23,10 @@ export function formatDateTime(date: Date | string): string {
   return format(new Date(date), 'dd MMM yyyy HH:mm')
 }
 
+export function formatTime(date: Date | string): string {
+  return format(new Date(date), 'HH:mm')
+}
+
 export function timeAgo(date: Date | string): string {
   return formatDistanceToNow(new Date(date), { addSuffix: true })
 }

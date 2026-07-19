@@ -11,9 +11,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Controller } from 'react-hook-form'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { ImportWizardDialog } from '@/components/shared/import-export/ImportWizardDialog'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, CheckmarkCircleRegular, CopyRegular, DeleteRegular, EditRegular, KeyRegular, PeopleRegular, SearchRegular } from '@fluentui/react-icons';
+import { AddRegular, ArrowDownloadRegular, ArrowUploadRegular, CheckmarkCircleRegular, CopyRegular, DeleteRegular, DocumentArrowDownRegular, EditRegular, KeyRegular, PeopleRegular, SearchRegular } from '@fluentui/react-icons';
 
 interface Customer { id: string; name: string; email: string | null; phone: string | null; address: string | null; paymentTerms: number; creditLimit: number; outstandingBal: number; invoiceCount: number }
 type FormValues = { name: string; email: string; phone: string; address: string; paymentTerms: string; creditLimit: string }
@@ -25,6 +26,7 @@ export default function CustomersPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [showDialog, setShowDialog] = useState(false)
+  const [showImportWizard, setShowImportWizard] = useState(false)
   const [editing, setEditing] = useState<Customer | null>(null)
   const [creatingPortalFor, setCreatingPortalFor] = useState<string | null>(null)
   const [portalCredentials, setPortalCredentials] = useState<{ name: string; email: string; tempPassword: string } | null>(null)
@@ -98,9 +100,25 @@ export default function CustomersPage() {
     toast.success('Password copied to clipboard')
   }
 
+  async function exportCsv() {
+    const res = await fetch('/api/finance/customers/export?format=csv')
+    if (!res.ok) { toast.error('Export failed'); return }
+    const blob = await res.blob()
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `customers-${new Date().toISOString().split('T')[0]}.csv`; a.click()
+  }
+
   return (
     <div>
-      <PageHeader title="Customers" description="Manage your customer accounts" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Customer</Button>} />
+      <PageHeader title="Customers" description="Manage your customer accounts" action={
+        <div className="flex items-center gap-2">
+          <a href="/api/finance/customers/import/template" className="inline-flex">
+            <Button type="button" variant="outline"><DocumentArrowDownRegular className="h-4 w-4 mr-1" /> Template</Button>
+          </a>
+          <Button type="button" variant="outline" onClick={() => setShowImportWizard(true)}><ArrowUploadRegular className="h-4 w-4 mr-1" /> Import</Button>
+          <Button type="button" variant="outline" onClick={exportCsv}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export CSV</Button>
+          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Customer</Button>
+        </div>
+      } />
 
       <div className="mt-4 flex items-center gap-3">
         <div className="relative flex-1 max-w-sm">
@@ -160,6 +178,14 @@ export default function CustomersPage() {
           </div>
         )}
       </div>
+
+      <ImportWizardDialog
+        open={showImportWizard}
+        onOpenChange={setShowImportWizard}
+        apiBase="/api/finance/customers/import"
+        moduleLabel="Customers"
+        onComplete={fetchCustomers}
+      />
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-md">

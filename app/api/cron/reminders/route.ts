@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { sendWhatsAppMessage } from '@/lib/whatsapp'
-import { formatDate, formatDateTime } from '@/lib/utils'
+import { sendWhatsAppMessage, sendMeetingReminder } from '@/lib/whatsapp'
+import { formatDate, formatTime } from '@/lib/utils'
 import { isValidCronRequest } from '@/lib/cron-auth'
 
 export async function GET(req: NextRequest) {
@@ -45,9 +45,10 @@ export async function GET(req: NextRequest) {
     const users = await prisma.user.findMany({ where: { id: { in: userIds }, whatsapp: { not: null } } })
     for (const user of users) {
       if (user.whatsapp) {
-        await sendWhatsAppMessage({
+        await sendMeetingReminder({
           to: user.whatsapp,
-          message: `📅 *Meeting Reminder — Ravenshield*\n\n*${meeting.title}*\nDate: ${formatDateTime(meeting.meetingDate)}\nLocation: ${meeting.location ?? 'TBD'}\n\n_Ravenshield Security ERP_`,
+          date: formatDate(meeting.meetingDate),
+          time: formatTime(meeting.meetingDate),
         }).catch(() => {})
       }
     }

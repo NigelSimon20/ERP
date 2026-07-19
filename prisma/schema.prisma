@@ -69,6 +69,12 @@ model Company {
   nextPurchaseInvoiceNumber Int?    @default(1) @map("next_purchase_invoice_number")
   nextTransferNumber       Int?     @default(1) @map("next_transfer_number")
   nextForceNumber          Int?     @default(1) @map("next_force_number")
+  customerCodePrefix       String?  @map("customer_code_prefix")
+  nextCustomerNumber       Int?     @default(1) @map("next_customer_number")
+  supplierCodePrefix       String?  @map("supplier_code_prefix")
+  nextSupplierNumber       Int?     @default(1) @map("next_supplier_number")
+  siteCodePrefix           String?  @map("site_code_prefix")
+  nextSiteNumber           Int?     @default(1) @map("next_site_number")
   vatAccountId             String?  @map("vat_account_id")
   // Notifications / integrations
   whatsappEnabled          Boolean? @default(false) @map("whatsapp_enabled")
@@ -1521,6 +1527,48 @@ model AuditTrail {
   createdAt DateTime @default(now())
 
   @@map("audit_trail")
+}
+
+// Centralized import/export engine (Phase 2 pilot: employees, customers, suppliers, sites)
+model ImportJob {
+  id             String   @id
+  companyId      String
+  userId         String
+  userName       String
+  module         String
+  fileRecordId   String?
+  mode           String
+  columnMapping  Json
+  status         String   @default("VALIDATING")
+  totalRows      Int      @default(0)
+  validRows      Int      @default(0)
+  invalidRows    Int      @default(0)
+  successCount   Int      @default(0)
+  failureCount   Int      @default(0)
+  createdAt      DateTime @default(now())
+  completedAt    DateTime?
+  rows           ImportJobRow[]
+
+  @@index([companyId, module])
+  @@map("import_jobs")
+}
+
+model ImportJobRow {
+  id             String   @id
+  importJobId    String
+  importJob      ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+  rowNumber      Int
+  rawData        Json
+  mappedData     Json
+  classification String
+  action         String?
+  errors         Json?
+  recordId       String?
+  previousData   Json?
+  createdAt      DateTime @default(now())
+
+  @@index([importJobId])
+  @@map("import_job_rows")
 }
 
 model OtpToken {

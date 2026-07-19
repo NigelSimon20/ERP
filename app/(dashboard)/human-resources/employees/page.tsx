@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
-import { formatCurrency, formatDate } from '@/lib/utils'
+import { ImportWizardDialog } from '@/components/shared/import-export/ImportWizardDialog'
+import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, ArrowDownloadRegular, ChatRegular, CopyRegular, DeleteRegular, EditRegular, KeyRegular, MailRegular, PeopleRegular, PersonAddRegular, PrintRegular } from '@fluentui/react-icons';
+import { AddRegular, ArrowDownloadRegular, ArrowUploadRegular, ChatRegular, CopyRegular, DeleteRegular, DocumentArrowDownRegular, EditRegular, KeyRegular, MailRegular, PeopleRegular, PersonAddRegular, PrintRegular } from '@fluentui/react-icons';
 
 interface Guard { id: string; employeeNumber: string; name: string; idNumber: string | null; phone: string | null; email: string | null; department: string | null; rank: string | null; status: string; dailyRate: number; basicSalary: number | null; dateHired: string | null; whatsapp: string | null }
 type FormValues = { name: string; idNumber: string; phone: string; email: string; address: string; department: string; position: string; rank: string; dailyRate: string; basicSalary: string; status: string; dateOfBirth: string; dateHired: string; whatsapp: string }
@@ -56,6 +57,7 @@ export default function EmployeesPage() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterDept, setFilterDept] = useState('')
   const [showDialog, setShowDialog] = useState(false)
+  const [showImportWizard, setShowImportWizard] = useState(false)
   const [editing, setEditing] = useState<Guard | null>(null)
   const [credentials, setCredentials] = useState<CredentialsData | null>(null)
   const [creatingAccount, setCreatingAccount] = useState<string | null>(null)
@@ -193,19 +195,21 @@ Please change your password on first login.
     w.document.close(); w.print()
   }
 
-  function exportCsv() {
-    const rows = [
-      ['Emp#', 'Name', 'ID Number', 'Phone', 'Rank', 'Department', 'Status', 'Daily Rate', 'Date Hired'],
-      ...guards.map(g => [g.employeeNumber, g.name, g.idNumber ?? '', g.phone ?? '', g.rank ?? '', g.department ?? '', g.status, Number(g.dailyRate).toFixed(2), g.dateHired ? formatDate(new Date(g.dateHired)) : '']),
-    ]
-    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n')
-    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = `employees-${new Date().toISOString().split('T')[0]}.csv`; a.click()
+  async function exportCsv() {
+    const res = await fetch('/api/hr/employees/export?format=csv')
+    if (!res.ok) { toast.error('Export failed'); return }
+    const blob = await res.blob()
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `employees-${new Date().toISOString().split('T')[0]}.csv`; a.click()
   }
 
   return (
     <div>
       <PageHeader title="Employees" description="Manage guard and staff records" action={
         <div className="flex items-center gap-2">
+          <a href="/api/hr/employees/import/template" className="inline-flex">
+            <Button type="button" variant="outline"><DocumentArrowDownRegular className="h-4 w-4 mr-1" /> Template</Button>
+          </a>
+          <Button type="button" variant="outline" onClick={() => setShowImportWizard(true)}><ArrowUploadRegular className="h-4 w-4 mr-1" /> Import</Button>
           <Button type="button" variant="outline" onClick={exportCsv}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export CSV</Button>
           <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Employee</Button>
         </div>
@@ -292,6 +296,14 @@ Please change your password on first login.
           </div>
         )}
       </div>
+
+      <ImportWizardDialog
+        open={showImportWizard}
+        onOpenChange={setShowImportWizard}
+        apiBase="/api/hr/employees/import"
+        moduleLabel="Employees"
+        onComplete={fetchGuards}
+      />
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">

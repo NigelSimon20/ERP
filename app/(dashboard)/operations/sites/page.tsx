@@ -9,9 +9,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
+import { ImportWizardDialog } from '@/components/shared/import-export/ImportWizardDialog'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, ChevronDownRegular, ChevronRightRegular, DeleteRegular, EditRegular, LocationRegular } from '@fluentui/react-icons';
+import { AddRegular, ArrowDownloadRegular, ArrowUploadRegular, ChevronDownRegular, ChevronRightRegular, DeleteRegular, DocumentArrowDownRegular, EditRegular, LocationRegular } from '@fluentui/react-icons';
 
 interface Site {
   id: string; name: string; address: string | null; guardsRequired: number
@@ -35,6 +36,7 @@ export default function SitesPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
+  const [showImportWizard, setShowImportWizard] = useState(false)
   const [editing, setEditing] = useState<Site | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
   const [expandedDeployments, setExpandedDeployments] = useState<Site['deployments']>([])
@@ -108,9 +110,25 @@ export default function SitesPage() {
 
   const expiringSoon = useMemo(() => sites.filter(s => isExpiringSoon(s.contractEnd)).length, [sites])
 
+  async function exportCsv() {
+    const res = await fetch('/api/operations/sites/export?format=csv')
+    if (!res.ok) { toast.error('Export failed'); return }
+    const blob = await res.blob()
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `sites-${new Date().toISOString().split('T')[0]}.csv`; a.click()
+  }
+
   return (
     <div>
-      <PageHeader title="Sites" description="Manage all client sites and contracts" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Site</Button>} />
+      <PageHeader title="Sites" description="Manage all client sites and contracts" action={
+        <div className="flex items-center gap-2">
+          <a href="/api/operations/sites/import/template" className="inline-flex">
+            <Button type="button" variant="outline"><DocumentArrowDownRegular className="h-4 w-4 mr-1" /> Template</Button>
+          </a>
+          <Button type="button" variant="outline" onClick={() => setShowImportWizard(true)}><ArrowUploadRegular className="h-4 w-4 mr-1" /> Import</Button>
+          <Button type="button" variant="outline" onClick={exportCsv}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export CSV</Button>
+          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Site</Button>
+        </div>
+      } />
 
       {expiringSoon > 0 && (
         <div className="mt-4 rounded-lg border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/10 px-4 py-2.5 text-sm text-amber-700 dark:text-amber-400">
@@ -191,6 +209,14 @@ export default function SitesPage() {
           </div>
         )}
       </div>
+
+      <ImportWizardDialog
+        open={showImportWizard}
+        onOpenChange={setShowImportWizard}
+        apiBase="/api/operations/sites/import"
+        moduleLabel="Sites"
+        onComplete={fetchSites}
+      />
 
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="max-w-lg">

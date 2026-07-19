@@ -104,6 +104,7 @@ const nav: NavItem[] = [
       { label: 'Company', href: '/settings/company' },
       { label: 'Users', href: '/settings/users' },
       { label: 'Audit Trail', href: '/settings/audit-trail' },
+      { label: 'Import Logs', href: '/settings/import-logs' },
     ],
   },
 ]

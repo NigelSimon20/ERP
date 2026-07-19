@@ -1,6 +1,6 @@
 import { prisma } from './prisma'
 
-function parseNum(ref: string | null): number {
+export function parseNum(ref: string | null): number {
   if (!ref) return 0
   const m = ref.match(/(\d+)$/)
   return m ? parseInt(m[1], 10) : 0
@@ -95,4 +95,25 @@ export async function nextTransferReference(companyId: string): Promise<string> 
   const prefix = await getPrefix(companyId)
   const n = await claimCounter(companyId, 'nextTransferNumber')
   return `${prefix}TRF-${String(n).padStart(6, '0')}`
+}
+
+export async function nextCustomerNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { customerCodePrefix: true } })
+  const tag = company?.customerCodePrefix || 'CUS'
+  const n = await claimCounter(companyId, 'nextCustomerNumber')
+  return `${tag}-${String(n).padStart(4, '0')}`
+}
+
+export async function nextSupplierNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { supplierCodePrefix: true } })
+  const tag = company?.supplierCodePrefix || 'SUP'
+  const n = await claimCounter(companyId, 'nextSupplierNumber')
+  return `${tag}-${String(n).padStart(4, '0')}`
+}
+
+export async function nextSiteNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { siteCodePrefix: true } })
+  const tag = company?.siteCodePrefix || 'SITE'
+  const n = await claimCounter(companyId, 'nextSiteNumber')
+  return `${tag}-${String(n).padStart(4, '0')}`
 }
