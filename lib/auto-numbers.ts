@@ -31,16 +31,20 @@ async function claimCounter(companyId: string, field: string): Promise<number> {
 
 export async function nextInvoiceNumber(companyId: string): Promise<string> {
   const company = await prisma.company.findUnique({ where: { id: companyId }, select: { invoicePrefix: true } })
-  const prefix = company?.invoicePrefix ? `${company.invoicePrefix}-` : ''
+  // The configured prefix IS the document tag (e.g. an admin sets
+  // invoicePrefix="INV" meaning "number them INV-000036") — it isn't meant
+  // to be prepended to another hardcoded "INV-" tag. Doing both produced
+  // "INV-INV-000036" for any company that had customized this field.
+  const tag = company?.invoicePrefix || 'INV'
   const n = await claimCounter(companyId, 'nextInvoiceNumber')
-  return `${prefix}INV-${String(n).padStart(6, '0')}`
+  return `${tag}-${String(n).padStart(6, '0')}`
 }
 
 export async function nextQuoteNumber(companyId: string): Promise<string> {
   const company = await prisma.company.findUnique({ where: { id: companyId }, select: { quotationPrefix: true } })
-  const prefix = company?.quotationPrefix ? `${company.quotationPrefix}-` : ''
+  const tag = company?.quotationPrefix || 'QUO'
   const n = await claimCounter(companyId, 'nextQuotationNumber')
-  return `${prefix}QUO-${String(n).padStart(6, '0')}`
+  return `${tag}-${String(n).padStart(6, '0')}`
 }
 
 export async function nextJournalReference(companyId: string): Promise<string> {
@@ -68,23 +72,23 @@ export async function nextForceNumber(companyId: string): Promise<string> {
 
 export async function nextPaymentReference(companyId: string): Promise<string> {
   const company = await prisma.company.findUnique({ where: { id: companyId }, select: { paymentPrefix: true } })
-  const prefix = company?.paymentPrefix ? `${company.paymentPrefix}-` : ''
+  const tag = company?.paymentPrefix || 'PAY'
   const n = await claimCounter(companyId, 'nextPaymentNumber')
-  return `${prefix}PAY-${String(n).padStart(6, '0')}`
+  return `${tag}-${String(n).padStart(6, '0')}`
 }
 
 export async function nextReceiptReference(companyId: string): Promise<string> {
   const company = await prisma.company.findUnique({ where: { id: companyId }, select: { receiptPrefix: true } })
-  const prefix = company?.receiptPrefix ? `${company.receiptPrefix}-` : ''
+  const tag = company?.receiptPrefix || 'RCP'
   const n = await claimCounter(companyId, 'nextReceiptNumber')
-  return `${prefix}RCP-${String(n).padStart(6, '0')}`
+  return `${tag}-${String(n).padStart(6, '0')}`
 }
 
 export async function nextPurchaseInvoiceNumber(companyId: string): Promise<string> {
   const company = await prisma.company.findUnique({ where: { id: companyId }, select: { purchaseInvoicePrefix: true } })
-  const prefix = company?.purchaseInvoicePrefix ? `${company.purchaseInvoicePrefix}-` : ''
+  const tag = company?.purchaseInvoicePrefix || 'BILL'
   const n = await claimCounter(companyId, 'nextPurchaseInvoiceNumber')
-  return `${prefix}BILL-${String(n).padStart(6, '0')}`
+  return `${tag}-${String(n).padStart(6, '0')}`
 }
 
 export async function nextTransferReference(companyId: string): Promise<string> {

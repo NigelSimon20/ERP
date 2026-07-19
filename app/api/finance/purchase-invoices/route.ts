@@ -171,7 +171,7 @@ export async function POST(req: NextRequest) {
       await tx.supplier.update({ where: { id: supplierId }, data: { current_balance: { increment: totals.totalAmount } } })
 
       return inv
-    })
+    }, { timeout: 15000 })
 
     await logAudit({
       companyId: session.companyId,

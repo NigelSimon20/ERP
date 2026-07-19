@@ -1,6 +1,6 @@
 import { Prisma } from '@prisma/client'
 import { DB_STATUS_VOID } from '@/lib/invoice-status'
-import { convertToReportingCurrency } from '@/lib/currency'
+import { buildCurrencyConverter } from '@/lib/currency'
 
 function toNumber(value: unknown): number {
   const n = Number(value)
@@ -23,12 +23,19 @@ export async function recalculateCustomerOutstandingBalance(
     ? (await tx.company.findUnique({ where: { id: customer.companyId }, select: { currency: true } }))?.currency ?? 'USD'
     : 'USD'
 
+  // Was calling convertToReportingCurrency (1-2 queries each) per invoice in
+  // this loop — for a customer with N invoices that's up to 2N extra
+  // round trips held open inside the caller's interactive transaction,
+  // which was blowing past Prisma's default 5s transaction timeout on
+  // customers with more than a handful of invoices. Load every rate once
+  // instead.
+  const convert = await buildCurrencyConverter(reportingCurrency)
   let outstanding = 0
   for (const invoice of invoices) {
     const total = toNumber(invoice.total_amount)
     const paid = toNumber(invoice.amount_paid)
     const balance = Math.max(0, total - paid)
-    outstanding += await convertToReportingCurrency(balance, invoice.currency, reportingCurrency)
+    outstanding += convert(balance, invoice.currency).amount
   }
 
   await tx.customer.update({

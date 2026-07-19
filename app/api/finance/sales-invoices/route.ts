@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
       await recalculateCustomerOutstandingBalance(tx, data.customerId)
 
       return inv
-    })
+    }, { timeout: 15000 })
 
     await logAudit({
       companyId: session.companyId,

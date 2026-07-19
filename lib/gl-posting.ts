@@ -13,11 +13,16 @@ async function applyBalanceDeltas(
   })
   const typeById = new Map(accounts.map((a) => [a.id, a.account_type]))
 
-  for (const l of lines) {
+  // Each line is an atomic `increment` at the DB level, so it's safe to fire
+  // these concurrently instead of one round trip at a time — this loop was
+  // previously sequential and, combined with the rest of the invoice-posting
+  // transaction, was the main contributor to interactive transactions
+  // exceeding Prisma's default 5s timeout against the Supabase pooler.
+  await Promise.all(lines.map((l) => {
     const normalDebit = NORMAL_DEBIT.includes(typeById.get(l.accountId) ?? 'ASSET')
     const delta = normalDebit ? l.debit - l.credit : l.credit - l.debit
-    await tx.chartOfAccount.update({ where: { id: l.accountId }, data: { current_balance: { increment: delta } } }).catch(() => {})
-  }
+    return tx.chartOfAccount.update({ where: { id: l.accountId }, data: { current_balance: { increment: delta } } }).catch(() => {})
+  }))
 }
 
 /**
