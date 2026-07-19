@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
+import PortalsTab from '@/components/settings/PortalsTab'
 
 const tabs = [
   { key: 'company-info', label: 'Company Info' },
@@ -186,20 +187,6 @@ function DocumentsTab() {
       <div className="rounded-2xl border border-slate-200 bg-card p-6">
         <div className="text-sm font-medium text-slate-900">Document numbering placeholder</div>
         <p className="mt-2 text-sm text-slate-500">Configure prefixes, next numbering values, and document types for invoices, orders, and other records.</p>
-      </div>
-    </div>
-  )
-}
-
-function PortalsTab() {
-  return (
-    <div className="space-y-4">
-      <p className="text-sm leading-6 text-slate-600">
-        External portals and integration endpoints can be managed from this section.
-      </p>
-      <div className="rounded-2xl border border-slate-200 bg-card p-6">
-        <div className="text-sm font-medium text-slate-900">Portal settings placeholder</div>
-        <p className="mt-2 text-sm text-slate-500">Store portal names, URLs, categories, and display tags for external services.</p>
       </div>
     </div>
   )

@@ -1,106 +1,126 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BuildingRegular, OpenRegular, PeopleRegular, ShieldRegular } from '@fluentui/react-icons';
+import toast from 'react-hot-toast'
+import { SearchRegular } from '@fluentui/react-icons'
+import { PortalCard, type PortalCardData } from '@/components/portals/PortalCard'
+import { EmbeddedPortalModal } from '@/components/portals/EmbeddedPortalModal'
+import { CATEGORY_LABELS } from '@/lib/portals'
+
+interface Portal extends PortalCardData {
+  url: string
+}
+
 export default function ExternalPortalsPage() {
-  const [clientCount, setClientCount] = useState<number | null>(null)
-  const [guardCount, setGuardCount] = useState<number | null>(null)
+  const router = useRouter()
+  const [portals, setPortals] = useState<Portal[]>([])
+  const [loading, setLoading] = useState(true)
+  const [categoryFilter, setCategoryFilter] = useState('ALL')
+  const [search, setSearch] = useState('')
+  const [embed, setEmbed] = useState<{ name: string; url: string } | null>(null)
 
   useEffect(() => {
-    fetch('/api/users')
-      .then(r => r.json())
-      .then(j => {
-        const users: Array<{ role: string }> = j.users ?? []
-        setClientCount(users.filter(u => u.role === 'CLIENT').length)
-        setGuardCount(users.filter(u => u.role === 'GUARD').length)
-      })
-      .catch(() => {})
+    fetch('/api/portals')
+      .then((r) => r.json())
+      .then((j) => setPortals(j.portals ?? []))
+      .catch(() => toast.error('Failed to load portals'))
+      .finally(() => setLoading(false))
   }, [])
+
+  const categories = useMemo(
+    () => Array.from(new Set(portals.map((p) => p.category))),
+    [portals],
+  )
+
+  const filtered = useMemo(() => portals.filter((p) => {
+    const matchesCategory = categoryFilter === 'ALL' || p.category === categoryFilter
+    const matchesSearch = !search
+      || p.name.toLowerCase().includes(search.toLowerCase())
+      || p.description.toLowerCase().includes(search.toLowerCase())
+    return matchesCategory && matchesSearch
+  }), [portals, categoryFilter, search])
+
+  async function handleOpen(portal: Portal) {
+    fetch(`/api/portals/${portal.id}/launch`, { method: 'POST' }).catch(() => {})
+
+    if (portal.openBehavior === 'EMBEDDED') {
+      setEmbed({ name: portal.name, url: portal.url })
+    } else if (portal.openBehavior === 'SAME_TAB') {
+      if (portal.url.startsWith('/')) router.push(portal.url)
+      else window.location.href = portal.url
+    } else {
+      window.open(portal.url, '_blank', 'noopener,noreferrer')
+    }
+  }
 
   return (
     <div>
       <div className="mb-6">
         <h1 className="text-xl font-bold text-foreground">External Portals</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Dedicated portals for clients and guards to access their data</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Your enterprise portal hub — internal self-service and external partner/government portals in one place</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Client Portal */}
-        <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-5">
-          <div className="flex items-start justify-between">
-            <div className="rounded-lg bg-blue-50 dark:bg-blue-500/10 p-3">
-              <BuildingRegular className="h-7 w-7 text-blue-600 dark:text-blue-400" />
-            </div>
-            <span className="text-xs text-brand-muted-light bg-muted px-2 py-0.5 rounded-full">Client Access</span>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-bold text-foreground">Client Portal</h2>
-            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-              Clients access their invoices, payment history, active site deployments, and incident reports — securely.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <PeopleRegular className="h-4 w-4 text-brand-muted-light" />
-            {clientCount === null ? (
-              <span className="text-brand-muted-light">Loading…</span>
-            ) : (
-              <span><strong>{clientCount}</strong> registered client {clientCount === 1 ? 'user' : 'users'}</span>
-            )}
-          </div>
-
-          <Link
-            href="/portal/client"
-            target="_blank"
-            className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-brand-navy hover:bg-brand-navy-light text-white text-sm font-medium px-4 py-2.5 transition-colors"
-          >
-            Open Client Portal
-            <OpenRegular className="h-4 w-4" />
-          </Link>
+      <div className="flex flex-wrap items-center gap-3 mb-6">
+        <div className="relative flex-1 max-w-sm">
+          <SearchRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search portals…"
+            className="w-full pl-9 pr-3 py-2 text-sm border border-border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary"
+            aria-label="Search portals"
+          />
         </div>
-
-        {/* Guard Portal */}
-        <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-5">
-          <div className="flex items-start justify-between">
-            <div className="rounded-lg bg-red-50 p-3">
-              <ShieldRegular className="h-7 w-7 text-primary" />
-            </div>
-            <span className="text-xs text-brand-muted-light bg-muted px-2 py-0.5 rounded-full">Guard Access</span>
-          </div>
-
-          <div>
-            <h2 className="text-lg font-bold text-foreground">Guard Self-Service</h2>
-            <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
-              Guards view their deployment schedule, attendance records, and download payslips.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <PeopleRegular className="h-4 w-4 text-brand-muted-light" />
-            {guardCount === null ? (
-              <span className="text-brand-muted-light">Loading…</span>
-            ) : (
-              <span><strong>{guardCount}</strong> registered guard {guardCount === 1 ? 'user' : 'users'}</span>
-            )}
-          </div>
-
-          <Link
-            href="/portal/guard"
-            target="_blank"
-            className="mt-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary hover:bg-brand-red-dark text-white text-sm font-medium px-4 py-2.5 transition-colors"
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setCategoryFilter('ALL')}
+            className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${categoryFilter === 'ALL' ? 'bg-primary text-white border-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
           >
-            Open Guard Portal
-            <OpenRegular className="h-4 w-4" />
-          </Link>
+            All
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategoryFilter(c)}
+              className={`text-xs font-medium px-3 py-1.5 rounded-full border transition-colors ${categoryFilter === c ? 'bg-primary text-white border-primary' : 'border-border text-muted-foreground hover:bg-muted'}`}
+            >
+              {CATEGORY_LABELS[c] ?? c}
+            </button>
+          ))}
         </div>
       </div>
+
+      {loading ? (
+        <div className="text-sm text-muted-foreground">Loading portals…</div>
+      ) : filtered.length === 0 ? (
+        <div className="rounded-xl border border-border bg-card p-10 text-center text-sm text-muted-foreground">
+          No portals match your search.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+          {filtered.map((p) => (
+            <PortalCard key={p.id} portal={p} onOpen={() => handleOpen(p)} />
+          ))}
+        </div>
+      )}
 
       <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-        <strong>Note:</strong> Portal links open in a new tab. Users must have accounts with the appropriate role (CLIENT or GUARD) to log in.
-        Create user accounts from <Link href="/settings/users" className="underline">Settings → Users</Link>.
+        <strong>Note:</strong> You only see portals your role has been granted access to.
+        Manage portals, branding, and permissions from <Link href="/settings/company" className="underline">Settings → Company → Portals</Link>.
       </div>
+
+      {embed && (
+        <EmbeddedPortalModal
+          portalName={embed.name}
+          url={embed.url}
+          open={!!embed}
+          onOpenChange={(open) => { if (!open) setEmbed(null) }}
+        />
+      )}
     </div>
   )
 }

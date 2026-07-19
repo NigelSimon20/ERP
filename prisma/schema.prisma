@@ -102,6 +102,7 @@ model Company {
   leaveRequests            LeaveRequest[]
   users                    User[]
   guards                   Guard[]
+  portals                  Portal[]
   customers                Customer[]
   suppliers                Supplier[]
   payments                 Payment[]
@@ -348,8 +349,86 @@ model User {
 
   approvedLeaves     LeaveRequest[] @relation("ApprovedBy")
   leadsAssigned      Lead[]         @relation("LeadAssignedTo")
+  portalUsageLogs    PortalUsageLog[]
 
   @@map("users")
+}
+
+// ============================================================
+// EXTERNAL PORTALS HUB
+// ============================================================
+
+enum PortalCategory {
+  INTERNAL
+  EXTERNAL
+  GOVERNMENT
+  BANKING
+  TELECOMMUNICATIONS
+  UTILITIES
+  HR
+  FINANCE
+  OPERATIONS
+  COMPLIANCE
+}
+
+enum PortalOpenBehavior {
+  NEW_TAB
+  SAME_TAB
+  EMBEDDED
+}
+
+model Portal {
+  id             String             @id @default(cuid())
+  companyId      String
+  company        Company            @relation(fields: [companyId], references: [id])
+  slug           String
+  name           String
+  category       PortalCategory
+  description    String             @db.Text
+  url            String
+  logoUrl        String?
+  icon           String?
+  colorPrimary   String?
+  colorSecondary String?
+  buttonText     String             @default("Open Portal")
+  openBehavior   PortalOpenBehavior @default(NEW_TAB)
+  isActive       Boolean            @default(true)
+  isSystem       Boolean            @default(false)
+  displayOrder   Int                @default(0)
+  supportContact String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  roleAccess     PortalRoleAccess[]
+  usageLogs      PortalUsageLog[]
+
+  @@unique([companyId, slug])
+  @@index([companyId])
+  @@map("portals")
+}
+
+model PortalRoleAccess {
+  id       String @id @default(cuid())
+  portalId String
+  portal   Portal @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  role     String
+
+  @@unique([portalId, role])
+  @@map("portal_role_access")
+}
+
+model PortalUsageLog {
+  id        String   @id @default(cuid())
+  portalId  String
+  portal    Portal   @relation(fields: [portalId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String   @default("LAUNCH")
+  createdAt DateTime @default(now())
+
+  @@index([portalId])
+  @@index([userId])
+  @@map("portal_usage_logs")
 }
 
 model LeaveRequest {
