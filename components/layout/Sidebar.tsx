@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useEffect, useState } from 'react'
-import { BotRegular, BriefcaseRegular, BuildingRegular, ChatRegular, ChevronRightRegular, FolderOpenRegular, GlobeRegular, GridRegular, MoneyRegular, PanelLeftContractRegular, PanelLeftExpandRegular, PeopleRegular, SettingsRegular, ShieldRegular, TaskListSquareLtrRegular } from '@fluentui/react-icons';
+import { BotRegular, BriefcaseRegular, BuildingRegular, ChatRegular, ChevronRightRegular, FolderOpenRegular, GlobeRegular, GridRegular, MoneyRegular, PanelLeftContractRegular, PanelLeftExpandRegular, PeopleRegular, SettingsRegular, TaskListSquareLtrRegular } from '@fluentui/react-icons';
 
 interface NavItem {
   label: string
@@ -323,8 +324,8 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
     >
       {/* Logo */}
       <div className={cn('flex items-center h-16 flex-shrink-0 border-b border-border/60', isCollapsed ? 'justify-center px-2' : 'gap-3 px-5')}>
-        <div className="flex items-center justify-center w-8 h-8 bg-primary rounded-xl flex-shrink-0">
-          <ShieldRegular className="h-4 w-4 text-white" />
+        <div className="flex items-center justify-center w-8 h-8 rounded-xl flex-shrink-0 overflow-hidden">
+          <Image src="/assets/raven-logo.jpeg" alt="RavenShield" width={32} height={32} className="object-cover" />
         </div>
         {!isCollapsed && (
           <div className="min-w-0">
