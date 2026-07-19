@@ -3,6 +3,7 @@ import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { isOnline } from '@/lib/presence'
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -11,11 +12,17 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ user
   const { userId: counterpartId } = await params
   const meId = session.userId
 
-  const counterpart = await prisma.user.findFirst({
+  const counterpartUser = await prisma.user.findFirst({
     where: { id: counterpartId, companyId: session.companyId },
-    select: { id: true, name: true, role: true },
+    select: { id: true, name: true, role: true, lastActiveAt: true },
   })
-  if (!counterpart) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  if (!counterpartUser) return NextResponse.json({ error: 'User not found' }, { status: 404 })
+  const counterpart = {
+    id: counterpartUser.id,
+    name: counterpartUser.name,
+    role: counterpartUser.role,
+    online: isOnline(counterpartUser.lastActiveAt),
+  }
 
   const messages = await prisma.message.findMany({
     where: {

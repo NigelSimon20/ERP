@@ -344,6 +344,7 @@ model User {
   active             Boolean  @default(true)
   mustChangePassword Boolean  @default(false)
   lastLogin          DateTime?
+  lastActiveAt       DateTime?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

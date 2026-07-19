@@ -3,6 +3,7 @@ import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { isOnline } from '@/lib/presence'
 
 // Threads = one row per distinct conversation partner, with the latest
 // message and unread count. No Conversation table — derived from Message
@@ -35,7 +36,7 @@ export async function GET() {
   const counterpartIds = Array.from(latestByCounterpart.keys())
   const users = await prisma.user.findMany({
     where: { id: { in: counterpartIds } },
-    select: { id: true, name: true, role: true },
+    select: { id: true, name: true, role: true, lastActiveAt: true },
   })
   const userById = new Map(users.map((u) => [u.id, u]))
 
@@ -48,6 +49,7 @@ export async function GET() {
         userId: id,
         name: user.name,
         role: user.role,
+        online: isOnline(user.lastActiveAt),
         lastMessage: lastMessage.body,
         lastMessageAt: lastMessage.createdAt,
         lastMessageFromMe: lastMessage.senderId === meId,

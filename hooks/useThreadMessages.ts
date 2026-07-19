@@ -16,6 +16,7 @@ export interface ThreadCounterpart {
   id: string
   name: string
   role: string
+  online: boolean
 }
 
 const POLL_INTERVAL_MS = 4_000

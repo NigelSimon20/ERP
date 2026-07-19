@@ -9,6 +9,7 @@ import { UserProvider, UserInfo } from '@/lib/user-context'
 import { DashboardFilterProvider } from '@/lib/dashboard-filter-context'
 import { WelcomeModal, type WelcomeData } from '@/components/auth/WelcomeModal'
 import { WELCOME_DATA_STORAGE_KEY } from '@/components/auth/LoginForm'
+import { usePresenceHeartbeat } from '@/hooks/usePresenceHeartbeat'
 
 interface DashboardShellProps {
   user: UserInfo
@@ -18,6 +19,8 @@ interface DashboardShellProps {
 export function DashboardShell({ user, children }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [welcomeData, setWelcomeData] = useState<WelcomeData | null>(null)
+
+  usePresenceHeartbeat(true)
 
   useEffect(() => {
     const raw = sessionStorage.getItem(WELCOME_DATA_STORAGE_KEY)

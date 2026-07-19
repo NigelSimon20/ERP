@@ -7,6 +7,7 @@ export interface MessageThread {
   userId: string
   name: string
   role: string
+  online: boolean
   lastMessage: string
   lastMessageAt: string
   lastMessageFromMe: boolean

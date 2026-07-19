@@ -32,16 +32,28 @@ export async function GET(req: NextRequest) {
     orderBy: { effectiveDate: 'desc' },
   })
 
-  // Current rates: latest per pair
-  const pairs = new Map<string, typeof rates[0]>()
+  // Current + previous rate per pair, to compute day-over-day movement —
+  // "previous" is the next-most-recent row for that pair, not necessarily
+  // yesterday (rates aren't guaranteed to sync every single day).
+  const latestByPair = new Map<string, typeof rates[0]>()
+  const previousByPair = new Map<string, typeof rates[0]>()
   for (const r of rates) {
     const key = `${r.baseCurrency}-${r.targetCurrency}`
-    if (!pairs.has(key)) pairs.set(key, r)
+    if (!latestByPair.has(key)) latestByPair.set(key, r)
+    else if (!previousByPair.has(key)) previousByPair.set(key, r)
   }
+
+  const currentRates = Array.from(latestByPair.entries()).map(([key, r]) => {
+    const previous = previousByPair.get(key)
+    const rate = Number(r.rate)
+    const previousRate = previous ? Number(previous.rate) : null
+    const changePercent = previousRate ? ((rate - previousRate) / previousRate) * 100 : null
+    return { ...r, rate, previousRate, changePercent }
+  })
 
   return NextResponse.json({
     rates: rates.map((r) => ({ ...r, rate: Number(r.rate) })),
-    currentRates: Array.from(pairs.values()).map((r) => ({ ...r, rate: Number(r.rate) })),
+    currentRates,
   })
 }
 
