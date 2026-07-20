@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { PasswordInput } from './PasswordInput'
-import { SocialLogin } from './SocialLogin'
 import type { WelcomeData } from './WelcomeModal'
 import toast from 'react-hot-toast'
 
@@ -191,9 +190,6 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
           </>
         )}
       </Button>
-
-      {/* Social Login */}
-      <SocialLogin loading={isSubmitting} />
 
       {/* Sign Up Link */}
       <p className="text-center text-sm text-muted-foreground">
