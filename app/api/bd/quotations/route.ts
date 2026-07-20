@@ -5,6 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { nextQuoteNumber } from '@/lib/auto-numbers'
+import { calculateLineTotal, calculateInvoiceTotals } from '@/lib/calculations'
 
 function mapQuotation(q: { subtotal: unknown; tax: unknown; total: unknown; [k: string]: unknown }) {
   const { subtotal, tax, total, ...rest } = q
@@ -39,18 +40,16 @@ export async function POST(req: NextRequest) {
 
   const quoteNumber = await nextQuoteNumber(companyId)
 
-  let subtotal = 0
-  let taxAmount = 0
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { showVat: true, taxInclusive: true } })
+  const taxEnabled = company?.showVat ?? true
+  const taxInclusive = company?.taxInclusive ?? false
+
   const processedItems = (items as { description: string; quantity: number; unitPrice: number; taxRate?: number }[]).map((item) => {
-    const lineSubtotal = Math.round(item.quantity * item.unitPrice * 100) / 100
-    const lineTax = Math.round(lineSubtotal * ((item.taxRate ?? 0) / 100) * 100) / 100
-    subtotal += lineSubtotal
-    taxAmount += lineTax
-    return { ...item, lineTotal: lineSubtotal + lineTax, subtotal: lineSubtotal, taxAmount: lineTax }
+    const taxRate = taxEnabled ? (item.taxRate ?? 0) : 0
+    const { subtotal, taxAmount, lineTotal } = calculateLineTotal(item.quantity, item.unitPrice, taxRate, taxInclusive)
+    return { ...item, taxRate, lineTotal, subtotal, taxAmount }
   })
-  subtotal = Math.round(subtotal * 100) / 100
-  taxAmount = Math.round(taxAmount * 100) / 100
-  const totalAmount = Math.round((subtotal + taxAmount) * 100) / 100
+  const { subtotal, taxAmount, totalAmount } = calculateInvoiceTotals(processedItems, 0, taxInclusive)
 
   const quotationId = crypto.randomUUID()
 

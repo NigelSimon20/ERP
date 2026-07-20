@@ -54,11 +54,16 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const body = await req.json()
   const { issueDate, dueDate, description, notes, lineItems } = body
 
+  const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { showVat: true, taxInclusive: true } })
+  const taxEnabled = company?.showVat ?? true
+  const taxInclusive = company?.taxInclusive ?? false
+
   const lines = lineItems?.map((l: { description: string; quantity: number; unitPrice: number; taxRate?: number }) => {
-    const lineTotal = calculateInvoiceLineTotal(l.quantity, l.unitPrice, l.taxRate ?? 0)
-    return { ...l, ...lineTotal }
+    const taxRate = taxEnabled ? (l.taxRate ?? 0) : 0
+    const lineTotal = calculateInvoiceLineTotal(l.quantity, l.unitPrice, taxRate, taxInclusive)
+    return { ...l, taxRate, ...lineTotal }
   })
-  const totals = lines ? calculateInvoiceTotals(lines) : null
+  const totals = lines ? calculateInvoiceTotals(lines, 0, taxInclusive) : null
 
   const updated = await prisma.$transaction(async (tx) => {
     if (lines && totals) {

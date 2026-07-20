@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { calculateInvoiceTotals } from '@/lib/calculations'
 import toast from 'react-hot-toast'
 import { AddRegular, DeleteRegular, DocumentRegular, PrintRegular } from '@fluentui/react-icons';
 
@@ -17,38 +18,43 @@ interface QuotationItem { id: string; description: string; quantity: number; uni
 interface Quotation { id: string; quoteNumber: string; status: string; issueDate: string; validUntil: string | null; subtotal: number; taxAmount: number; totalAmount: number; notes: string | null; convertedInvoiceId: string | null; customer: { id: string; name: string } | null; lead: { id: string; companyName: string } | null; items?: QuotationItem[] }
 interface Customer { id: string; name: string }
 interface Lead { id: string; companyName: string }
+interface TaxSettings { taxName: string; taxRate: number; taxNumber: string | null; taxEnabled: boolean; taxInclusive: boolean; taxAppliedByDefault: boolean }
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
 type FormValues = { linkType: 'customer' | 'lead'; customerId: string; leadId: string; issueDate: string; validUntil: string; notes: string; items: LineItem[] }
 
 const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-muted-foreground', SENT: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', ACCEPTED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', EXPIRED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
-const TAX_RATES = [0, 5, 10, 14.5, 15, 20]
+const DEFAULT_TAX_SETTINGS: TaxSettings = { taxName: 'Tax', taxRate: 0, taxNumber: null, taxEnabled: true, taxInclusive: false, taxAppliedByDefault: true }
 
-function calcLineTotals(items: LineItem[]) {
-  let subtotal = 0; let taxAmount = 0
-  for (const item of items) {
-    const qty = Number(item.quantity) || 0; const up = Number(item.unitPrice) || 0; const tr = Number(item.taxRate) || 0
-    const s = Math.round(qty * up * 100) / 100; const t = Math.round(s * (tr / 100) * 100) / 100
-    subtotal += s; taxAmount += t
-  }
-  return { subtotal: Math.round(subtotal * 100) / 100, taxAmount: Math.round(taxAmount * 100) / 100, totalAmount: Math.round((subtotal + taxAmount) * 100) / 100 }
+function blankItem(tax: TaxSettings): LineItem {
+  return { description: '', quantity: '1', unitPrice: '', taxRate: tax.taxEnabled && tax.taxAppliedByDefault ? String(tax.taxRate) : '0' }
+}
+
+function calcLineTotals(items: LineItem[], tax: TaxSettings) {
+  const { subTotal, taxTotal, totalAmount } = calculateInvoiceTotals(
+    items.map((item) => ({ quantity: Number(item.quantity) || 0, unitPrice: Number(item.unitPrice) || 0, taxRate: tax.taxEnabled ? Number(item.taxRate) || 0 : 0 })),
+    0,
+    tax.taxInclusive,
+  )
+  return { subtotal: subTotal ?? 0, taxAmount: taxTotal ?? 0, totalAmount }
 }
 
 export default function QuotationsPage() {
   const [quotations, setQuotations] = useState<Quotation[]>([])
   const [customers, setCustomers] = useState<Customer[]>([])
   const [leads, setLeads] = useState<Lead[]>([])
+  const [taxSettings, setTaxSettings] = useState<TaxSettings>(DEFAULT_TAX_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [convertTarget, setConvertTarget] = useState<Quotation | null>(null)
   const [converting, setConverting] = useState(false)
 
   const { register, handleSubmit, control, reset, watch, formState: { isSubmitting } } = useForm<FormValues>({
-    defaultValues: { linkType: 'customer', customerId: '', leadId: '', issueDate: new Date().toISOString().split('T')[0], validUntil: '', notes: '', items: [{ description: '', quantity: '1', unitPrice: '', taxRate: '0' }] },
+    defaultValues: { linkType: 'customer', customerId: '', leadId: '', issueDate: new Date().toISOString().split('T')[0], validUntil: '', notes: '', items: [blankItem(DEFAULT_TAX_SETTINGS)] },
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'items' })
   const watchedItems = useWatch({ control, name: 'items' })
   const linkType = watch('linkType')
-  const totals = calcLineTotals(watchedItems ?? [])
+  const totals = calcLineTotals(watchedItems ?? [], taxSettings)
 
   async function fetchQuotations() {
     setLoading(true)
@@ -67,6 +73,18 @@ export default function QuotationsPage() {
   useEffect(() => {
     Promise.all([fetch('/api/bd/customers').then(r => r.json()), fetch('/api/bd/leads').then(r => r.json())]).then(([c, l]) => {
       setCustomers(c.customers ?? []); setLeads(l.leads ?? [])
+    }).catch((err) => console.error(err))
+    fetch('/api/settings').then(r => r.json()).then((settings) => {
+      if (settings.company) {
+        setTaxSettings({
+          taxName: settings.company.taxName || 'Tax',
+          taxRate: Number(settings.company.taxRate) || 0,
+          taxNumber: settings.company.taxNumber ?? null,
+          taxEnabled: settings.company.taxEnabled ?? true,
+          taxInclusive: settings.company.taxInclusive ?? false,
+          taxAppliedByDefault: settings.company.taxAppliedByDefault ?? true,
+        })
+      }
     }).catch((err) => console.error(err))
   }, [])
 
@@ -118,24 +136,30 @@ export default function QuotationsPage() {
       items = json.quotation.items ?? []
     }
 
+    const taxCol = taxSettings.taxEnabled ? `<th>${taxSettings.taxName}</th>` : ''
+    const taxCell = (i: QuotationItem) => taxSettings.taxEnabled ? `<td>${i.taxRate}%</td>` : ''
+    const taxRow = taxSettings.taxEnabled ? `<tr><td colspan="${taxSettings.taxEnabled ? 4 : 3}">${taxSettings.taxName}</td><td>${formatCurrency(Number(q.taxAmount))}</td></tr>` : ''
+    const colspan = taxSettings.taxEnabled ? 4 : 3
+
     const w = window.open('', '_blank')!
     w.document.write(`<!DOCTYPE html><html><head><title>${q.quoteNumber}</title><style>body{font-family:sans-serif;padding:40px;max-width:700px;margin:0 auto}h1{color:#111827}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #E5E7EB;padding:8px 12px;text-align:left}th{background:#F8FAFC}tfoot td{font-weight:bold}.total{font-size:1.2em;color:#DC2626}</style></head><body>
       <h1>QUOTATION</h1><p><strong>Quote #:</strong> ${q.quoteNumber}</p>
       <p><strong>Date:</strong> ${formatDate(new Date(q.issueDate))}</p>
       ${q.validUntil ? `<p><strong>Valid Until:</strong> ${formatDate(new Date(q.validUntil))}</p>` : ''}
+      ${taxSettings.taxNumber ? `<p><strong>Tax Reg No:</strong> ${taxSettings.taxNumber}</p>` : ''}
       <p><strong>To:</strong> ${q.customer?.name ?? q.lead?.companyName ?? '—'}</p>
-      <table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th><th>Tax</th><th>Total</th></tr></thead>
-      <tbody>${(items ?? []).map(i => `<tr><td>${i.description}</td><td>${i.quantity}</td><td>${formatCurrency(Number(i.unitPrice))}</td><td>${i.taxRate}%</td><td>${formatCurrency(Number(i.lineTotal))}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td colspan="4">Subtotal</td><td>${formatCurrency(Number(q.subtotal))}</td></tr>
-      <tr><td colspan="4">Tax</td><td>${formatCurrency(Number(q.taxAmount))}</td></tr>
-      <tr><td colspan="4" class="total">TOTAL</td><td class="total">${formatCurrency(Number(q.totalAmount))}</td></tr></tfoot></table>
+      <table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th>${taxCol}<th>Total</th></tr></thead>
+      <tbody>${(items ?? []).map(i => `<tr><td>${i.description}</td><td>${i.quantity}</td><td>${formatCurrency(Number(i.unitPrice))}</td>${taxCell(i)}<td>${formatCurrency(Number(i.lineTotal))}</td></tr>`).join('')}</tbody>
+      <tfoot><tr><td colspan="${colspan}">Subtotal</td><td>${formatCurrency(Number(q.subtotal))}</td></tr>
+      ${taxRow}
+      <tr><td colspan="${colspan}" class="total">TOTAL</td><td class="total">${formatCurrency(Number(q.totalAmount))}</td></tr></tfoot></table>
       ${q.notes ? `<p><em>${q.notes}</em></p>` : ''}</body></html>`)
     w.document.close(); w.print()
   }
 
   return (
     <div>
-      <PageHeader title="Quotations" description="Create and manage sales quotations" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Quote</Button>} />
+      <PageHeader title="Quotations" description="Create and manage sales quotations" action={<Button type="button" onClick={() => { reset({ linkType: 'customer', customerId: '', leadId: '', issueDate: new Date().toISOString().split('T')[0], validUntil: '', notes: '', items: [blankItem(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Quote</Button>} />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
@@ -239,24 +263,23 @@ export default function QuotationsPage() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <Label className="text-sm font-semibold">Line Items</Label>
-                <Button type="button" size="sm" variant="outline" onClick={() => append({ description: '', quantity: '1', unitPrice: '', taxRate: '0' })}><AddRegular className="h-3.5 w-3.5 mr-1" /> Add Line</Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => append(blankItem(taxSettings))}><AddRegular className="h-3.5 w-3.5 mr-1" /> Add Line</Button>
               </div>
               <div className="space-y-2">
                 {fields.map((field, idx) => {
                   const qty = Number(watchedItems?.[idx]?.quantity) || 0
                   const up = Number(watchedItems?.[idx]?.unitPrice) || 0
-                  const tr = Number(watchedItems?.[idx]?.taxRate) || 0
-                  const lineTotal = Math.round(qty * up * (1 + tr / 100) * 100) / 100
+                  const tr = taxSettings.taxEnabled ? Number(watchedItems?.[idx]?.taxRate) || 0 : 0
+                  const gross = Math.round(qty * up * 100) / 100
+                  const lineTotal = taxSettings.taxInclusive ? gross : Math.round(gross * (1 + tr / 100) * 100) / 100
                   return (
                     <div key={field.id} className="grid grid-cols-12 gap-1.5 items-center">
-                      <div className="col-span-5"><Input placeholder="Description" {...register(`items.${idx}.description`)} /></div>
+                      <div className={taxSettings.taxEnabled ? 'col-span-5' : 'col-span-7'}><Input placeholder="Description" {...register(`items.${idx}.description`)} /></div>
                       <div className="col-span-2"><Input type="number" placeholder="Qty" min="0" step="any" {...register(`items.${idx}.quantity`)} /></div>
                       <div className="col-span-2"><Input type="number" placeholder="Price" min="0" step="0.01" {...register(`items.${idx}.unitPrice`)} /></div>
-                      <div className="col-span-2">
-                        <select className="w-full h-9 rounded-md border border-border px-2 text-sm" aria-label="Tax rate" {...register(`items.${idx}.taxRate`)}>
-                          {TAX_RATES.map(r => <option key={r} value={r}>{r}%</option>)}
-                        </select>
-                      </div>
+                      {taxSettings.taxEnabled && (
+                        <div className="col-span-2"><Input type="number" placeholder={`${taxSettings.taxName} %`} min="0" max="100" step="0.01" aria-label="Tax rate" {...register(`items.${idx}.taxRate`)} /></div>
+                      )}
                       <div className="col-span-1 flex items-center justify-between gap-1">
                         <span className="text-xs text-muted-foreground hidden xl:block">{lineTotal > 0 ? formatCurrency(lineTotal) : ''}</span>
                         {fields.length > 1 && <button type="button" onClick={() => remove(idx)} className="p-1 text-brand-muted-light hover:text-primary" aria-label="Remove line"><DeleteRegular className="h-3.5 w-3.5" /></button>}
@@ -268,7 +291,7 @@ export default function QuotationsPage() {
               <div className="mt-3 flex justify-end text-sm space-y-0.5">
                 <div className="text-right space-y-0.5">
                   <div className="flex gap-8 text-muted-foreground"><span>Subtotal</span><span>{formatCurrency(totals.subtotal)}</span></div>
-                  <div className="flex gap-8 text-muted-foreground"><span>Tax</span><span>{formatCurrency(totals.taxAmount)}</span></div>
+                  {taxSettings.taxEnabled && <div className="flex gap-8 text-muted-foreground"><span>{taxSettings.taxName}</span><span>{formatCurrency(totals.taxAmount)}</span></div>}
                   <div className="flex gap-8 font-bold text-foreground"><span>Total</span><span>{formatCurrency(totals.totalAmount)}</span></div>
                 </div>
               </div>

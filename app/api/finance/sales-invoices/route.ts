@@ -109,12 +109,17 @@ export async function POST(req: NextRequest) {
 
     const invoiceNumber = await nextInvoiceNumber(session.companyId)
 
+    const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { showVat: true, taxInclusive: true } })
+    const taxEnabled = company?.showVat ?? true
+    const taxInclusive = company?.taxInclusive ?? false
+
     const lines = (data.lineItems as { description: string; quantity: number; unitPrice: number; taxRate: number }[]).map((item) => {
-      const { lineTotal, taxAmount } = calculateInvoiceLineTotal(item.quantity, item.unitPrice, item.taxRate)
-      return { ...item, lineTotal, taxAmount }
+      const taxRate = taxEnabled ? item.taxRate : 0
+      const { lineTotal, taxAmount } = calculateInvoiceLineTotal(item.quantity, item.unitPrice, taxRate, taxInclusive)
+      return { ...item, taxRate, lineTotal, taxAmount }
     })
 
-    const { subTotal, taxTotal, totalAmount } = calculateInvoiceTotals(lines)
+    const { subTotal, taxTotal, totalAmount } = calculateInvoiceTotals(lines, 0, taxInclusive)
     const status = toDbInvoiceStatus(determineInvoiceStatus(totalAmount, 0, dueDate))
 
     const [receivablesAccount, vatAccount, requestedRevenueAccount, defaultRevenueAccount] = await Promise.all([

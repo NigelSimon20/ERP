@@ -39,24 +39,35 @@ export function calculateLineSubtotal(quantity: number, unitPrice: number): numb
   }
 }
 
-export function calculateLineTax(subtotal: number, taxRate: number): number {
+// When inclusive, `subtotal` is treated as a tax-inclusive gross amount and
+// the tax is extracted out of it rather than added on top.
+export function calculateLineTax(subtotal: number, taxRate: number, inclusive = false): number {
   try {
-    return round2dp((Number(subtotal) || 0) * ((Number(taxRate) || 0) / 100))
+    const s = Number(subtotal) || 0
+    const r = Number(taxRate) || 0
+    if (inclusive) return round2dp(s - s / (1 + r / 100))
+    return round2dp(s * (r / 100))
   } catch {
     return 0
   }
 }
 
-export function calculateLineTotal(quantity: number, unitPrice: number, taxRate: number): { subtotal: number; taxAmount: number; lineTotal: number } {
-  const subtotal = calculateLineSubtotal(quantity, unitPrice)
-  const taxAmount = calculateLineTax(subtotal, taxRate)
-  const lineTotal = round2dp(subtotal + taxAmount)
-  return { subtotal, taxAmount, lineTotal }
+export function calculateLineTotal(quantity: number, unitPrice: number, taxRate: number, inclusive = false): { subtotal: number; taxAmount: number; lineTotal: number } {
+  const gross = calculateLineSubtotal(quantity, unitPrice)
+  if (inclusive) {
+    const taxAmount = calculateLineTax(gross, taxRate, true)
+    const subtotal = round2dp(gross - taxAmount)
+    return { subtotal, taxAmount, lineTotal: gross }
+  }
+  const taxAmount = calculateLineTax(gross, taxRate)
+  const lineTotal = round2dp(gross + taxAmount)
+  return { subtotal: gross, taxAmount, lineTotal }
 }
 
 export function calculateInvoiceTotals(
   lines: Array<{ quantity: number; unitPrice?: number; unit_price?: number; taxRate?: number; tax_rate?: number }>,
-  invoiceVatRate = 0
+  invoiceVatRate = 0,
+  inclusive = false
 ): { subtotal: number; taxAmount: number; totalAmount: number; subTotal?: number; taxTotal?: number } {
   let subtotal = 0
   let taxAmount = 0
@@ -65,10 +76,9 @@ export function calculateInvoiceTotals(
     const qty = Number(line.quantity) || 0
     const price = Number(line.unitPrice ?? line.unit_price) || 0
     const rate = Number(line.taxRate ?? line.tax_rate ?? 0) || 0
-    const s = calculateLineSubtotal(qty, price)
     // prefer per-line tax rate; if not present or zero, fall back to invoice-level VAT rate
     const effectiveRate = rate > 0 ? rate : Number(invoiceVatRate || 0)
-    const t = calculateLineTax(s, effectiveRate)
+    const { subtotal: s, taxAmount: t } = calculateLineTotal(qty, price, effectiveRate, inclusive)
     subtotal += s
     taxAmount += t
   }
@@ -295,8 +305,8 @@ export function calculateAgedBalance(invoices: Array<{ balanceDue: number; dueDa
 // Exports for backward compatibility
 // ----------------------
 // Provide older function names used across the codebase as aliases.
-export const calculateInvoiceLineTotal = (q: number, p: number, r: number) => {
-  const res = calculateLineTotal(q, p, r)
+export const calculateInvoiceLineTotal = (q: number, p: number, r: number, inclusive = false) => {
+  const res = calculateLineTotal(q, p, r, inclusive)
   // original shape expected: { lineTotal, taxAmount, subtotal }
   return { lineTotal: res.lineTotal, taxAmount: res.taxAmount, subtotal: res.subtotal }
 }

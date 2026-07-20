@@ -35,6 +35,11 @@ export async function GET(req: NextRequest) {
           currency: true,
           logo: true,
           defaultVatRate: true,
+          taxName: true,
+          vatNumber: true,
+          showVat: true,
+          taxInclusive: true,
+          taxAppliedByDefault: true,
         },
       },
     },
@@ -53,6 +58,11 @@ export async function GET(req: NextRequest) {
           currency: user.company.currency,
           logo: user.company.logo,
           taxRate: user.company.defaultVatRate,
+          taxName: user.company.taxName ?? 'VAT',
+          taxNumber: user.company.vatNumber,
+          taxEnabled: user.company.showVat ?? true,
+          taxInclusive: user.company.taxInclusive ?? false,
+          taxAppliedByDefault: user.company.taxAppliedByDefault ?? true,
         }
       : null,
   }

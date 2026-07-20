@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
+import { calculateInvoiceTotals } from '@/lib/calculations'
 import toast from 'react-hot-toast'
 import { AddRegular, DeleteRegular, DocumentRegular, EyeRegular, ProhibitedRegular, ReceiptRegular } from '@fluentui/react-icons';
 
@@ -29,6 +30,7 @@ interface Invoice {
 interface Customer { id: string; name: string }
 interface BankAccount { id: string; bankName: string; accountNumber: string }
 interface GLAccount { id: string; account_name: string; account_code: string; account_type: string }
+interface TaxSettings { taxName: string; taxRate: number; taxEnabled: boolean; taxInclusive: boolean; taxAppliedByDefault: boolean }
 
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
 type InvoiceForm = { customerId: string; issueDate: string; dueDate: string; description: string; revenueAccountId: string; lineItems: LineItem[] }
@@ -43,7 +45,10 @@ const STATUS_STYLES: Record<string, string> = {
   VOID: 'bg-muted text-brand-muted-light line-through',
 }
 const STATUS_TABS = ['ALL', 'UNPAID', 'PARTIAL', 'PAID', 'OVERDUE', 'VOID']
-const BLANK_LINE: LineItem = { description: '', quantity: '1', unitPrice: '', taxRate: '0' }
+const DEFAULT_TAX_SETTINGS: TaxSettings = { taxName: 'Tax', taxRate: 0, taxEnabled: true, taxInclusive: false, taxAppliedByDefault: true }
+function blankLine(tax: TaxSettings): LineItem {
+  return { description: '', quantity: '1', unitPrice: '', taxRate: tax.taxEnabled && tax.taxAppliedByDefault ? String(tax.taxRate) : '0' }
+}
 
 function StatusBadge({ status }: { status: string }) {
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status] ?? 'bg-muted text-foreground'}`}>{status}</span>
@@ -54,6 +59,7 @@ export default function SalesInvoicesPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [glAccounts, setGlAccounts] = useState<GLAccount[]>([])
+  const [taxSettings, setTaxSettings] = useState<TaxSettings>(DEFAULT_TAX_SETTINGS)
   const [loading, setLoading] = useState(true)
   const [statusTab, setStatusTab] = useState('ALL')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
@@ -62,22 +68,18 @@ export default function SalesInvoicesPage() {
 
   // Invoice form
   const { register: invReg, handleSubmit: invSubmit, control: invCtrl, reset: invReset, formState: { isSubmitting: invSubmitting } } = useForm<InvoiceForm>({
-    defaultValues: { customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: '', lineItems: [BLANK_LINE] },
+    defaultValues: { customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: '', lineItems: [blankLine(DEFAULT_TAX_SETTINGS)] },
   })
   const { fields, append, remove } = useFieldArray({ control: invCtrl, name: 'lineItems' })
   const watchedItems = useWatch({ control: invCtrl, name: 'lineItems' }) ?? []
   const totals = useMemo(() => {
-    let sub = 0, tax = 0
-    for (const item of watchedItems) {
-      const qty = Number(item?.quantity) || 0
-      const price = Number(item?.unitPrice) || 0
-      const rate = Number(item?.taxRate) || 0
-      const lineTotal = qty * price
-      sub += lineTotal
-      tax += lineTotal * (rate / 100)
-    }
-    return { subTotal: sub, taxTotal: tax, totalAmount: sub + tax }
-  }, [watchedItems])
+    const { subtotal, taxAmount, totalAmount } = calculateInvoiceTotals(
+      watchedItems.map((item) => ({ quantity: Number(item?.quantity) || 0, unitPrice: Number(item?.unitPrice) || 0, taxRate: taxSettings.taxEnabled ? Number(item?.taxRate) || 0 : 0 })),
+      0,
+      taxSettings.taxInclusive,
+    )
+    return { subTotal: subtotal, taxTotal: taxAmount, totalAmount }
+  }, [watchedItems, taxSettings])
 
   // Receipt form
   const { register: rcpReg, handleSubmit: rcpSubmit, reset: rcpReset, formState: { isSubmitting: rcpSubmitting } } = useForm<ReceiptForm>({
@@ -119,8 +121,26 @@ export default function SalesInvoicesPage() {
     }
   }
 
+  async function fetchTaxSettings() {
+    try {
+      const res = await fetch('/api/settings')
+      const json = await res.json()
+      if (res.ok && json.company) {
+        setTaxSettings({
+          taxName: json.company.taxName || 'Tax',
+          taxRate: Number(json.company.taxRate) || 0,
+          taxEnabled: json.company.taxEnabled ?? true,
+          taxInclusive: json.company.taxInclusive ?? false,
+          taxAppliedByDefault: json.company.taxAppliedByDefault ?? true,
+        })
+      }
+    } catch (err) {
+      console.error(err)
+    }
+  }
+
   useEffect(() => { fetchInvoices() }, [statusTab])
-  useEffect(() => { fetchSupporting() }, [])
+  useEffect(() => { fetchSupporting(); fetchTaxSettings() }, [])
 
   // Summary stats from ALL invoices (fetch once separately)
   const [allInvoices, setAllInvoices] = useState<Invoice[]>([])
@@ -199,7 +219,7 @@ export default function SalesInvoicesPage() {
       <PageHeader
         title="Sales Invoices"
         description="Create and manage customer invoices"
-        action={<Button type="button" onClick={() => { invReset({ customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: '', lineItems: [BLANK_LINE] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Invoice</Button>}
+        action={<Button type="button" onClick={() => { invReset({ customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: '', lineItems: [blankLine(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Invoice</Button>}
       />
 
       {/* Summary Cards */}
@@ -335,10 +355,10 @@ export default function SalesInvoicesPage() {
             {/* Line Items */}
             <div>
               <div className="grid grid-cols-12 gap-2 mb-1 text-xs font-medium text-muted-foreground px-1">
-                <div className="col-span-4">Description</div>
+                <div className={taxSettings.taxEnabled ? 'col-span-4' : 'col-span-5'}>Description</div>
                 <div className="col-span-2 text-right">Qty</div>
                 <div className="col-span-2 text-right">Unit Price</div>
-                <div className="col-span-2 text-right">Tax %</div>
+                {taxSettings.taxEnabled && <div className="col-span-2 text-right">{taxSettings.taxName} %</div>}
                 <div className="col-span-1 text-right">Total</div>
                 <div className="col-span-1" />
               </div>
@@ -346,14 +366,14 @@ export default function SalesInvoicesPage() {
                 {fields.map((field, index) => {
                   const qty = Number(watchedItems?.[index]?.quantity) || 0
                   const price = Number(watchedItems?.[index]?.unitPrice) || 0
-                  const tax = Number(watchedItems?.[index]?.taxRate) || 0
-                  const lineTotal = qty * price * (1 + tax / 100)
+                  const tax = taxSettings.taxEnabled ? Number(watchedItems?.[index]?.taxRate) || 0 : 0
+                  const lineTotal = taxSettings.taxInclusive ? qty * price : qty * price * (1 + tax / 100)
                   return (
                     <div key={field.id} className="grid grid-cols-12 gap-2 items-center">
-                      <div className="col-span-4"><Input className="h-8 text-xs" placeholder="Item description" {...invReg(`lineItems.${index}.description`)} /></div>
+                      <div className={taxSettings.taxEnabled ? 'col-span-4' : 'col-span-5'}><Input className="h-8 text-xs" placeholder="Item description" {...invReg(`lineItems.${index}.description`)} /></div>
                       <div className="col-span-2"><Input className="h-8 text-xs text-right" type="number" step="1" min="0" placeholder="1" {...invReg(`lineItems.${index}.quantity`)} /></div>
                       <div className="col-span-2"><Input className="h-8 text-xs text-right" type="number" step="0.01" min="0" placeholder="0.00" {...invReg(`lineItems.${index}.unitPrice`)} /></div>
-                      <div className="col-span-2"><Input className="h-8 text-xs text-right" type="number" step="0.01" min="0" max="100" placeholder="0" {...invReg(`lineItems.${index}.taxRate`)} /></div>
+                      {taxSettings.taxEnabled && <div className="col-span-2"><Input className="h-8 text-xs text-right" type="number" step="0.01" min="0" max="100" placeholder="0" {...invReg(`lineItems.${index}.taxRate`)} /></div>}
                       <div className="col-span-1 text-right text-xs font-medium text-foreground">{formatCurrency(lineTotal)}</div>
                       <div className="col-span-1 flex justify-center">
                         <button type="button" onClick={() => remove(index)} disabled={fields.length <= 1} className="p-1 rounded hover:bg-red-50 text-brand-muted-light hover:text-red-400 disabled:opacity-30" aria-label="Remove line">
@@ -364,14 +384,14 @@ export default function SalesInvoicesPage() {
                   )
                 })}
               </div>
-              <button type="button" onClick={() => append(BLANK_LINE)} className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline font-medium">
+              <button type="button" onClick={() => append(blankLine(taxSettings))} className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline font-medium">
                 <AddRegular className="h-3 w-3" /> Add Line
               </button>
             </div>
 
             <div className="rounded-lg bg-muted/50 border border-border p-3 text-sm space-y-1 text-right">
               <div className="text-muted-foreground">Sub-total: <strong>{formatCurrency(totals.subTotal)}</strong></div>
-              <div className="text-muted-foreground">Tax: <strong>{formatCurrency(totals.taxTotal)}</strong></div>
+              {taxSettings.taxEnabled && <div className="text-muted-foreground">{taxSettings.taxName}: <strong>{formatCurrency(totals.taxTotal)}</strong></div>}
               <div className="text-foreground font-bold text-base">Total: {formatCurrency(totals.totalAmount)}</div>
             </div>
 

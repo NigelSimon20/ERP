@@ -104,11 +104,16 @@ export async function POST(req: NextRequest) {
   const supplier = await prisma.supplier.findFirst({ where: { id: supplierId, companyId } })
   if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 })
 
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { showVat: true, taxInclusive: true } })
+  const taxEnabled = company?.showVat ?? true
+  const taxInclusive = company?.taxInclusive ?? false
+
   const lines = lineItems.map((l: { description: string; quantity: number; unitPrice: number; taxRate?: number }) => {
-    const lineTotal = calculateInvoiceLineTotal(l.quantity, l.unitPrice, l.taxRate ?? 0)
-    return { ...l, ...lineTotal }
+    const taxRate = taxEnabled ? (l.taxRate ?? 0) : 0
+    const lineTotal = calculateInvoiceLineTotal(l.quantity, l.unitPrice, taxRate, taxInclusive)
+    return { ...l, taxRate, ...lineTotal }
   })
-  const totals = calculateInvoiceTotals(lines)
+  const totals = calculateInvoiceTotals(lines, 0, taxInclusive)
   const billNumber = await nextPurchaseInvoiceNumber(companyId)
   const status = determineInvoiceStatus(totals.totalAmount, 0, due)
   const id = crypto.randomUUID()

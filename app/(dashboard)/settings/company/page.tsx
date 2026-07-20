@@ -8,6 +8,7 @@ const tabs = [
   { key: 'company-info', label: 'Company Info' },
   { key: 'branding', label: 'Branding' },
   { key: 'invoice', label: 'Invoice Settings' },
+  { key: 'tax', label: 'Tax Settings' },
   { key: 'banking', label: 'Banking' },
   { key: 'documents', label: 'Documents' },
   { key: 'portals', label: 'Portals' },
@@ -159,6 +160,94 @@ function InvoiceTab() {
       </div>
       <div className="flex justify-end">
         <button disabled={saving} onClick={save} className="btn btn-primary">Save Invoice Settings</button>
+      </div>
+    </div>
+  )
+}
+
+function TaxTab() {
+  const [company, setCompany] = useState<any | null>(null)
+  const [saving, setSaving] = useState(false)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/settings')
+        const json = await res.json()
+        if (!res.ok) { toast.error(json.error ?? 'Failed to load tax settings'); return }
+        setCompany(json.company)
+      } catch {
+        toast.error('Network error loading tax settings')
+      }
+    })()
+  }, [])
+  const save = async () => {
+    if (!company) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          taxName: company.taxName,
+          taxRate: company.taxRate,
+          taxNumber: company.taxNumber,
+          taxEnabled: company.taxEnabled,
+          taxInclusive: company.taxInclusive,
+          taxAppliedByDefault: company.taxAppliedByDefault,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Failed to save tax settings'); return }
+      setCompany(json.company)
+      toast.success('Tax settings saved')
+    } catch {
+      toast.error('Network error saving tax settings')
+    } finally {
+      setSaving(false)
+    }
+  }
+  if (!company) return <div>Loading...</div>
+
+  return (
+    <div className="space-y-4">
+      <p className="text-sm leading-6 text-slate-600">
+        Configure the tax that applies to new Sales Invoices, Purchase Invoices, and Quotations. Existing documents keep the tax value they were created with.
+      </p>
+      <div className="rounded-2xl border border-slate-200 bg-card p-6 space-y-4">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={!!company.taxEnabled} onChange={e => setCompany({ ...company, taxEnabled: e.target.checked })} />
+          Enable Tax
+        </label>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label htmlFor="tax-name" className="block text-sm font-medium">Tax Name</label>
+            <input id="tax-name" title="Tax Name" placeholder="VAT" value={company.taxName || ''} onChange={e => setCompany({ ...company, taxName: e.target.value })} disabled={!company.taxEnabled} className="mt-1 input" />
+          </div>
+          <div>
+            <label htmlFor="tax-percentage" className="block text-sm font-medium">Tax Percentage (%)</label>
+            <input id="tax-percentage" type="number" step="0.01" min="0" max="100" title="Tax Percentage" placeholder="0" value={company.taxRate ?? 0} onChange={e => setCompany({ ...company, taxRate: Number(e.target.value) })} disabled={!company.taxEnabled} className="mt-1 input" />
+          </div>
+          <div className="md:col-span-2">
+            <label htmlFor="tax-number" className="block text-sm font-medium">Tax Registration Number</label>
+            <input id="tax-number" title="Tax Registration Number" placeholder="Tax Registration Number" value={company.taxNumber || ''} onChange={e => setCompany({ ...company, taxNumber: e.target.value })} disabled={!company.taxEnabled} className="mt-1 input" />
+          </div>
+        </div>
+
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={!!company.taxInclusive} onChange={e => setCompany({ ...company, taxInclusive: e.target.checked })} disabled={!company.taxEnabled} />
+          Tax Inclusive Pricing
+        </label>
+        <p className="text-xs text-slate-500 -mt-2 ml-6">When enabled, line item prices are treated as already including tax; tax is extracted from the price instead of added on top.</p>
+
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={!!company.taxAppliedByDefault} onChange={e => setCompany({ ...company, taxAppliedByDefault: e.target.checked })} disabled={!company.taxEnabled} />
+          Apply Tax By Default To New Lines
+        </label>
+      </div>
+
+      <div className="flex justify-end">
+        <button disabled={saving} onClick={save} className="btn btn-primary">Save Tax Settings</button>
       </div>
     </div>
   )
@@ -375,6 +464,8 @@ export default function CompanySettingsPage() {
         return <BrandingTab />
       case 'invoice':
         return <InvoiceTab />
+      case 'tax':
+        return <TaxTab />
       case 'banking':
         return <BankingTab />
       case 'documents':

@@ -2,6 +2,9 @@ export function generateInvoiceHtml(invoice: any, company: any) {
   const primary = company.primaryColor || '#0b5fff'
   const secondary = company.secondaryColor || '#f5f7fa'
   const accent = company.accentColor || '#06b6d4'
+  const taxEnabled = company.taxEnabled ?? company.showVat ?? true
+  const taxName = company.taxName || 'Tax'
+  const taxNumber = company.taxNumber ?? company.vatNumber
 
   const lines = (invoice.lineItems || []).map((l: any, i: number) => `
     <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'}">
@@ -9,7 +12,7 @@ export function generateInvoiceHtml(invoice: any, company: any) {
       <td style="padding:8px">${escapeHtml(l.description)}</td>
       <td style="padding:8px">${l.quantity}</td>
       <td style="padding:8px;text-align:right">${(l.unitPrice||0).toFixed(2)}</td>
-      <td style="padding:8px;text-align:right">${(l.taxRate||0).toFixed(2)}%</td>
+      ${taxEnabled ? `<td style="padding:8px;text-align:right">${(l.taxRate||0).toFixed(2)}%</td>` : ''}
       <td style="padding:8px;text-align:right">${(l.discount||0).toFixed(2)}</td>
       <td style="padding:8px;text-align:right">${(l.lineTotal||0).toFixed(2)}</td>
     </tr>
@@ -30,6 +33,7 @@ export function generateInvoiceHtml(invoice: any, company: any) {
         ${company.logo ? `<img src="${company.logo}" style="height:60px;object-fit:contain" />` : ''}
         <h1>${escapeHtml(company.name)}</h1>
         <div>${escapeHtml(company.address || '')}</div>
+        ${taxNumber ? `<div>Tax Reg No: ${escapeHtml(taxNumber)}</div>` : ''}
       </div>
       <div class="invoice-meta" style="text-align:right">
         <div style="background:var(--primary);color:#fff;padding:12px;border-radius:6px"><strong>Invoice</strong><div style="font-size:18px">${escapeHtml(invoice.invoice_number)}</div></div>
@@ -47,7 +51,7 @@ export function generateInvoiceHtml(invoice: any, company: any) {
           <th>Item</th>
           <th>Qty</th>
           <th style="text-align:right">Rate</th>
-          <th style="text-align:right">Tax</th>
+          ${taxEnabled ? `<th style="text-align:right">${escapeHtml(taxName)}</th>` : ''}
           <th style="text-align:right">Discount</th>
           <th style="text-align:right">Total</th>
         </tr>
@@ -60,7 +64,7 @@ export function generateInvoiceHtml(invoice: any, company: any) {
     <div style="width:300px;margin-left:auto;margin-top:12px">
       <div style="display:flex;justify-content:space-between;padding:8px;border-top:1px solid #eee"><div>Subtotal</div><div>${(invoice.subtotal||0).toFixed(2)}</div></div>
       <div style="display:flex;justify-content:space-between;padding:8px;border-top:1px solid #eee"><div>Discount</div><div>${(invoice.discount_amount||0).toFixed(2)}</div></div>
-      <div style="display:flex;justify-content:space-between;padding:8px;border-top:1px solid #eee"><div>VAT</div><div>${(invoice.tax_amount||0).toFixed(2)}</div></div>
+      ${taxEnabled ? `<div style="display:flex;justify-content:space-between;padding:8px;border-top:1px solid #eee"><div>${escapeHtml(taxName)}</div><div>${(invoice.tax_amount||0).toFixed(2)}</div></div>` : ''}
       <div style="display:flex;justify-content:space-between;padding:12px;font-weight:700;color:var(--primary)"><div>Grand Total</div><div>${(invoice.total_amount||0).toFixed(2)}</div></div>
     </div>
 

@@ -5,6 +5,18 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 
+function withTaxAliases<T extends { defaultVatRate: unknown; vatNumber: string | null; showVat: boolean | null; taxName: string | null; taxInclusive: boolean | null; taxAppliedByDefault: boolean | null }>(company: T) {
+  return {
+    ...company,
+    taxRate: Number(company.defaultVatRate),
+    taxName: company.taxName ?? 'VAT',
+    taxNumber: company.vatNumber,
+    taxEnabled: company.showVat ?? true,
+    taxInclusive: company.taxInclusive ?? false,
+    taxAppliedByDefault: company.taxAppliedByDefault ?? true,
+  }
+}
+
 export async function GET() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -12,7 +24,7 @@ export async function GET() {
   const company = await prisma.company.findUnique({ where: { id: session.companyId } })
   if (!company) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  return NextResponse.json({ company: { ...company, taxRate: Number(company.defaultVatRate) } })
+  return NextResponse.json({ company: withTaxAliases(company) })
 }
 
 export async function PUT(req: NextRequest) {
@@ -37,9 +49,15 @@ export async function PUT(req: NextRequest) {
       whatsapp,
       email,
       website,
+      vatNumber,
       currency,
       fiscalYearStart,
       taxRate,
+      taxName,
+      taxNumber,
+      taxEnabled,
+      taxInclusive,
+      taxAppliedByDefault,
       // Branding
       primaryColor,
       secondaryColor,
@@ -111,9 +129,15 @@ export async function PUT(req: NextRequest) {
         ...(whatsapp !== undefined && { whatsapp }),
         ...(email !== undefined && { email }),
         ...(website !== undefined && { website }),
+        ...(vatNumber !== undefined && { vatNumber }),
         ...(currency !== undefined && { currency }),
         ...(fiscalYearStart !== undefined && { fiscalYearStart: String(fiscalYearStart) }),
         ...(taxRate !== undefined && { defaultVatRate: Number(taxRate) }),
+        ...(taxName !== undefined && { taxName }),
+        ...(taxNumber !== undefined && { vatNumber: taxNumber }),
+        ...(taxEnabled !== undefined && { showVat: Boolean(taxEnabled) }),
+        ...(taxInclusive !== undefined && { taxInclusive: Boolean(taxInclusive) }),
+        ...(taxAppliedByDefault !== undefined && { taxAppliedByDefault: Boolean(taxAppliedByDefault) }),
         // Branding
         ...(primaryColor !== undefined && { primaryColor }),
         ...(secondaryColor !== undefined && { secondaryColor }),
@@ -176,12 +200,12 @@ export async function PUT(req: NextRequest) {
       module: 'Settings',
       recordId: session.companyId,
       oldValues: old
-        ? { name: old.name, currency: old.currency, taxRate: Number(old.defaultVatRate) }
+        ? { name: old.name, currency: old.currency, taxRate: Number(old.defaultVatRate), taxName: old.taxName, taxNumber: old.vatNumber, taxEnabled: old.showVat, taxInclusive: old.taxInclusive, taxAppliedByDefault: old.taxAppliedByDefault }
         : undefined,
-      newValues: { name: company.name, currency: company.currency, taxRate: Number(company.defaultVatRate) },
+      newValues: { name: company.name, currency: company.currency, taxRate: Number(company.defaultVatRate), taxName: company.taxName, taxNumber: company.vatNumber, taxEnabled: company.showVat, taxInclusive: company.taxInclusive, taxAppliedByDefault: company.taxAppliedByDefault },
     })
 
-    return NextResponse.json({ company: { ...company, taxRate: Number(company.defaultVatRate) } })
+    return NextResponse.json({ company: withTaxAliases(company) })
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
   }
