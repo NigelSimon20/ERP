@@ -20,11 +20,23 @@ const paymentSchema = z.object({
   bankAccountId: z.string().min(1),
   amount: z.coerce.number().positive('Amount must be greater than 0'),
   paymentDate: z.string(),
+  method: z.string().optional(),
   entityType: z.string().optional(),
   entityId: z.string().min(1).optional(),
   notes: z.string().optional(),
   payee: z.string().optional(),
 })
+
+// Mirrors app/api/finance/receipts/route.ts — keep new payment_method writes
+// consistent with the humanized labels the live DB already uses.
+const METHOD_LABELS: Record<string, string> = {
+  BANK_TRANSFER: 'Bank Transfer',
+  CASH: 'Cash',
+  CHEQUE: 'Cheque',
+  CARD: 'Card',
+  MOBILE_MONEY: 'Mobile Money',
+  OTHER: 'Other',
+}
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -36,10 +48,33 @@ export async function GET(req: NextRequest) {
   const session = await getSession(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const payments = await prisma.payment.findMany({
-    where: { companyId: session.companyId },
+  // Outgoing payments live in `payments` with payment_type in ('Supplier Payment',
+  // 'Other Payment') — 'Customer Receipt' rows belong to the Receipts page, see
+  // the same dual-model note in app/api/finance/receipts/route.ts.
+  const rows = await prisma.payment.findMany({
+    where: { companyId: session.companyId, payment_type: { in: ['Supplier Payment', 'Other Payment'] } },
     orderBy: { payment_date: 'desc' },
   })
+
+  const bankAccountIds = Array.from(new Set(rows.map((r) => r.bank_account_id).filter(Boolean))) as string[]
+  const banks = bankAccountIds.length
+    ? await prisma.bankAccount.findMany({ where: { id: { in: bankAccountIds } }, select: { id: true, bank_name: true, account_number: true } })
+    : []
+  const bankMap = Object.fromEntries(banks.map((b) => [b.id, b]))
+
+  const payments = rows.map((r) => ({
+    id: r.id,
+    reference: r.payment_number,
+    paymentDate: r.payment_date,
+    payee: r.party_name,
+    amount: Number(r.amount ?? 0),
+    method: r.payment_method ?? 'Other',
+    notes: r.description,
+    bankAccount: {
+      bankName: r.bank_account_name ?? bankMap[r.bank_account_id ?? '']?.bank_name ?? '',
+      accountNumber: bankMap[r.bank_account_id ?? '']?.account_number ?? '',
+    },
+  }))
 
   return NextResponse.json({ payments })
 }
@@ -73,6 +108,7 @@ export async function POST(req: NextRequest) {
     }
 
     const reference = await nextPaymentReference(session.companyId)
+    const methodLabel = METHOD_LABELS[data.method ?? 'OTHER'] ?? data.method ?? 'Other'
 
     const payment = await prisma.$transaction(async (tx) => {
       // create payment
@@ -81,12 +117,21 @@ export async function POST(req: NextRequest) {
           id: crypto.randomUUID(),
           companyId: session.companyId,
           bank_account_id: data.bankAccountId,
-          reference,
+          bank_account_name: bankAccount.account_name ?? '',
+          payment_number: reference,
           amount: data.amount,
           payment_date: new Date(data.paymentDate).toISOString(),
-          payment_type: data.entityType ?? '',
+          payment_method: methodLabel,
+          payment_type: data.entityType === 'PURCHASE_INVOICE' ? 'Supplier Payment' : 'Other Payment',
           description: data.notes ?? '',
           party_name: data.payee ?? '',
+          supplier_id: data.entityType === 'PURCHASE_INVOICE' ? invoice?.supplierId ?? null : null,
+          currency: bankAccount.currency ?? 'USD',
+          status: 'Posted',
+          created_by_id: session.userId,
+          created_by: session.name,
+          created_date: new Date().toISOString(),
+          updated_date: new Date().toISOString(),
         },
       })
 
@@ -172,7 +217,7 @@ export async function POST(req: NextRequest) {
       newValues: { reference, amount: data.amount, updatedBankBalance: payment.newBankBalance, updatedInvoiceBalance: payment.newInvoiceBalance },
     })
 
-    return NextResponse.json({ payment: payment.payment, updatedBankBalance: payment.newBankBalance, updatedInvoiceBalance: payment.newInvoiceBalance, updatedInvoiceStatus: payment.newInvoiceStatus }, { status: 201 })
+    return NextResponse.json({ payment: { ...payment.payment, reference: payment.payment.payment_number }, updatedBankBalance: payment.newBankBalance, updatedInvoiceBalance: payment.newInvoiceBalance, updatedInvoiceStatus: payment.newInvoiceStatus }, { status: 201 })
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
   }

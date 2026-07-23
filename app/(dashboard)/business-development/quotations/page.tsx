@@ -136,25 +136,24 @@ export default function QuotationsPage() {
       items = json.quotation.items ?? []
     }
 
-    const taxCol = taxSettings.taxEnabled ? `<th>${taxSettings.taxName}</th>` : ''
-    const taxCell = (i: QuotationItem) => taxSettings.taxEnabled ? `<td>${i.taxRate}%</td>` : ''
-    const taxRow = taxSettings.taxEnabled ? `<tr><td colspan="${taxSettings.taxEnabled ? 4 : 3}">${taxSettings.taxName}</td><td>${formatCurrency(Number(q.taxAmount))}</td></tr>` : ''
-    const colspan = taxSettings.taxEnabled ? 4 : 3
+    let company: any = {}
+    try {
+      const settingsRes = await fetch('/api/settings')
+      if (settingsRes.ok) company = (await settingsRes.json()).company ?? {}
+    } catch { /* use defaults */ }
 
-    const w = window.open('', '_blank')!
-    w.document.write(`<!DOCTYPE html><html><head><title>${q.quoteNumber}</title><style>body{font-family:sans-serif;padding:40px;max-width:700px;margin:0 auto}h1{color:#111827}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid #E5E7EB;padding:8px 12px;text-align:left}th{background:#F8FAFC}tfoot td{font-weight:bold}.total{font-size:1.2em;color:#DC2626}</style></head><body>
-      <h1>QUOTATION</h1><p><strong>Quote #:</strong> ${q.quoteNumber}</p>
-      <p><strong>Date:</strong> ${formatDate(new Date(q.issueDate))}</p>
-      ${q.validUntil ? `<p><strong>Valid Until:</strong> ${formatDate(new Date(q.validUntil))}</p>` : ''}
-      ${taxSettings.taxNumber ? `<p><strong>Tax Reg No:</strong> ${taxSettings.taxNumber}</p>` : ''}
-      <p><strong>To:</strong> ${q.customer?.name ?? q.lead?.companyName ?? '—'}</p>
-      <table><thead><tr><th>Description</th><th>Qty</th><th>Unit Price</th>${taxCol}<th>Total</th></tr></thead>
-      <tbody>${(items ?? []).map(i => `<tr><td>${i.description}</td><td>${i.quantity}</td><td>${formatCurrency(Number(i.unitPrice))}</td>${taxCell(i)}<td>${formatCurrency(Number(i.lineTotal))}</td></tr>`).join('')}</tbody>
-      <tfoot><tr><td colspan="${colspan}">Subtotal</td><td>${formatCurrency(Number(q.subtotal))}</td></tr>
-      ${taxRow}
-      <tr><td colspan="${colspan}" class="total">TOTAL</td><td class="total">${formatCurrency(Number(q.totalAmount))}</td></tr></tfoot></table>
-      ${q.notes ? `<p><em>${q.notes}</em></p>` : ''}</body></html>`)
-    w.document.close(); w.print()
+    const { exportDocumentPdf } = await import('@/lib/pdf')
+    await exportDocumentPdf('quotation', {
+      quoteNumber: q.quoteNumber,
+      issueDate: q.issueDate,
+      validUntil: q.validUntil,
+      customer_name: q.customer?.name ?? q.lead?.companyName ?? 'Customer',
+      quotationItems: items,
+      subtotal: q.subtotal,
+      taxAmount: q.taxAmount,
+      totalAmount: q.totalAmount,
+      notes: q.notes,
+    }, company)
   }
 
   return (

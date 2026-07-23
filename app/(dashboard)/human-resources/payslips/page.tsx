@@ -62,8 +62,19 @@ export default function PayslipsPage() {
     } finally { setLoadingDetail(false) }
   }
 
-  function printPayslip() {
-    window.print()
+  async function printPayslip() {
+    if (!selectedPayslip) return
+    try {
+      const { exportHrReportPdf } = await import('@/lib/pdf')
+      let company: any = {}
+      try {
+        const settingsRes = await fetch('/api/settings')
+        if (settingsRes.ok) company = (await settingsRes.json()).company ?? {}
+      } catch { /* use defaults */ }
+      await exportHrReportPdf('payslip', selectedPayslip, company)
+    } catch {
+      toast.error('Failed to export payslip PDF')
+    }
   }
 
   return (

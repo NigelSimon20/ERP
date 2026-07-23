@@ -63,6 +63,38 @@ export default function DepartmentReportsPage() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `dept-report-${department}.csv`; a.click()
   }
 
+  async function downloadPdf() {
+    if (!result) return
+    try {
+      const { exportReportPdf } = await import('@/lib/pdf')
+      let company: any = {}
+      try {
+        const settingsRes = await fetch('/api/settings')
+        if (settingsRes.ok) {
+          const settingsJson = await settingsRes.json()
+          company = settingsJson.company ?? {}
+        }
+      } catch { /* use defaults */ }
+      const rows = (result.lineItems ?? []).map(l => ({
+        accountCode: '',
+        name: l.category,
+        type: 'Expense',
+        totalDebit: l.amount,
+        totalCredit: 0,
+      }))
+      const grandDebit = rows.reduce((s, r) => s + r.totalDebit, 0)
+      await exportReportPdf(
+        'trial-balance',
+        { rows, grandDebit, grandCredit: 0 },
+        company,
+        { from: startDate, to: endDate }
+      )
+      toast.success('PDF exported')
+    } catch {
+      toast.error('Failed to export PDF')
+    }
+  }
+
   return (
     <div>
       <PageHeader title="Department Reports" description="Financial performance breakdown by department" />
@@ -89,6 +121,7 @@ export default function DepartmentReportsPage() {
               {loading ? <><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Loading…</> : <><DataBarVerticalRegular className="h-4 w-4 mr-2" />Generate</>}
             </Button>
             {result && <Button type="button" variant="outline" onClick={downloadCSV} aria-label="Download CSV"><ArrowDownloadRegular className="h-4 w-4" /></Button>}
+            {result && <Button type="button" variant="outline" onClick={downloadPdf} aria-label="Download PDF"><ArrowDownloadRegular className="h-4 w-4" /></Button>}
           </div>
         </div>
       </div>

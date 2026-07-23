@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, ArrowCircleDownRegular } from '@fluentui/react-icons';
+import { AddRegular, ArrowCircleDownRegular, ArrowDownloadRegular } from '@fluentui/react-icons';
 
 interface Receipt {
   id: string
@@ -101,6 +101,27 @@ export default function ReceiptsPage() {
     setShowDialog(true)
   }
 
+  async function downloadReceiptPdf(r: Receipt) {
+    try {
+      const { exportDocumentPdf } = await import('@/lib/pdf')
+      let company: any = {}
+      try {
+        const settingsRes = await fetch('/api/settings')
+        if (settingsRes.ok) company = (await settingsRes.json()).company ?? {}
+      } catch { /* use defaults */ }
+      await exportDocumentPdf('receipt', {
+        payment_number: r.reference,
+        receiptDate: r.receiptDate,
+        party_name: r.customer?.name ?? r.payer,
+        reference: r.reference,
+        subtotal: r.amount,
+        total_amount: r.amount,
+      }, company)
+    } catch {
+      toast.error('Failed to export PDF')
+    }
+  }
+
   async function onSubmit(data: FormValues) {
     const payload: Record<string, unknown> = {
       bankAccountId: data.bankAccountId,
@@ -165,6 +186,7 @@ export default function ReceiptsPage() {
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Bank Account</th>
                   <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Method</th>
                   <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Amount</th>
+                  <th className="px-4 py-2.5"></th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -181,6 +203,11 @@ export default function ReceiptsPage() {
                       <span className="text-xs bg-muted text-muted-foreground rounded-full px-2 py-0.5">{r.method.replace('_', ' ')}</span>
                     </td>
                     <td className="px-4 py-3 text-right font-semibold text-green-600">{formatCurrency(Number(r.amount))}</td>
+                    <td className="px-4 py-3">
+                      <button type="button" onClick={() => downloadReceiptPdf(r)} className="p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground" aria-label="Download receipt PDF">
+                        <ArrowDownloadRegular className="h-4 w-4" />
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>

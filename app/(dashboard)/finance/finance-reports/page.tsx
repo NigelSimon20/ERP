@@ -119,17 +119,25 @@ export default function FinanceReportsPage() {
   async function exportPdf() {
     if (!report) return
     try {
-      const { default: jsPDF } = await import('jspdf')
-      const doc = new jsPDF()
-      const tabLabel = REPORT_TABS.find((t) => t.key === activeTab)?.label ?? activeTab
-      doc.setFontSize(16)
-      doc.text(`Ravenshield ERP — ${tabLabel}`, 14, 20)
-      doc.setFontSize(10)
-      doc.text(`Generated: ${formatDate(new Date())}`, 14, 28)
-      doc.save(`${activeTab}-${to || asAt}.pdf`)
+      const { exportReportPdf } = await import('@/lib/pdf')
+      // Fetch company settings for PDF branding
+      let company: any = {}
+      try {
+        const settingsRes = await fetch('/api/settings')
+        if (settingsRes.ok) {
+          const settingsJson = await settingsRes.json()
+          company = settingsJson.company ?? {}
+        }
+      } catch { /* use defaults */ }
+      await exportReportPdf(
+        activeTab,
+        report,
+        company,
+        { from: needsRange ? from : undefined, to: needsRange ? to : undefined, asAt: needsAsAt ? asAt : undefined }
+      )
       toast.success('PDF exported')
     } catch {
-      toast.error('jsPDF not installed — run: npm install jspdf')
+      toast.error('Failed to export PDF — ensure jspdf is installed')
     }
   }
 

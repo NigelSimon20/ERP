@@ -58,6 +58,41 @@ export default function BusinessReportsPage() {
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `${reportType.toLowerCase()}.csv`; a.click()
   }
 
+  async function downloadPdf() {
+    if (!result) return
+    try {
+      const { exportReportPdf } = await import('@/lib/pdf')
+      let company: any = {}
+      try {
+        const settingsRes = await fetch('/api/settings')
+        if (settingsRes.ok) {
+          const settingsJson = await settingsRes.json()
+          company = settingsJson.company ?? {}
+        }
+      } catch { /* use defaults */ }
+      // Map business report sections into a format exportReportPdf can handle
+      const rows = result.sections.flatMap(s => s.rows.map(r => ({
+        accountCode: '',
+        name: r.label,
+        amount: r.amount,
+        type: s.heading,
+        totalDebit: r.amount >= 0 ? r.amount : 0,
+        totalCredit: r.amount < 0 ? Math.abs(r.amount) : 0,
+      })))
+      const grandDebit = rows.reduce((s, r) => s + r.totalDebit, 0)
+      const grandCredit = rows.reduce((s, r) => s + r.totalCredit, 0)
+      await exportReportPdf(
+        'trial-balance',
+        { rows, grandDebit, grandCredit },
+        company,
+        { from: startDate, to: endDate }
+      )
+      toast.success('PDF exported')
+    } catch {
+      toast.error('Failed to export PDF')
+    }
+  }
+
   return (
     <div>
       <PageHeader title="Business Reports" description="Generate comprehensive financial reports for your company" />
@@ -88,6 +123,7 @@ export default function BusinessReportsPage() {
             {loading ? <><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Generating…</> : <><DataBarVerticalRegular className="h-4 w-4 mr-2" />Generate Report</>}
           </Button>
           {result && <Button type="button" variant="outline" onClick={downloadCSV}><ArrowDownloadRegular className="h-4 w-4 mr-2" />Download CSV</Button>}
+          {result && <Button type="button" variant="outline" onClick={downloadPdf}><ArrowDownloadRegular className="h-4 w-4 mr-2" />Download PDF</Button>}
         </div>
       </div>
 

@@ -72,17 +72,62 @@ export async function POST(req: NextRequest) {
   try {
     const data = createSchema.parse(await req.json())
 
-    const account = await prisma.bankAccount.create({
-      data: {
-        id: crypto.randomUUID(),
-        companyId: session.companyId,
-        bank_name: data.bankName,
-        account_number: data.accountNumber,
-        account_type: data.accountType,
-        currency: data.currency,
-        opening_balance: data.openingBalance,
-        current_balance: data.openingBalance,
-      },
+    const result = await prisma.$transaction(async (tx) => {
+      // Find highest bank-series account code (1010–1099) to auto-increment
+      const existingBankAccounts = await tx.chartOfAccount.findMany({
+        where: {
+          companyId: session.companyId,
+          is_bank_account: true,
+          account_code: { startsWith: '101' },
+        },
+        select: { account_code: true },
+        orderBy: { account_code: 'desc' },
+        take: 1,
+      })
+
+      const lastCode = existingBankAccounts[0]?.account_code
+      const nextCode = lastCode ? String(Number(lastCode) + 1) : '1013'
+
+      const coaId = crypto.randomUUID()
+      const now = new Date().toISOString()
+
+      // Create corresponding Chart of Account entry
+      await tx.chartOfAccount.create({
+        data: {
+          id: coaId,
+          companyId: session.companyId,
+          account_code: nextCode,
+          account_name: `Bank - ${data.bankName} (${data.accountNumber})`,
+          account_type: 'ASSET',
+          account_subtype: 'Current Asset',
+          is_bank_account: true,
+          is_active: true,
+          opening_balance: data.openingBalance,
+          current_balance: data.openingBalance,
+          currency: data.currency,
+          created_date: now,
+          updated_date: now,
+        },
+      })
+
+      // Create bank account linked to the new COA entry
+      const account = await tx.bankAccount.create({
+        data: {
+          id: crypto.randomUUID(),
+          companyId: session.companyId,
+          bank_name: data.bankName,
+          account_number: data.accountNumber,
+          account_type: data.accountType,
+          currency: data.currency,
+          opening_balance: data.openingBalance,
+          current_balance: data.openingBalance,
+          chart_account_id: coaId,
+          created_date: now,
+          updated_date: now,
+        },
+      })
+
+      return { account, ledgerCode: nextCode }
     })
 
     await logAudit({
@@ -91,11 +136,11 @@ export async function POST(req: NextRequest) {
       userName: session.name,
       action: 'CREATE',
       module: 'BankAccounts',
-      recordId: account.id,
-      newValues: { bankName: data.bankName, accountNumber: data.accountNumber },
+      recordId: result.account.id,
+      newValues: { bankName: data.bankName, accountNumber: data.accountNumber, ledgerCode: result.ledgerCode },
     })
 
-    return NextResponse.json({ account }, { status: 201 })
+    return NextResponse.json({ account: result.account }, { status: 201 })
   } catch (err: unknown) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
   }

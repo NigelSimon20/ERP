@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, BoxRegular } from '@fluentui/react-icons';
+import { AddRegular, ArrowDownloadRegular, BoxRegular } from '@fluentui/react-icons';
 
 interface Asset { id: string; name: string; category: string; purchaseDate: string; purchasePrice: number; usefulLifeYears: number; accumulatedDepreciation: number; currentValue: number; status: string }
 type FormValues = { name: string; category: string; purchaseDate: string; purchasePrice: string; usefulLifeYears: string; depreciationMethod: string }
@@ -50,6 +50,20 @@ export default function FixedAssetsPage() {
     netBookValue: assets.reduce((s, a) => s + Number(a.currentValue), 0),
   }), [assets])
 
+  async function exportPdf() {
+    try {
+      const { exportHrReportPdf } = await import('@/lib/pdf')
+      let company: any = {}
+      try {
+        const settingsRes = await fetch('/api/settings')
+        if (settingsRes.ok) company = (await settingsRes.json()).company ?? {}
+      } catch { /* use defaults */ }
+      await exportHrReportPdf('assets', assets, company)
+    } catch {
+      toast.error('Failed to export PDF')
+    }
+  }
+
   function openCreate() { setEditing(null); reset({ name: '', category: 'Equipment', purchaseDate: '', purchasePrice: '', usefulLifeYears: '5', depreciationMethod: 'STRAIGHT_LINE' }); setShowDialog(true) }
   function openEdit(a: Asset) {
     setEditing(a)
@@ -82,7 +96,7 @@ export default function FixedAssetsPage() {
 
   return (
     <div>
-      <PageHeader title="Fixed Assets" description="Track and depreciate your company assets" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Asset</Button>} />
+      <PageHeader title="Fixed Assets" description="Track and depreciate your company assets" action={<div className="flex items-center gap-2"><Button type="button" variant="outline" onClick={exportPdf}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export PDF</Button><Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Asset</Button></div>} />
 
       {/* Summary Cards */}
       <div className="mt-5 grid grid-cols-3 gap-4">

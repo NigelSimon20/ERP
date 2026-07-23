@@ -41,18 +41,12 @@ export default function InvoiceView({ invoiceId }: { invoiceId: string }) {
   }, [company])
 
   const handleDownloadPdf = async () => {
-    // For now open HTML preview generated server-side
     try {
       const res = await fetch(`/api/finance/sales-invoices/${invoiceId}?action=pdf`, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) { toast.error(data.error ?? 'Failed to generate PDF'); return }
-      const html = generateInvoiceHtml(data.invoice, company)
-      const w = window.open('', '_blank')
-      if (w) {
-        w.document.open()
-        w.document.write(html)
-        w.document.close()
-      }
+      const { exportDocumentPdf } = await import('@/lib/pdf')
+      await exportDocumentPdf('invoice', data.invoice, company)
     } catch {
       toast.error('Network error generating PDF')
     }

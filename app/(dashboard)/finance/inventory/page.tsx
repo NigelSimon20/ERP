@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, BoxRegular, WarningRegular } from '@fluentui/react-icons';
+import { AddRegular, ArrowDownloadRegular, BoxRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface InventoryItem { id: string; name: string; category: string; unit: string; quantityOnHand: number; reorderLevel: number; unitCost: number; totalValue: number; lowStock: boolean }
 type FormValues = { name: string; category: string; unit: string; quantityOnHand: string; reorderLevel: string; unitCost: string }
@@ -52,6 +52,20 @@ export default function InventoryPage() {
 
   useEffect(() => { fetchItems() }, [])
 
+  async function exportPdf() {
+    try {
+      const { exportHrReportPdf } = await import('@/lib/pdf')
+      let company: any = {}
+      try {
+        const settingsRes = await fetch('/api/settings')
+        if (settingsRes.ok) company = (await settingsRes.json()).company ?? {}
+      } catch { /* use defaults */ }
+      await exportHrReportPdf('inventory', items, company)
+    } catch {
+      toast.error('Failed to export PDF')
+    }
+  }
+
   function openCreate() { setEditing(null); reset({ name: '', category: 'Other', unit: 'each', quantityOnHand: '0', reorderLevel: '5', unitCost: '0' }); setShowDialog(true) }
   function openEdit(i: InventoryItem) { setEditing(i); reset({ name: i.name, category: i.category, unit: i.unit, quantityOnHand: String(i.quantityOnHand), reorderLevel: String(i.reorderLevel), unitCost: String(i.unitCost) }); setShowDialog(true) }
 
@@ -74,7 +88,7 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <PageHeader title="Inventory" description="Track stock levels and reorder points" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Item</Button>} />
+      <PageHeader title="Inventory" description="Track stock levels and reorder points" action={<div className="flex items-center gap-2"><Button type="button" variant="outline" onClick={exportPdf}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export PDF</Button><Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Item</Button></div>} />
 
       {/* Summary */}
       <div className="mt-5 grid grid-cols-3 gap-4">
