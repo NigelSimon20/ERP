@@ -268,14 +268,57 @@ function BankingTab() {
 }
 
 function DocumentsTab() {
+  const [company, setCompany] = useState<any | null>(null)
+  const [saving, setSaving] = useState(false)
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/settings')
+        const json = await res.json()
+        if (!res.ok) { toast.error(json.error ?? 'Failed to load document settings'); return }
+        setCompany(json.company)
+      } catch {
+        toast.error('Network error loading document settings')
+      }
+    })()
+  }, [])
+  const save = async () => {
+    if (!company) return
+    setSaving(true)
+    try {
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          employeeCodePrefix: company.employeeCodePrefix,
+          nextEmployeeNumber: company.nextEmployeeNumber,
+        }),
+      })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Failed to save document settings'); return }
+      setCompany(json.company)
+      toast.success('Document numbering settings saved')
+    } catch {
+      toast.error('Network error saving document settings')
+    } finally {
+      setSaving(false)
+    }
+  }
+  if (!company) return <div>Loading...</div>
+
   return (
     <div className="space-y-4">
       <p className="text-sm leading-6 text-slate-600">
-        Document numbering schemes and invoice sequence settings are stored here for consistent document control.
+        Document numbering schemes are stored here for consistent document control. Invoice, quotation, and other prefixes are managed on their own tabs — this covers employee numbering.
       </p>
       <div className="rounded-2xl border border-slate-200 bg-card p-6">
-        <div className="text-sm font-medium text-slate-900">Document numbering placeholder</div>
-        <p className="mt-2 text-sm text-slate-500">Configure prefixes, next numbering values, and document types for invoices, orders, and other records.</p>
+        <label htmlFor="employee-code-prefix" className="block text-sm font-medium">Employee Code Prefix</label>
+        <input id="employee-code-prefix" title="Employee Code Prefix" placeholder="EMP" value={company.employeeCodePrefix || ''} onChange={e => setCompany({ ...company, employeeCodePrefix: e.target.value })} className="mt-1 input" />
+        <label htmlFor="next-employee-number" className="block text-sm font-medium mt-4">Next Employee Number</label>
+        <input id="next-employee-number" type="number" title="Next Employee Number" placeholder="Next Employee Number" value={company.nextEmployeeNumber || 1} onChange={e => setCompany({ ...company, nextEmployeeNumber: Number(e.target.value) })} className="mt-1 input" />
+      </div>
+      <div className="flex justify-end">
+        <button disabled={saving} onClick={save} className="btn btn-primary">Save Document Settings</button>
       </div>
     </div>
   )

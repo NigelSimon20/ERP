@@ -78,6 +78,8 @@ model Company {
   nextSupplierNumber       Int?     @default(1) @map("next_supplier_number")
   siteCodePrefix           String?  @map("site_code_prefix")
   nextSiteNumber           Int?     @default(1) @map("next_site_number")
+  employeeCodePrefix       String?  @map("employee_code_prefix")
+  nextEmployeeNumber       Int?     @default(1) @map("next_employee_number")
   vatAccountId             String?  @map("vat_account_id")
   // Notifications / integrations
   whatsappEnabled          Boolean? @default(false) @map("whatsapp_enabled")

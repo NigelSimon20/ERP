@@ -54,14 +54,10 @@ export async function nextJournalReference(companyId: string): Promise<string> {
 }
 
 export async function nextEmployeeNumber(companyId: string): Promise<string> {
-  const prefix = await getPrefix(companyId)
-  const last = await prisma.guard.findFirst({
-    where: { companyId },
-    orderBy: { employee_code: 'desc' },
-    select: { employee_code: true },
-  })
-  const n = last ? parseNum(last.employee_code) : 0
-  return `${prefix}EMP-${String(n + 1).padStart(4, '0')}`
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { employeeCodePrefix: true } })
+  const tag = company?.employeeCodePrefix || 'EMP'
+  const n = await claimCounter(companyId, 'nextEmployeeNumber')
+  return `${tag}-${String(n).padStart(4, '0')}`
 }
 
 export async function nextForceNumber(companyId: string): Promise<string> {

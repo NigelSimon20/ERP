@@ -80,6 +80,8 @@ export async function PUT(req: NextRequest) {
       paymentPrefix,
       receiptPrefix,
       purchaseInvoicePrefix,
+      employeeCodePrefix,
+      nextEmployeeNumber,
       vatAccountId,
       // Notifications / integrations
       whatsappEnabled,
@@ -160,6 +162,8 @@ export async function PUT(req: NextRequest) {
         ...(paymentPrefix !== undefined && { paymentPrefix }),
         ...(receiptPrefix !== undefined && { receiptPrefix }),
         ...(purchaseInvoicePrefix !== undefined && { purchaseInvoicePrefix }),
+        ...(employeeCodePrefix !== undefined && { employeeCodePrefix }),
+        ...(nextEmployeeNumber !== undefined && { nextEmployeeNumber }),
         ...(vatAccountId !== undefined && { vatAccountId }),
         ...(whatsappEnabled !== undefined && { whatsappEnabled }),
         ...(whatsappNumber !== undefined && { whatsappNumber }),

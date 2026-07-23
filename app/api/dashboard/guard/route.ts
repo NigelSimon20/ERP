@@ -53,7 +53,7 @@ export async function GET() {
     prisma.payslip.findFirst({
       where: { employee_id: guardId },
       orderBy: { pay_date: 'desc' },
-      select: { net_pay: true, payroll_run_id: true },
+      select: { net_pay: true, payroll_run_id: true, period: true, pay_date: true },
     }),
     prisma.task.findMany({
       where: { companyId, assignedTo: userId, status: { notIn: ['COMPLETED', 'CANCELLED'] } },
@@ -82,20 +82,39 @@ export async function GET() {
   const patrolSites = await prisma.site.findMany({ where: { id: { in: patrolSiteIds } }, select: { id: true, site_name: true } })
   const siteMap = Object.fromEntries(patrolSites.map(s => [s.id, s.site_name]))
 
-  // Resolve the payslip's period from its linked PayrollRun (Payslip itself
-  // has no periodStart/periodEnd — only a payroll_run_id scalar reference).
+  // Resolve the payslip's period from its linked PayrollRun where one
+  // exists (Payslip itself has no periodStart/periodEnd — only a
+  // payroll_run_id scalar reference). Most payslips in this dataset were
+  // never linked to a PayrollRun, so fall back to the payslip's own
+  // `period` ("YYYY-MM") or `pay_date` rather than silently hiding a real
+  // payslip just because the run link is missing.
   let myLatestPayslip: { netPay: number; periodStart: string; periodEnd: string } | null = null
-  if (latestPayslip?.payroll_run_id) {
-    const run = await prisma.payrollRun.findUnique({
-      where: { id: latestPayslip.payroll_run_id },
-      select: { periodStart: true, periodEnd: true },
-    })
-    if (run) {
-      myLatestPayslip = {
-        netPay: Number(latestPayslip.net_pay ?? 0),
-        periodStart: run.periodStart.toISOString(),
-        periodEnd: run.periodEnd.toISOString(),
+  if (latestPayslip) {
+    let periodStart: string | null = null
+    let periodEnd: string | null = null
+    if (latestPayslip.payroll_run_id) {
+      const run = await prisma.payrollRun.findUnique({
+        where: { id: latestPayslip.payroll_run_id },
+        select: { periodStart: true, periodEnd: true },
+      })
+      if (run) {
+        periodStart = run.periodStart.toISOString()
+        periodEnd = run.periodEnd.toISOString()
       }
+    }
+    if (!periodStart && latestPayslip.period && /^\d{4}-\d{2}$/.test(latestPayslip.period)) {
+      const [year, month] = latestPayslip.period.split('-').map(Number)
+      periodStart = new Date(Date.UTC(year, month - 1, 1)).toISOString()
+      periodEnd = new Date(Date.UTC(year, month, 0)).toISOString()
+    }
+    if (!periodStart && latestPayslip.pay_date) {
+      periodStart = new Date(latestPayslip.pay_date).toISOString()
+      periodEnd = periodStart
+    }
+    myLatestPayslip = {
+      netPay: Number(latestPayslip.net_pay ?? 0),
+      periodStart: periodStart ?? new Date().toISOString(),
+      periodEnd: periodEnd ?? new Date().toISOString(),
     }
   }
 
