@@ -122,15 +122,14 @@ export async function POST(req: NextRequest) {
     const { subTotal, taxTotal, totalAmount } = calculateInvoiceTotals(lines, 0, taxInclusive)
     const status = toDbInvoiceStatus(determineInvoiceStatus(totalAmount, 0, dueDate))
 
-    const [receivablesAccount, vatAccount, requestedRevenueAccount, defaultRevenueAccount] = await Promise.all([
+    const [receivablesAccount, vatAccount, revenueAccount] = await Promise.all([
       prisma.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'ASSET', account_name: { contains: 'Accounts Receivable' } } }),
       prisma.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'LIABILITY', account_name: { contains: 'VAT' } } }),
-      data.revenueAccountId
-        ? prisma.chartOfAccount.findFirst({ where: { id: data.revenueAccountId, companyId: session.companyId, account_type: 'REVENUE' } })
-        : Promise.resolve(null),
-      prisma.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'REVENUE' }, orderBy: { account_code: 'asc' } }),
+      prisma.chartOfAccount.findFirst({ where: { id: data.revenueAccountId, companyId: session.companyId, account_type: 'REVENUE' } }),
     ])
-    const revenueAccount = requestedRevenueAccount ?? defaultRevenueAccount
+    if (!revenueAccount) {
+      return NextResponse.json({ error: 'Selected revenue account was not found' }, { status: 400 })
+    }
 
     const invoice = await prisma.$transaction(async (tx) => {
       const inv = await tx.salesInvoice.create({
@@ -138,6 +137,7 @@ export async function POST(req: NextRequest) {
           id: crypto.randomUUID(),
           companyId: session.companyId,
           customer_id: data.customerId,
+          customer_name: customer.company_name ?? '',
           invoice_number: invoiceNumber,
           invoice_date: issueDate.toISOString(),
           due_date: dueDate.toISOString(),
@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
       await recalculateCustomerOutstandingBalance(tx, data.customerId)
 
       return inv
-    }, { timeout: 15000 })
+    }, { timeout: 60000 })
 
     await logAudit({
       companyId: session.companyId,

@@ -109,7 +109,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       if (customerId) {
         await recalculateCustomerOutstandingBalance(tx, customerId)
       }
-    }, { timeout: 15000 })
+    }, { timeout: 60000 })
 
     await logAudit({
       companyId: session.companyId,
@@ -158,7 +158,7 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
     if (customerId) {
       await recalculateCustomerOutstandingBalance(tx, customerId)
     }
-  }, { timeout: 15000 })
+  }, { timeout: 60000 })
 
   await logAudit({
     companyId: session.companyId,

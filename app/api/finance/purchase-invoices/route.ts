@@ -93,6 +93,7 @@ export async function POST(req: NextRequest) {
 
   if (!supplierId || !issueDate || !dueDate) return NextResponse.json({ error: 'supplierId, issueDate, dueDate required' }, { status: 400 })
   if (!lineItems || lineItems.length === 0) return NextResponse.json({ error: 'At least one line item required' }, { status: 400 })
+  if (!expenseAccountId) return NextResponse.json({ error: 'Expense account is required' }, { status: 400 })
 
   const issue = new Date(issueDate)
   const due = new Date(dueDate)
@@ -118,14 +119,11 @@ export async function POST(req: NextRequest) {
   const status = determineInvoiceStatus(totals.totalAmount, 0, due)
   const id = crypto.randomUUID()
 
-  const [payableAccount, requestedExpenseAccount, defaultExpenseAccount] = await Promise.all([
+  const [payableAccount, expenseAccount] = await Promise.all([
     prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'LIABILITY', account_name: { contains: 'Accounts Payable' } } }),
-    expenseAccountId
-      ? prisma.chartOfAccount.findFirst({ where: { id: expenseAccountId, companyId, account_type: 'EXPENSE' } })
-      : Promise.resolve(null),
-    prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'EXPENSE' }, orderBy: { account_code: 'asc' } }),
+    prisma.chartOfAccount.findFirst({ where: { id: expenseAccountId, companyId, account_type: 'EXPENSE' } }),
   ])
-  const expenseAccount = requestedExpenseAccount ?? defaultExpenseAccount
+  if (!expenseAccount) return NextResponse.json({ error: 'Selected expense account was not found' }, { status: 400 })
 
   try {
     const invoice = await prisma.$transaction(async (tx) => {
@@ -176,7 +174,7 @@ export async function POST(req: NextRequest) {
       await tx.supplier.update({ where: { id: supplierId }, data: { current_balance: { increment: totals.totalAmount } } })
 
       return inv
-    }, { timeout: 15000 })
+    }, { timeout: 60000 })
 
     await logAudit({
       companyId: session.companyId,

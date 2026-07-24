@@ -205,7 +205,7 @@ export async function POST(req: NextRequest) {
       }
 
       return { payment: p, newBankBalance, updatedInvoice, newInvoiceBalance, newInvoiceStatus }
-    }, { timeout: 15000 })
+    }, { timeout: 60000 })
 
     await logAudit({
       companyId: session.companyId,

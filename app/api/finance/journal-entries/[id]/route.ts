@@ -92,7 +92,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
           data: { current_balance: { increment: delta } },
         })
       }
-    }, { timeout: 15000 })
+    }, { timeout: 60000 })
 
     await logAudit({
       companyId: session.companyId,
@@ -139,7 +139,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
           })
         }
       }
-    }, { timeout: 15000 })
+    }, { timeout: 60000 })
 
     await logAudit({
       companyId: session.companyId,

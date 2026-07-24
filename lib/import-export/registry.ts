@@ -233,8 +233,21 @@ const customersConfig: ModuleImportConfig = {
     await tx.customer.delete({ where: { id } })
   },
   async listForExport(companyId) {
-    const customers = await prisma.customer.findMany({ where: { companyId }, orderBy: { company_name: 'asc' } })
-    return customers as ImportRecord[]
+    // current_balance is a denormalized cache that's gone stale for a
+    // meaningful share of historically-imported customers (confirmed via a
+    // live customer whose real outstanding balance from unpaid invoices
+    // didn't match its current_balance) — export the same live sum used by
+    // the customers list API instead of trusting the cached column.
+    const [customers, balanceAggs] = await Promise.all([
+      prisma.customer.findMany({ where: { companyId }, orderBy: { company_name: 'asc' } }),
+      prisma.salesInvoice.groupBy({
+        by: ['customer_id'],
+        where: { companyId, status: { not: 'Void' } },
+        _sum: { balance_due: true },
+      }),
+    ])
+    const balanceMap = Object.fromEntries(balanceAggs.map((b) => [b.customer_id, Number(b._sum.balance_due ?? 0)]))
+    return customers.map((c) => ({ ...c, current_balance: balanceMap[c.id] ?? 0 })) as ImportRecord[]
   },
 }
 
@@ -317,8 +330,18 @@ const suppliersConfig: ModuleImportConfig = {
     await tx.supplier.delete({ where: { id } })
   },
   async listForExport(companyId) {
-    const suppliers = await prisma.supplier.findMany({ where: { companyId }, orderBy: { company_name: 'asc' } })
-    return suppliers as ImportRecord[]
+    // Same denormalized-balance staleness as customersConfig above — export
+    // the live sum of unpaid purchase invoice balances, not the cached column.
+    const [suppliers, balanceAggs] = await Promise.all([
+      prisma.supplier.findMany({ where: { companyId }, orderBy: { company_name: 'asc' } }),
+      prisma.purchaseInvoice.groupBy({
+        by: ['supplierId'],
+        where: { companyId, status: { not: 'VOID' as any } },
+        _sum: { balanceDue: true },
+      }),
+    ])
+    const balanceMap = Object.fromEntries(balanceAggs.map((b) => [b.supplierId, Number(b._sum.balanceDue ?? 0)]))
+    return suppliers.map((s) => ({ ...s, current_balance: balanceMap[s.id] ?? 0 })) as ImportRecord[]
   },
 }
 

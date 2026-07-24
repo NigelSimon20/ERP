@@ -25,11 +25,23 @@ async function computePayrollPreviews(companyId: string, start: Date, end: Date)
   const earningItems = payslipItems.filter((i) => i.itemType === 'EARNING')
   const deductionItems = payslipItems.filter((i) => i.itemType === 'DEDUCTION')
 
-  return Promise.all(guards.map(async (guard) => {
-    const attendance = await prisma.attendance.findMany({
-      where: { guardId: guard.id, date: { gte: start, lte: end } },
-      select: { hoursWorked: true, overtimeHours: true },
-    })
+  // One query for every guard's attendance instead of one concurrent query
+  // per guard — with hundreds of active guards, firing that many parallel
+  // requests at once was unreliable against this DB's pooler (connections
+  // getting dropped mid-batch) and could 500 the whole preview/confirm.
+  const attendanceRows = await prisma.attendance.findMany({
+    where: { guardId: { in: guards.map((g) => g.id) }, date: { gte: start, lte: end } },
+    select: { guardId: true, hoursWorked: true, overtimeHours: true },
+  })
+  const attendanceByGuard = new Map<string, { hoursWorked: unknown; overtimeHours: unknown }[]>()
+  for (const row of attendanceRows) {
+    const list = attendanceByGuard.get(row.guardId) ?? []
+    list.push(row)
+    attendanceByGuard.set(row.guardId, list)
+  }
+
+  return guards.map((guard) => {
+    const attendance = attendanceByGuard.get(guard.id) ?? []
 
     const hoursWorked = r2(attendance.reduce((s, a) => s + Number(a.hoursWorked), 0))
     const overtimeHours = r2(attendance.reduce((s, a) => s + Number(a.overtimeHours), 0))
@@ -60,7 +72,7 @@ async function computePayrollPreviews(companyId: string, start: Date, end: Date)
       basicSalary, overtimePay, totalEarnings, grossPay, totalDeductions, netPay,
       earningsLines, deductionLines,
     }
-  }))
+  })
 }
 
 export async function GET() {
@@ -184,25 +196,30 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      for (const g of guardPayslips) {
+      // Batched via createMany (2 round trips total) instead of one
+      // payslip.create + payslipLine.createMany per guard — with hundreds of
+      // active guards, the per-guard loop meant hundreds of sequential
+      // round trips inside a single interactive transaction, which reliably
+      // exceeded the transaction timeout against this DB's pooler latency.
+      const payslipRows = guardPayslips.map((g) => {
         const payslipId = crypto.randomUUID()
-        await tx.payslip.create({
-          data: {
-            id: payslipId, payroll_run_id: runId, employee_id: g.guardId, payslip_number: `PS-${payslipId.substring(0, 8)}`,
-            basic_salary: g.basicSalary, net_pay: g.netPay, total_deductions: g.totalDeductions,
-            total_earnings: g.grossPay, status: 'Approved', created_by_id: userId,
-            hours_worked: g.hoursWorked ?? null, overtime_hours: g.overtimeHours ?? null, overtime_pay: g.overtimePay ?? null,
-          },
-        })
-        const allLines = [...(g.earningsLines ?? []), ...(g.deductionLines ?? [])]
-        if (allLines.length) {
-          await tx.payslipLine.createMany({
-            data: allLines.map((l: { name: string; type: string; amount: number; calculationMethod: string }) => ({
-              id: crypto.randomUUID(), payslipId, itemName: l.name, itemType: l.type as any,
-              amount: l.amount,
-            })),
-          })
+        return {
+          id: payslipId, payroll_run_id: runId, employee_id: g.guardId, payslip_number: `PS-${payslipId.substring(0, 8)}`,
+          basic_salary: g.basicSalary, net_pay: g.netPay, total_deductions: g.totalDeductions,
+          total_earnings: g.grossPay, status: 'Approved', created_by_id: userId,
+          hours_worked: g.hoursWorked ?? null, overtime_hours: g.overtimeHours ?? null, overtime_pay: g.overtimePay ?? null,
         }
+      })
+      await tx.payslip.createMany({ data: payslipRows })
+
+      const payslipLineRows = guardPayslips.flatMap((g, i) =>
+        [...(g.earningsLines ?? []), ...(g.deductionLines ?? [])].map((l: { name: string; type: string; amount: number; calculationMethod: string }) => ({
+          id: crypto.randomUUID(), payslipId: payslipRows[i].id, itemName: l.name, itemType: l.type as any,
+          amount: l.amount,
+        })),
+      )
+      if (payslipLineRows.length) {
+        await tx.payslipLine.createMany({ data: payslipLineRows })
       }
 
       await tx.bankAccount.update({
@@ -226,6 +243,7 @@ export async function POST(req: NextRequest) {
             id: journalId, companyId, reference,
             entry_date: new Date().toISOString(),
             description: `Payroll ${new Date(periodStart).toLocaleDateString()} – ${new Date(periodEnd).toLocaleDateString()}`,
+            total_debit: totalGross, total_credit: totalGross,
             status: 'POSTED', created_by_id: userId,
           },
         })
@@ -236,7 +254,7 @@ export async function POST(req: NextRequest) {
           })),
         })
       }
-    })
+    }, { timeout: 60000 })
 
     // WhatsApp payslip notifications (fire-and-forget)
     if (process.env.WHATSAPP_WEBHOOK_URL) {

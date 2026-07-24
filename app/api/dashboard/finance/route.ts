@@ -105,7 +105,7 @@ export async function GET(req: NextRequest) {
 
     outstandingReceivables += bal
 
-    if (inv.due_date && new Date(inv.due_date) <= sevenDaysOut) {
+    if (inv.due_date && new Date(inv.due_date) >= now && new Date(inv.due_date) <= sevenDaysOut) {
       dueSoonList.push({ invoiceNumber: inv.invoice_number || '', customerId: inv.customer_id, dueDate: inv.due_date, balanceDue: bal })
     }
     if (bal > 0 && inv.customer_id) {

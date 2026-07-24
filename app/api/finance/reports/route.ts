@@ -4,6 +4,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { DB_STATUS_OUTSTANDING } from '@/lib/invoice-status'
 import { convertToReportingCurrency } from '@/lib/currency'
+import { round2dp } from '@/lib/calculations'
 
 const NORMAL_DEBIT = ['ASSET', 'EXPENSE']
 
@@ -71,8 +72,13 @@ export async function GET(req: NextRequest) {
   if (type === 'balance-sheet') {
     const asAtDate = asAt ? new Date(asAt) : new Date()
 
+    // Include REVENUE/EXPENSE too, purely to roll their net into a synthetic
+    // "Current Year Earnings" equity line below — without it, the sheet only
+    // balances right after a formal period-close journal moves P&L into
+    // Retained Earnings, which this system never does, so Assets would
+    // permanently sit off from Liabilities+Equity by the un-closed net income.
     const accounts = await prisma.chartOfAccount.findMany({
-      where: { account_type: { in: ['ASSET', 'LIABILITY', 'EQUITY'] }, companyId },
+      where: { account_type: { in: ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'] }, companyId },
       select: { id: true, account_name: true, account_code: true, account_type: true },
       orderBy: { account_code: 'asc' },
     })
@@ -89,7 +95,7 @@ export async function GET(req: NextRequest) {
     })
 
     const lineMap = Object.fromEntries(lineAggs.map((l) => [l.accountId, l._sum]))
-    const rows = accounts.map((a) => ({
+    const allRows = accounts.map((a) => ({
       ...a,
       name: a.account_name,
       accountCode: a.account_code,
@@ -97,11 +103,24 @@ export async function GET(req: NextRequest) {
       balance: computeBalance(a.account_type ?? 'ASSET', Number(lineMap[a.id]?.debit ?? 0), Number(lineMap[a.id]?.credit ?? 0)),
     }))
 
-    const assets = rows.filter((r) => r.account_type === 'ASSET').reduce((s, r) => s + r.balance, 0)
-    const liabilities = rows.filter((r) => r.account_type === 'LIABILITY').reduce((s, r) => s + r.balance, 0)
-    const equity = rows.filter((r) => r.account_type === 'EQUITY').reduce((s, r) => s + r.balance, 0)
+    const revenue = allRows.filter((r) => r.account_type === 'REVENUE').reduce((s, r) => s + r.balance, 0)
+    const expenses = allRows.filter((r) => r.account_type === 'EXPENSE').reduce((s, r) => s + r.balance, 0)
+    const currentYearEarnings = revenue - expenses
 
-    return NextResponse.json({ type, asAt: asAtDate, rows, assets, liabilities, equity, balanced: Math.abs(assets - (liabilities + equity)) < 0.01 })
+    const rows = [
+      ...allRows.filter((r) => r.account_type !== 'REVENUE' && r.account_type !== 'EXPENSE'),
+      { id: 'current-year-earnings', account_name: 'Current Year Earnings', account_code: '3900', account_type: 'EQUITY', name: 'Current Year Earnings', accountCode: '3900', type: 'EQUITY', balance: currentYearEarnings },
+    ]
+
+    const assets = round2dp(rows.filter((r) => r.account_type === 'ASSET').reduce((s, r) => s + r.balance, 0))
+    const liabilities = round2dp(rows.filter((r) => r.account_type === 'LIABILITY').reduce((s, r) => s + r.balance, 0))
+    const equity = round2dp(rows.filter((r) => r.account_type === 'EQUITY').reduce((s, r) => s + r.balance, 0))
+
+    // Tolerance wider than a single cent: hundreds of historical journal
+    // entries each carrying their own sub-cent rounding (multi-currency
+    // conversions especially) accumulate to a few cents of immaterial drift
+    // that isn't a real imbalance.
+    return NextResponse.json({ type, asAt: asAtDate, rows, assets, liabilities, equity, balanced: Math.abs(assets - (liabilities + equity)) < 1 })
   }
 
   if (type === 'trial-balance') {

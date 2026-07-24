@@ -115,7 +115,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         }),
       },
     })
-  }, { timeout: 15000 })
+  }, { timeout: 60000 })
 
   await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'UPDATE', module: 'PurchaseInvoices', recordId: params.id })
   return NextResponse.json({ invoice: { ...updated, totalAmount: Number(updated.totalAmount), paidAmount: Number(updated.paidAmount), balanceDue: Number(updated.balanceDue) } })
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }
       await recalculateSupplierOutstandingBalance(tx, invoice.supplierId, session.companyId)
       return inv
-    }, { timeout: 15000 })
+    }, { timeout: 60000 })
     await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'UPDATE', module: 'PurchaseInvoices', recordId: params.id, newValues: { status: 'VOID' } })
     return NextResponse.json({ invoice: updated })
   }
@@ -173,7 +173,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     await tx.purchaseInvoiceLineItem.deleteMany({ where: { purchaseInvoiceId: params.id } })
     await tx.purchaseInvoice.delete({ where: { id: params.id } })
     await recalculateSupplierOutstandingBalance(tx, invoice.supplierId, session.companyId)
-  }, { timeout: 15000 })
+  }, { timeout: 60000 })
   await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'DELETE', module: 'PurchaseInvoices', recordId: params.id })
   return NextResponse.json({ success: true })
 }

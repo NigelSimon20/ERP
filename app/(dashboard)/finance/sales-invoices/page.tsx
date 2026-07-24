@@ -65,9 +65,13 @@ export default function SalesInvoicesPage() {
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [receiptTarget, setReceiptTarget] = useState<Invoice | null>(null)
   const revenueAccounts = useMemo(() => glAccounts.filter((a) => a.account_type === 'REVENUE'), [glAccounts])
+  const defaultRevenueAccountId = useMemo(
+    () => revenueAccounts.find((a) => a.account_name === 'Guarding Services')?.id ?? revenueAccounts[0]?.id ?? '',
+    [revenueAccounts],
+  )
 
   // Invoice form
-  const { register: invReg, handleSubmit: invSubmit, control: invCtrl, reset: invReset, formState: { isSubmitting: invSubmitting } } = useForm<InvoiceForm>({
+  const { register: invReg, handleSubmit: invSubmit, control: invCtrl, reset: invReset, setValue: invSetValue, formState: { isSubmitting: invSubmitting, errors: invErrors } } = useForm<InvoiceForm>({
     defaultValues: { customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: '', lineItems: [blankLine(DEFAULT_TAX_SETTINGS)] },
   })
   const { fields, append, remove } = useFieldArray({ control: invCtrl, name: 'lineItems' })
@@ -141,6 +145,16 @@ export default function SalesInvoicesPage() {
 
   useEffect(() => { fetchInvoices() }, [statusTab])
   useEffect(() => { fetchSupporting(); fetchTaxSettings() }, [])
+
+  // GL accounts load asynchronously, so if the dialog was already open when
+  // they arrived, backfill the revenue account default rather than leaving
+  // the field blank.
+  useEffect(() => {
+    if (showCreateDialog && defaultRevenueAccountId) {
+      invSetValue('revenueAccountId', defaultRevenueAccountId, { shouldValidate: false })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showCreateDialog, defaultRevenueAccountId])
 
   // Summary stats from ALL invoices (fetch once separately)
   const [allInvoices, setAllInvoices] = useState<Invoice[]>([])
@@ -219,7 +233,7 @@ export default function SalesInvoicesPage() {
       <PageHeader
         title="Sales Invoices"
         description="Create and manage customer invoices"
-        action={<Button type="button" onClick={() => { invReset({ customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: '', lineItems: [blankLine(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Invoice</Button>}
+        action={<Button type="button" onClick={() => { invReset({ customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: defaultRevenueAccountId, lineItems: [blankLine(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Invoice</Button>}
       />
 
       {/* Summary Cards */}
@@ -340,15 +354,16 @@ export default function SalesInvoicesPage() {
                 <Input type="date" {...invReg('dueDate', { required: 'Required' })} />
               </div>
               <div className="space-y-1.5 col-span-2">
-                <Label>Revenue Account</Label>
-                <Controller control={invCtrl} name="revenueAccountId" render={({ field }) => (
+                <Label>Revenue Account *</Label>
+                <Controller control={invCtrl} name="revenueAccountId" rules={{ required: 'Revenue account is required' }} render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Default revenue account" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select revenue account" /></SelectTrigger>
                     <SelectContent>
                       {revenueAccounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.account_code} — {a.account_name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 )} />
+                {invErrors.revenueAccountId && <p className="text-xs text-red-600">{invErrors.revenueAccountId.message}</p>}
               </div>
             </div>
 

@@ -46,7 +46,7 @@ export default function PurchaseInvoicesPage() {
   const [paymentTarget, setPaymentTarget] = useState<Invoice | null>(null)
   const expenseAccounts = useMemo(() => glAccounts.filter((a) => a.account_type === 'EXPENSE'), [glAccounts])
 
-  const { register: invReg, handleSubmit: invSubmit, control: invCtrl, reset: invReset, formState: { isSubmitting: invSubmitting } } = useForm<InvoiceForm>({
+  const { register: invReg, handleSubmit: invSubmit, control: invCtrl, reset: invReset, formState: { isSubmitting: invSubmitting, errors: invErrors } } = useForm<InvoiceForm>({
     defaultValues: { supplierId: '', reference: '', issueDate: '', dueDate: '', description: '', expenseAccountId: '', lineItems: [blankLine(DEFAULT_TAX_SETTINGS)] },
   })
   const { fields, append, remove } = useFieldArray({ control: invCtrl, name: 'lineItems' })
@@ -217,15 +217,16 @@ export default function PurchaseInvoicesPage() {
               <div className="space-y-1.5"><Label>Issue Date *</Label><Input type="date" {...invReg('issueDate', { required: true })} /></div>
               <div className="space-y-1.5"><Label>Due Date *</Label><Input type="date" {...invReg('dueDate', { required: true })} /></div>
               <div className="space-y-1.5 col-span-2">
-                <Label>Expense Account</Label>
-                <Controller control={invCtrl} name="expenseAccountId" render={({ field }) => (
+                <Label>Expense Account *</Label>
+                <Controller control={invCtrl} name="expenseAccountId" rules={{ required: 'Expense account is required' }} render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Default expense account" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder="Select expense account" /></SelectTrigger>
                     <SelectContent>
                       {expenseAccounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.account_code} — {a.account_name}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 )} />
+                {invErrors.expenseAccountId && <p className="text-xs text-red-600">{invErrors.expenseAccountId.message}</p>}
               </div>
             </div>
 

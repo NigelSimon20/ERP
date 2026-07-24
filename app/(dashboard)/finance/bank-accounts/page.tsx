@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, BuildingRegular, EditRegular, PaymentRegular } from '@fluentui/react-icons';
+import { AddRegular, BuildingRegular, DeleteRegular, EditRegular, PaymentRegular } from '@fluentui/react-icons';
 
 interface BankAccount {
   id: string
@@ -95,6 +95,15 @@ export default function BankAccountsPage() {
     fetchAccounts()
   }
 
+  async function deleteAccount(account: BankAccount) {
+    if (!confirm(`Delete bank account "${account.bankName} (${account.accountNumber})"? This cannot be undone.`)) return
+    const res = await fetch(`/api/finance/bank-accounts/${account.id}`, { method: 'DELETE' })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error ?? 'Failed to delete bank account'); return }
+    toast.success('Bank account deleted')
+    fetchAccounts()
+  }
+
   return (
     <div>
       <PageHeader
@@ -131,9 +140,14 @@ export default function BankAccountsPage() {
                     <p className="text-xs text-muted-foreground font-mono">{account.accountNumber}</p>
                   </div>
                 </div>
-                <button type="button" onClick={() => openEdit(account)} className="p-1.5 rounded hover:bg-muted text-brand-muted-light" aria-label="Edit bank account">
-                  <EditRegular className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex items-center gap-1">
+                  <button type="button" onClick={() => openEdit(account)} className="p-1.5 rounded hover:bg-muted text-brand-muted-light" aria-label="Edit bank account">
+                    <EditRegular className="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" onClick={() => deleteAccount(account)} className="p-1.5 rounded hover:bg-red-50 text-brand-muted-light hover:text-red-600" aria-label="Delete bank account">
+                    <DeleteRegular className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
 
               <div className="mb-4">

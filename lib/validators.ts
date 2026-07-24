@@ -111,7 +111,7 @@ export const salesInvoiceSchema = z.object({
   issueDate: z.string().min(1, 'Issue date is required'),
   dueDate: z.string().min(1, 'Due date is required'),
   description: z.string().optional(),
-  revenueAccountId: z.string().optional(),
+  revenueAccountId: z.string().min(1, 'Revenue account is required'),
   lineItems: z
     .array(
       z.object({
