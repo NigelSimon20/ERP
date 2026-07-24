@@ -26,6 +26,7 @@ interface Payment {
 
 interface BankAccount { id: string; bankName: string; accountNumber: string; currency: string }
 interface PurchaseInvoice { id: string; invoiceNumber: string; balanceDue: number }
+interface ExpenseAccount { id: string; account_name: string | null; account_code: string | null; account_type: string | null }
 
 type FormValues = {
   bankAccountId: string
@@ -35,6 +36,7 @@ type FormValues = {
   method: string
   entityType: string
   invoiceId: string
+  expenseAccountId: string
   notes: string
 }
 
@@ -44,11 +46,12 @@ export default function PaymentsPage() {
   const [payments, setPayments] = useState<Payment[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([])
+  const [expenseAccounts, setExpenseAccounts] = useState<ExpenseAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
 
   const { register, handleSubmit, control, reset, watch, formState: { isSubmitting } } = useForm<FormValues>({
-    defaultValues: { bankAccountId: '', paymentDate: new Date().toISOString().split('T')[0], payee: '', amount: '', method: 'BANK_TRANSFER', entityType: '', invoiceId: '', notes: '' },
+    defaultValues: { bankAccountId: '', paymentDate: new Date().toISOString().split('T')[0], payee: '', amount: '', method: 'BANK_TRANSFER', entityType: '', invoiceId: '', expenseAccountId: '', notes: '' },
   })
   const entityType = watch('entityType')
 
@@ -80,13 +83,18 @@ export default function PaymentsPage() {
       const invJson = await invRes.json()
       setPurchaseInvoices(invJson.invoices ?? [])
     } catch { /* purchase invoices optional */ }
+    try {
+      const acctRes = await fetch('/api/finance/accounts')
+      const acctJson = await acctRes.json()
+      setExpenseAccounts((acctJson.accounts ?? []).filter((a: ExpenseAccount) => a.account_type === 'EXPENSE'))
+    } catch { /* expense accounts optional */ }
   }
 
   useEffect(() => { fetchPayments() }, [])
   useEffect(() => { fetchSupporting() }, [])
 
   function openCreate() {
-    reset({ bankAccountId: '', paymentDate: new Date().toISOString().split('T')[0], payee: '', amount: '', method: 'BANK_TRANSFER', entityType: '', invoiceId: '', notes: '' })
+    reset({ bankAccountId: '', paymentDate: new Date().toISOString().split('T')[0], payee: '', amount: '', method: 'BANK_TRANSFER', entityType: '', invoiceId: '', expenseAccountId: '', notes: '' })
     setShowDialog(true)
   }
 
@@ -124,6 +132,9 @@ export default function PaymentsPage() {
     if (data.entityType === 'PURCHASE_INVOICE' && data.invoiceId) {
       payload.entityType = 'PURCHASE_INVOICE'
       payload.entityId = data.invoiceId
+    } else if (data.entityType === 'EXPENSE' && data.expenseAccountId) {
+      payload.entityType = 'EXPENSE'
+      payload.expenseAccountId = data.expenseAccountId
     }
     const res = await fetch('/api/finance/payments', {
       method: 'POST',
@@ -253,13 +264,14 @@ export default function PaymentsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Link to Purchase Invoice (optional)</Label>
+              <Label>Payment Type</Label>
               <Controller control={control} name="entityType" render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
                   <SelectTrigger><SelectValue placeholder="Not linked" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="">Not linked</SelectItem>
                     <SelectItem value="PURCHASE_INVOICE">Purchase Invoice</SelectItem>
+                    <SelectItem value="EXPENSE">Direct Expense</SelectItem>
                   </SelectContent>
                 </Select>
               )} />
@@ -275,6 +287,24 @@ export default function PaymentsPage() {
                       {purchaseInvoices.map((inv) => (
                         <SelectItem key={inv.id} value={inv.id}>
                           {inv.invoiceNumber} — {formatCurrency(Number(inv.balanceDue))} due
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+              </div>
+            )}
+
+            {entityType === 'EXPENSE' && (
+              <div className="space-y-1.5">
+                <Label>Expense Account *</Label>
+                <Controller control={control} name="expenseAccountId" render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Select expense account" /></SelectTrigger>
+                    <SelectContent>
+                      {expenseAccounts.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>
+                          {a.account_code} — {a.account_name}
                         </SelectItem>
                       ))}
                     </SelectContent>

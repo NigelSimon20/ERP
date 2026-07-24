@@ -63,6 +63,8 @@ model Company {
   quotationPrefix          String?  @map("quotation_prefix")
   nextQuotationNumber      Int?     @default(1) @map("next_quotation_number")
   quotationTerms           String?  @db.Text @map("quotation_terms")
+  contractPrefix           String?  @map("contract_prefix")
+  nextContractNumber       Int?     @default(1) @map("next_contract_number")
   paymentPrefix            String?  @map("payment_prefix")
   nextPaymentNumber        Int?     @default(1) @map("next_payment_number")
   receiptPrefix            String?  @map("receipt_prefix")
@@ -1466,6 +1468,36 @@ model QuotationItem {
   total Decimal
 
   @@map("quotation_items")
+}
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+model Contract {
+  id               String   @id
+  companyId        String
+  contractNumber   String   @unique
+  customerId       String?
+  siteId           String?
+  quotationId      String?
+  title            String
+  contractValue    Decimal
+  billingFrequency String?
+  startDate        DateTime
+  endDate          DateTime?
+  status           ContractStatus @default(DRAFT)
+  notes            String?
+  createdBy        String
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime
+
+  @@index([companyId])
+  @@index([status])
+  @@map("contracts")
 }
 
 model ClientLiaison {

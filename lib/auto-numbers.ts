@@ -47,6 +47,13 @@ export async function nextQuoteNumber(companyId: string): Promise<string> {
   return `${tag}-${String(n).padStart(6, '0')}`
 }
 
+export async function nextContractNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { contractPrefix: true } })
+  const tag = company?.contractPrefix || 'CON'
+  const n = await claimCounter(companyId, 'nextContractNumber')
+  return `${tag}-${String(n).padStart(6, '0')}`
+}
+
 export async function nextJournalReference(companyId: string): Promise<string> {
   const prefix = await getPrefix(companyId)
   const n = await claimCounter(companyId, 'nextJournalNumber')

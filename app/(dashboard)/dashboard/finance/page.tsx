@@ -5,7 +5,7 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar,
 } from 'recharts'
-import { ArrowTrendingRegular, BuildingBankRegular, DataBarVerticalRegular, MoneyHandRegular, PaymentRegular, ReceiptMoneyRegular, ShieldErrorRegular, VehicleTruckRegular } from '@fluentui/react-icons';
+import { ArrowDownloadRegular, ArrowTrendingRegular, ArrowUploadRegular, BuildingBankRegular, DataBarVerticalRegular, MoneyHandRegular, PaymentRegular, ReceiptMoneyRegular, ShieldErrorRegular, VehicleTruckRegular } from '@fluentui/react-icons';
 import { DashboardPageShell } from '@/components/dashboard/DashboardPageShell'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -27,6 +27,27 @@ interface FinanceData {
   totalExpenses: number
   netProfit: number
   cashInBank: number
+  pettyCash: number
+  totalBankAccounts: number
+  balanceSheetSummary: {
+    totalAssets: number
+    currentAssets: number
+    nonCurrentAssets: number
+    unclassifiedAssets: number
+    totalLiabilities: number
+    currentLiabilities: number
+    nonCurrentLiabilities: number
+    unclassifiedLiabilities: number
+    totalEquity: number
+    balanced: boolean
+  }
+  ratios: {
+    workingCapital: number
+    currentRatio: number | null
+    quickRatio: number | null
+    debtToEquity: number | null
+  }
+  trialBalanceSummary: { grandDebit: number; grandCredit: number; balanced: boolean }
   overdueCount: number
   overdueAmount: number
   unpaidSuppliers: number
@@ -44,6 +65,10 @@ function fmtY(v: number) {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
   if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`
   return `$${v}`
+}
+
+function fmtRatio(v: number | null) {
+  return v === null ? 'N/A' : v.toFixed(2)
 }
 
 export default function FinanceDashboardPage() {
@@ -160,6 +185,46 @@ export default function FinanceDashboardPage() {
             <KPICard title="Cash in Bank" value={formatCurrency(data!.cashInBank, vc)} icon={BuildingBankRegular} color="white" />
           </>}
         </div>
+
+        {/* Row 2.4 — Cash position */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {loading ? [1,2,3,4].map(i => <div key={i} className="erp-card !p-5 animate-pulse h-28" />) : <>
+            <KPICard title="Total Bank Accounts" value={data!.totalBankAccounts} icon={BuildingBankRegular} color="navy" />
+            <KPICard title="Cash In" subtitle="Fiscal year to date" value={formatCurrency(data!.totalCollected, vc)} icon={ArrowDownloadRegular} color="green" />
+            <KPICard title="Cash Out" subtitle="Fiscal year to date" value={formatCurrency(data!.totalExpenses, vc)} icon={ArrowUploadRegular} color="amber" />
+            <KPICard title="Petty Cash" subtitle="Included in Cash in Bank" value={formatCurrency(data!.pettyCash, vc)} icon={MoneyHandRegular} color="white" />
+          </>}
+        </div>
+
+        {/* Row 2.45 — Balance Sheet summary (GL basis) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {loading ? [1,2,3,4].map(i => <div key={i} className="erp-card !p-5 animate-pulse h-28" />) : <>
+            <KPICard title="Total Assets" value={formatCurrency(data!.balanceSheetSummary.totalAssets, vc)} icon={DataBarVerticalRegular} color="navy" />
+            <KPICard title="Current Assets" value={formatCurrency(data!.balanceSheetSummary.currentAssets, vc)} icon={ReceiptMoneyRegular} color="blue" />
+            <KPICard title="Current Liabilities" value={formatCurrency(data!.balanceSheetSummary.currentLiabilities, vc)} icon={ShieldErrorRegular} color="amber" />
+            <KPICard title="Total Equity" value={formatCurrency(data!.balanceSheetSummary.totalEquity, vc)} icon={PaymentRegular} color="green" />
+          </>}
+        </div>
+
+        {/* Row 2.46 — Financial ratios (GL basis — ties to Balance Sheet, not the cash-basis KPIs above) */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {loading ? [1,2,3,4].map(i => <div key={i} className="erp-card !p-5 animate-pulse h-28" />) : <>
+            <KPICard title="Working Capital" subtitle="GL basis" value={formatCurrency(data!.ratios.workingCapital, vc)} icon={ArrowTrendingRegular} color={data!.ratios.workingCapital >= 0 ? 'green' : 'red'} />
+            <KPICard title="Current Ratio" subtitle="GL basis" value={fmtRatio(data!.ratios.currentRatio)} icon={DataBarVerticalRegular} color={(data!.ratios.currentRatio ?? 0) < 1 ? 'amber' : 'green'} />
+            <KPICard title="Quick Ratio" subtitle="GL basis" value={fmtRatio(data!.ratios.quickRatio)} icon={MoneyHandRegular} color={(data!.ratios.quickRatio ?? 0) < 1 ? 'amber' : 'green'} />
+            <KPICard title="Debt-to-Equity" subtitle="GL basis" value={fmtRatio(data!.ratios.debtToEquity)} icon={PaymentRegular} color="white" />
+          </>}
+        </div>
+
+        {!loading && (
+          <Link href="/finance/finance-reports" className="block rounded-lg border border-border bg-card px-4 py-3 text-xs text-muted-foreground hover:bg-muted/50 transition-colors">
+            Trial Balance: Debit {formatCurrency(data!.trialBalanceSummary.grandDebit, vc)} · Credit {formatCurrency(data!.trialBalanceSummary.grandCredit, vc)} ·{' '}
+            <span className={data!.trialBalanceSummary.balanced ? 'text-green-600 dark:text-green-400 font-medium' : 'text-amber-600 dark:text-amber-400 font-medium'}>
+              {data!.trialBalanceSummary.balanced ? 'Balanced ✓' : 'Out of balance'}
+            </span>
+            {' '}— view full report →
+          </Link>
+        )}
 
         {/* Row 2.5 — Live activity */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

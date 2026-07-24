@@ -258,6 +258,30 @@ export function calculateNetProfit(totalRevenue: number, totalExpenses: number):
   return round2dp((Number(totalRevenue) || 0) - (Number(totalExpenses) || 0))
 }
 
+export function calculateWorkingCapital(currentAssets: number, currentLiabilities: number): number {
+  return round2dp((Number(currentAssets) || 0) - (Number(currentLiabilities) || 0))
+}
+
+// Returns null (not Infinity) when there's no current-liability data yet —
+// a ratio against zero is undefined, not "infinitely healthy."
+export function calculateCurrentRatio(currentAssets: number, currentLiabilities: number): number | null {
+  const cl = Number(currentLiabilities) || 0
+  if (cl === 0) return null
+  return round2dp((Number(currentAssets) || 0) / cl)
+}
+
+export function calculateQuickRatio(currentAssets: number, inventoryValue: number, currentLiabilities: number): number | null {
+  const cl = Number(currentLiabilities) || 0
+  if (cl === 0) return null
+  return round2dp(((Number(currentAssets) || 0) - (Number(inventoryValue) || 0)) / cl)
+}
+
+export function calculateDebtToEquity(totalLiabilities: number, totalEquity: number): number | null {
+  const eq = Number(totalEquity) || 0
+  if (eq === 0) return null
+  return round2dp((Number(totalLiabilities) || 0) / eq)
+}
+
 export function calculateAttendanceRate(present: number, total: number): number {
   if (!total || Number(total) === 0) return 0
   return round2dp((Number(present) || 0) / Number(total) * 100)

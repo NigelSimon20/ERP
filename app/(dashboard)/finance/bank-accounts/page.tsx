@@ -32,7 +32,7 @@ type FormValues = {
   openingBalance: string
 }
 
-const ACCOUNT_TYPES = ['CURRENT', 'SAVINGS', 'FIXED_DEPOSIT', 'MONEY_MARKET']
+const ACCOUNT_TYPES = ['CURRENT', 'SAVINGS', 'FIXED_DEPOSIT', 'MONEY_MARKET', 'PETTY_CASH']
 const CURRENCIES = ['USD', 'ZWL', 'ZAR', 'GBP', 'EUR']
 
 export default function BankAccountsPage() {

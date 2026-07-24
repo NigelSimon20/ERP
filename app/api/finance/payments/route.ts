@@ -14,6 +14,7 @@ import {
 } from '@/lib/calculations'
 import { recalculateSupplierOutstandingBalance } from '@/lib/finance-recalculation'
 import { checkLockDate } from '@/lib/lock-dates'
+import { applyBalanceDeltas } from '@/lib/gl-posting'
 import { z } from 'zod'
 
 const paymentSchema = z.object({
@@ -25,6 +26,7 @@ const paymentSchema = z.object({
   entityId: z.string().min(1).optional(),
   notes: z.string().optional(),
   payee: z.string().optional(),
+  expenseAccountId: z.string().min(1).optional(),
 })
 
 // Mirrors app/api/finance/receipts/route.ts — keep new payment_method writes
@@ -49,10 +51,10 @@ export async function GET(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Outgoing payments live in `payments` with payment_type in ('Supplier Payment',
-  // 'Other Payment') — 'Customer Receipt' rows belong to the Receipts page, see
-  // the same dual-model note in app/api/finance/receipts/route.ts.
+  // 'Other Payment', 'Expense Payment') — 'Customer Receipt' rows belong to the
+  // Receipts page, see the same dual-model note in app/api/finance/receipts/route.ts.
   const rows = await prisma.payment.findMany({
-    where: { companyId: session.companyId, payment_type: { in: ['Supplier Payment', 'Other Payment'] } },
+    where: { companyId: session.companyId, payment_type: { in: ['Supplier Payment', 'Other Payment', 'Expense Payment'] } },
     orderBy: { payment_date: 'desc' },
   })
 
@@ -107,6 +109,16 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // A direct expense (not tied to a Purchase Invoice / AP) must be booked
+    // against a real expense account, not the AP control account — see the
+    // GL-posting fix below.
+    let expenseAccount: any = null
+    if (data.entityType === 'EXPENSE') {
+      if (!data.expenseAccountId) return NextResponse.json({ error: 'Expense account is required' }, { status: 400 })
+      expenseAccount = await prisma.chartOfAccount.findFirst({ where: { id: data.expenseAccountId, companyId: session.companyId, account_type: 'EXPENSE' } })
+      if (!expenseAccount) return NextResponse.json({ error: 'Expense account not found' }, { status: 404 })
+    }
+
     const reference = await nextPaymentReference(session.companyId)
     const methodLabel = METHOD_LABELS[data.method ?? 'OTHER'] ?? data.method ?? 'Other'
 
@@ -122,7 +134,7 @@ export async function POST(req: NextRequest) {
           amount: data.amount,
           payment_date: new Date(data.paymentDate).toISOString(),
           payment_method: methodLabel,
-          payment_type: data.entityType === 'PURCHASE_INVOICE' ? 'Supplier Payment' : 'Other Payment',
+          payment_type: data.entityType === 'PURCHASE_INVOICE' ? 'Supplier Payment' : data.entityType === 'EXPENSE' ? 'Expense Payment' : 'Other Payment',
           description: data.notes ?? '',
           party_name: data.payee ?? '',
           supplier_id: data.entityType === 'PURCHASE_INVOICE' ? invoice?.supplierId ?? null : null,
@@ -159,10 +171,19 @@ export async function POST(req: NextRequest) {
 
       // create posted journal entry and update GL
       const bankLedger = await tx.bankAccount.findUnique({ where: { id: data.bankAccountId }, select: { chart_account_id: true } }).catch(() => null)
+      // A direct expense debits the chosen expense account, not AP — booking
+      // it against Accounts Payable would falsely imply the amount was ever
+      // a recorded payable, which for an ad-hoc expense it never was.
+      const isExpense = data.entityType === 'EXPENSE'
       // 'Payable' alone also matches unrelated liability accounts like "PAYE
       // Payable" (payroll tax) - match the real control-account name specifically.
-      const apAccount = await tx.chartOfAccount.findFirst({ where: { account_type: 'LIABILITY', account_name: { contains: 'Accounts Payable' }, companyId: session.companyId }, select: { id: true } }).catch(() => null)
-      if (bankLedger?.chart_account_id && apAccount) {
+      const apAccount = isExpense
+        ? null
+        : await tx.chartOfAccount.findFirst({ where: { account_type: 'LIABILITY', account_name: { contains: 'Accounts Payable' }, companyId: session.companyId }, select: { id: true } }).catch(() => null)
+      const debitAccountId = isExpense ? expenseAccount.id : apAccount?.id
+      const debitDescription = isExpense ? `Expense — ${data.notes || data.payee || 'Direct expense'}` : 'AP settlement'
+
+      if (bankLedger?.chart_account_id && debitAccountId) {
         const bankGLId = bankLedger.chart_account_id
         const je = await tx.journalEntry.create({
           data: {
@@ -178,30 +199,20 @@ export async function POST(req: NextRequest) {
           },
         })
 
+        const lines = [
+          { accountId: debitAccountId, debit: data.amount, credit: 0, description: debitDescription },
+          { accountId: bankGLId, debit: 0, credit: data.amount, description: 'Bank payment' },
+        ]
+
         await tx.journalLine.createMany({
-          data: [
-            {
-              id: crypto.randomUUID(),
-              journalEntryId: je.id,
-              accountId: apAccount.id,
-              description: 'AP settlement',
-              debit: data.amount,
-              credit: 0,
-            },
-            {
-              id: crypto.randomUUID(),
-              journalEntryId: je.id,
-              accountId: bankGLId,
-              description: 'Bank payment',
-              debit: 0,
-              credit: data.amount,
-            },
-          ],
+          data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: je.id, ...l })),
         })
 
-        // update chart account balances
-        await tx.chartOfAccount.update({ where: { id: apAccount.id }, data: { current_balance: { decrement: data.amount } } })
-        await tx.chartOfAccount.update({ where: { id: bankGLId }, data: { current_balance: { decrement: data.amount } } })
+        // Correct normal-debit/normal-credit balance handling for whichever
+        // account type was actually debited (EXPENSE is normal-debit, so it
+        // must increment on a debit — a blind decrement, correct only for
+        // the AP/Bank pair, would silently understate expenses).
+        await applyBalanceDeltas(tx, lines)
       }
 
       return { payment: p, newBankBalance, updatedInvoice, newInvoiceBalance, newInvoiceStatus }

@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from 'recharts'
-import { AddCircleRegular, ArrowEnterRegular, ArrowTrendingRegular, BuildingBankRegular, BuildingRegular, DataBarVerticalRegular, DeleteRegular, EditRegular, MoneyHandRegular, PersonRegular, ShieldErrorRegular, ShieldPersonRegular, SignOutRegular, WarningRegular } from '@fluentui/react-icons';
+import { AddCircleRegular, ArrowDownloadRegular, ArrowEnterRegular, ArrowTrendingRegular, ArrowUploadRegular, BuildingBankRegular, BuildingRegular, DataBarVerticalRegular, DeleteRegular, DocumentRegular, EditRegular, MoneyHandRegular, PersonRegular, ShieldErrorRegular, ShieldPersonRegular, SignOutRegular, WarningRegular } from '@fluentui/react-icons';
 import { DashboardPageShell } from '@/components/dashboard/DashboardPageShell'
 import { KPICard } from '@/components/dashboard/KPICard'
 import { ChartCard } from '@/components/dashboard/ChartCard'
@@ -21,7 +21,13 @@ interface ExecData {
   excludedCount: number
   totalRevenue: number
   outstandingReceivables: number
+  totalExpenses: number
+  cashIn: number
   cashInBank: number
+  pettyCash: number
+  totalBankAccounts: number
+  ratios: { workingCapital: number; currentRatio: number | null }
+  contractRevenue: { totalActiveValue: number; activeCount: number }
   activeGuards: number
   activeSites: number
   openIncidents: number
@@ -61,6 +67,10 @@ function fmtY(v: number) {
   if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`
   if (v >= 1_000) return `$${(v / 1_000).toFixed(0)}K`
   return `$${v}`
+}
+
+function fmtRatio(v: number | null) {
+  return v === null ? 'N/A' : v.toFixed(2)
 }
 
 export default function ExecutiveDashboardPage() {
@@ -157,6 +167,24 @@ export default function ExecutiveDashboardPage() {
           </div>
         )}
 
+        {/* ── Cash Position ── */}
+        {loading ? <SkeletonKPI count={4} cols={4} /> : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <KPICard title="Total Bank Accounts" value={data?.totalBankAccounts ?? 0} icon={BuildingBankRegular} color="navy" />
+            <KPICard title="Cash In" subtitle="Last 6 months" value={formatCurrency(data?.cashIn ?? 0, vc)} icon={ArrowDownloadRegular} color="green" />
+            <KPICard title="Cash Out" subtitle="Last 6 months" value={formatCurrency(data?.totalExpenses ?? 0, vc)} icon={ArrowUploadRegular} color="amber" />
+            <KPICard title="Petty Cash" subtitle="Included in Cash in Bank" value={formatCurrency(data?.pettyCash ?? 0, vc)} icon={MoneyHandRegular} color="white" />
+          </div>
+        )}
+
+        {/* ── Financial Ratios (GL basis) ── */}
+        {loading ? <SkeletonKPI count={2} cols={2} /> : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <KPICard title="Working Capital" subtitle="GL basis" value={formatCurrency(data?.ratios.workingCapital ?? 0, vc)} icon={ArrowTrendingRegular} color={(data?.ratios.workingCapital ?? 0) >= 0 ? 'green' : 'red'} />
+            <KPICard title="Current Ratio" subtitle="GL basis" value={fmtRatio(data?.ratios.currentRatio ?? null)} icon={DataBarVerticalRegular} color={(data?.ratios.currentRatio ?? 0) < 1 ? 'amber' : 'green'} />
+          </div>
+        )}
+
         {/* ── Operational KPIs ── */}
         {loading ? <SkeletonKPI count={4} cols={4} /> : (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -212,6 +240,14 @@ export default function ExecutiveDashboardPage() {
             </>
           )}
         </div>
+
+        {/* ── Contract Revenue ── */}
+        {loading ? <SkeletonKPI count={2} cols={2} /> : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <KPICard title="Total Active Contract Value" subtitle="Real contracts, not the site estimate below" value={formatCurrency(data?.contractRevenue.totalActiveValue ?? 0, vc)} icon={DocumentRegular} color="navy" />
+            <KPICard title="Active Contracts" value={data?.contractRevenue.activeCount ?? 0} icon={DocumentRegular} color="blue" />
+          </div>
+        )}
 
         {/* ── Tables ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

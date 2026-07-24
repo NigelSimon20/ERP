@@ -3,7 +3,7 @@ import crypto from 'crypto'
 
 const NORMAL_DEBIT = ['ASSET', 'EXPENSE']
 
-async function applyBalanceDeltas(
+export async function applyBalanceDeltas(
   tx: Prisma.TransactionClient,
   lines: { accountId: string; debit: number; credit: number }[],
 ) {

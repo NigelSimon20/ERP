@@ -4,8 +4,9 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
-import { overdueQueryCutoff } from '@/lib/calculations'
+import { overdueQueryCutoff, calculateWorkingCapital, calculateCurrentRatio, calculateQuickRatio, calculateDebtToEquity } from '@/lib/calculations'
 import { buildCurrencyConverter, listAvailableCurrencies } from '@/lib/currency'
+import { computeBalanceSheet, computeTrialBalance } from '@/lib/balance-sheet'
 
 function monthKey(d: Date | string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
@@ -65,7 +66,8 @@ export async function GET(req: NextRequest) {
 
   const [
     allInvoices, customerReceipts, otherPayments,
-    bankAccounts, unpaidSuppliersAgg, lastPayroll, lowInventoryCount,
+    bankAccounts, totalBankAccounts, unpaidSuppliersAgg, lastPayroll, lowInventoryCount,
+    balanceSheet, trialBalance,
   ] = await Promise.all([
     prisma.salesInvoice.findMany({
       where: { companyId, status: { not: DB_STATUS_VOID } },
@@ -80,12 +82,15 @@ export async function GET(req: NextRequest) {
       where: { companyId, payment_type: { not: 'Customer Receipt' } },
       select: { amount: true, payment_date: true, currency: true },
     }),
-    prisma.bankAccount.findMany({ where: { companyId }, select: { id: true, bank_name: true, account_number: true, current_balance: true, currency: true }, take: 25 }),
+    prisma.bankAccount.findMany({ where: { companyId, is_active: true }, select: { id: true, bank_name: true, account_number: true, current_balance: true, currency: true, account_type: true }, take: 25 }),
+    prisma.bankAccount.count({ where: { companyId, is_active: true } }),
     isNative
       ? Promise.resolve(null)
       : prisma.purchaseInvoice.aggregate({ where: { companyId, status: { not: 'PAID' } }, _sum: { balanceDue: true } }),
     prisma.payrollRun.findFirst({ where: { companyId }, orderBy: { createdAt: 'desc' }, select: { totalNet: true, periodStart: true, periodEnd: true } }),
     prisma.inventoryItem.count({ where: { companyId } }),
+    computeBalanceSheet(prisma, companyId, now),
+    computeTrialBalance(prisma, companyId, fiscalStart, now),
   ])
 
   let totalRevenue = 0
@@ -181,11 +186,13 @@ export async function GET(req: NextRequest) {
   })
 
   let cashInBank = 0
+  let pettyCash = 0
   const bankBalances: { bankName: string; accountNumber: string; balance: number; currency: string }[] = []
   bankAccounts.forEach((b) => {
     const val = amt(b.current_balance, b.currency)
     if (val === null) return
     cashInBank += val
+    if ((b.account_type ?? '').toLowerCase().includes('petty')) pettyCash += val
     bankBalances.push({ bankName: b.bank_name || '', accountNumber: b.account_number || '', balance: val, currency: b.currency || reportingCurrency })
   })
 
@@ -200,6 +207,31 @@ export async function GET(req: NextRequest) {
     totalExpenses,
     netProfit: totalCollected - totalExpenses,
     cashInBank,
+    pettyCash,
+    totalBankAccounts,
+    balanceSheetSummary: {
+      totalAssets: balanceSheet.assets,
+      currentAssets: balanceSheet.currentAssets,
+      nonCurrentAssets: balanceSheet.nonCurrentAssets,
+      unclassifiedAssets: balanceSheet.unclassifiedAssets,
+      totalLiabilities: balanceSheet.liabilities,
+      currentLiabilities: balanceSheet.currentLiabilities,
+      nonCurrentLiabilities: balanceSheet.nonCurrentLiabilities,
+      unclassifiedLiabilities: balanceSheet.unclassifiedLiabilities,
+      totalEquity: balanceSheet.equity,
+      balanced: balanceSheet.balanced,
+    },
+    ratios: {
+      workingCapital: calculateWorkingCapital(balanceSheet.currentAssets, balanceSheet.currentLiabilities),
+      currentRatio: calculateCurrentRatio(balanceSheet.currentAssets, balanceSheet.currentLiabilities),
+      quickRatio: calculateQuickRatio(balanceSheet.currentAssets, balanceSheet.inventoryAssetBalance, balanceSheet.currentLiabilities),
+      debtToEquity: calculateDebtToEquity(balanceSheet.liabilities, balanceSheet.equity),
+    },
+    trialBalanceSummary: {
+      grandDebit: trialBalance.grandDebit,
+      grandCredit: trialBalance.grandCredit,
+      balanced: trialBalance.balanced,
+    },
     overdueCount,
     overdueAmount,
     unpaidSuppliers: isNative ? 0 : Number(unpaidSuppliersAgg?._sum.balanceDue ?? 0),

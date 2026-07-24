@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { nextJournalReference } from '@/lib/auto-numbers'
+import { nextJournalReference, nextPaymentReference } from '@/lib/auto-numbers'
 import { calculateBasicSalary, calculateOvertimePay, calculatePayslipItem } from '@/lib/calculations'
 import { checkLockDate } from '@/lib/lock-dates'
 
@@ -166,6 +166,7 @@ export async function POST(req: NextRequest) {
     const totalNet = r2(guardPayslips.reduce((s: number, p: { netPay: number }) => s + p.netPay, 0))
 
     const reference = await nextJournalReference(companyId)
+    const paymentReference = await nextPaymentReference(companyId)
     const runId = crypto.randomUUID()
     const journalId = crypto.randomUUID()
 
@@ -225,6 +226,32 @@ export async function POST(req: NextRequest) {
       await tx.bankAccount.update({
         where: { id: bankAccountId },
         data: { current_balance: { decrement: totalNet } },
+      })
+
+      // Payroll disbursement never created a `Payment` row before, so it was
+      // invisible to Cash Out / Cash Flow KPIs (which sum from `Payment`,
+      // not from BankAccount.current_balance) even though the bank balance
+      // itself was already correctly decremented above.
+      await tx.payment.create({
+        data: {
+          id: crypto.randomUUID(),
+          companyId,
+          bank_account_id: bankAccountId,
+          bank_account_name: bankAccount.account_name ?? '',
+          payment_number: paymentReference,
+          amount: totalNet,
+          payment_date: new Date(periodEnd).toISOString(),
+          payment_method: 'Bank Transfer',
+          payment_type: 'Payroll Payment',
+          description: `Payroll run ${new Date(periodStart).toLocaleDateString()} – ${new Date(periodEnd).toLocaleDateString()}`,
+          party_name: 'Payroll',
+          currency: bankAccount.currency ?? 'USD',
+          status: 'Posted',
+          created_by_id: userId,
+          created_by: session.name,
+          created_date: new Date().toISOString(),
+          updated_date: new Date().toISOString(),
+        },
       })
 
       const journalLines = []

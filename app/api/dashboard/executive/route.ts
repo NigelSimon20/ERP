@@ -4,8 +4,9 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
-import { overdueQueryCutoff } from '@/lib/calculations'
+import { overdueQueryCutoff, calculateWorkingCapital, calculateCurrentRatio } from '@/lib/calculations'
 import { buildCurrencyConverter, listAvailableCurrencies } from '@/lib/currency'
+import { computeBalanceSheet } from '@/lib/balance-sheet'
 
 function monthKey(d: Date | string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
@@ -67,7 +68,7 @@ export async function GET(req: NextRequest) {
     invoicesForRevenue, outstandingInvoices, allPayments, bankAccounts,
     activeGuards, activeSites, openIncidents, criticalIncidents,
     guardsOnDutyToday, pendingTasks, overdueInvoices, lastPayroll,
-    incidentGroups, allActiveSites, recentActivity,
+    incidentGroups, allActiveSites, recentActivity, balanceSheet, contractAgg,
   ] = await Promise.all([
     prisma.salesInvoice.findMany({
       where: { companyId, invoice_date: { gte: fiscalStart.toISOString().split('T')[0] }, status: { not: DB_STATUS_VOID } },
@@ -81,7 +82,7 @@ export async function GET(req: NextRequest) {
       where: { companyId, payment_date: { gte: sixMonthsAgo.toISOString().split('T')[0] } },
       select: { payment_date: true, amount: true, currency: true, payment_type: true },
     }),
-    prisma.bankAccount.findMany({ where: { companyId, is_active: true }, select: { current_balance: true, currency: true } }),
+    prisma.bankAccount.findMany({ where: { companyId, is_active: true }, select: { current_balance: true, currency: true, account_type: true } }),
     prisma.guard.count({ where: { companyId, status: 'Active' } }),
     prisma.site.count({ where: { companyId, status: 'Active' } }),
     prisma.incident.count({ where: { companyId, status: { in: ['OPEN', 'INVESTIGATING'] } } }),
@@ -96,6 +97,8 @@ export async function GET(req: NextRequest) {
       select: { id: true, site_name: true, status: true, billing_rate_day: true, billing_rate_night: true, day_shift_assigned: true, night_shift_assigned: true },
     }),
     prisma.auditTrail.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 10, select: { action: true, module: true, userName: true, createdAt: true, recordId: true } }),
+    computeBalanceSheet(prisma, companyId, now),
+    prisma.contract.aggregate({ where: { companyId, status: 'ACTIVE' }, _sum: { contractValue: true }, _count: true }),
   ])
 
   let totalRevenue = 0
@@ -111,6 +114,7 @@ export async function GET(req: NextRequest) {
   })
 
   let totalExpenses = 0
+  let cashIn = 0
   const chartReceipts: { date: Date; amount: number }[] = []
   const chartPayments: { date: Date; amount: number }[] = []
   allPayments.forEach((p) => {
@@ -119,6 +123,7 @@ export async function GET(req: NextRequest) {
     if (v === null) return
     if (p.payment_type === 'Customer Receipt') {
       chartReceipts.push({ date: new Date(p.payment_date), amount: v })
+      cashIn += v
     } else {
       chartPayments.push({ date: new Date(p.payment_date), amount: v })
       totalExpenses += v
@@ -126,9 +131,12 @@ export async function GET(req: NextRequest) {
   })
 
   let cashInBank = 0
+  let pettyCash = 0
   bankAccounts.forEach((b) => {
     const v = amt(b.current_balance, b.currency)
-    if (v !== null) cashInBank += v
+    if (v === null) return
+    cashInBank += v
+    if ((b.account_type ?? '').toLowerCase().includes('petty')) pettyCash += v
   })
 
   // Monthly contract value estimate from real billing-rate + shift-assignment
@@ -159,7 +167,18 @@ export async function GET(req: NextRequest) {
     totalRevenue,
     outstandingReceivables,
     totalExpenses,
+    cashIn,
     cashInBank,
+    pettyCash,
+    totalBankAccounts: bankAccounts.length,
+    ratios: {
+      workingCapital: calculateWorkingCapital(balanceSheet.currentAssets, balanceSheet.currentLiabilities),
+      currentRatio: calculateCurrentRatio(balanceSheet.currentAssets, balanceSheet.currentLiabilities),
+    },
+    contractRevenue: {
+      totalActiveValue: Number(contractAgg._sum.contractValue ?? 0),
+      activeCount: contractAgg._count,
+    },
     activeGuards,
     activeSites,
     openIncidents,

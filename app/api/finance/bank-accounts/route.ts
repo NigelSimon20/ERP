@@ -122,6 +122,7 @@ export async function POST(req: NextRequest) {
           opening_balance: data.openingBalance,
           current_balance: data.openingBalance,
           chart_account_id: coaId,
+          is_active: true,
           created_date: now,
           updated_date: now,
         },
