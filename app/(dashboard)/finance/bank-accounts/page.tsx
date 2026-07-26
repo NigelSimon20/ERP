@@ -33,7 +33,7 @@ type FormValues = {
 }
 
 const ACCOUNT_TYPES = ['CURRENT', 'SAVINGS', 'FIXED_DEPOSIT', 'MONEY_MARKET', 'PETTY_CASH']
-const CURRENCIES = ['USD', 'ZWL', 'ZAR', 'GBP', 'EUR']
+const CURRENCIES = ['USD', 'ZWG', 'ZWL', 'ZAR', 'GBP', 'EUR']
 
 export default function BankAccountsPage() {
   const [accounts, setAccounts] = useState<BankAccount[]>([])
