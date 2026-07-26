@@ -13,16 +13,21 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { AddRegular, CheckmarkCircleRegular, DismissCircleRegular } from '@fluentui/react-icons';
 
-interface Reconciliation { id: string; reconcileDate: string; statementBalance: number; bookBalance: number; difference: number; status: string; bankAccount: { bankName: string; accountNumber: string; currency: string } }
+interface Reconciliation { id: string; reconcileDate: string; statementBalance: number; bookBalance: number; difference: number; status: string; bankAccountId: string; bankAccount: { bankName: string; accountNumber: string; currency: string } }
 interface BankAccount { id: string; bankName: string; accountNumber: string; currency: string; currentBalance: number }
+interface GLAccount { id: string; account_name: string; account_type: string }
 type FormValues = { bankAccountId: string; reconcileDate: string; statementBalance: string }
 
 export default function BankReconciliationsPage() {
   const [recs, setRecs] = useState<Reconciliation[]>([])
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
+  const [glAccounts, setGlAccounts] = useState<GLAccount[]>([])
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
   const [closingId, setClosingId] = useState<string | null>(null)
+  const [adjustingRec, setAdjustingRec] = useState<Reconciliation | null>(null)
+  const [offsetAccountId, setOffsetAccountId] = useState('')
+  const [posting, setPosting] = useState(false)
 
   const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<FormValues>({
     defaultValues: { bankAccountId: '', reconcileDate: new Date().toISOString().split('T')[0], statementBalance: '' },
@@ -48,6 +53,12 @@ export default function BankReconciliationsPage() {
       toast.error('Failed to load bank accounts')
     })
   }, [])
+  useEffect(() => {
+    fetch('/api/finance/accounts').then(r => r.json()).then(j => setGlAccounts(j.accounts ?? [])).catch((err) => {
+      console.error(err)
+      toast.error('Failed to load chart of accounts')
+    })
+  }, [])
 
   async function onSubmit(data: FormValues) {
     const res = await fetch('/api/finance/bank-reconciliations', {
@@ -70,6 +81,27 @@ export default function BankReconciliationsPage() {
       if (!res.ok) { toast.error(json.error); return }
       toast.success('Reconciliation closed'); fetchRecs()
     } finally { setClosingId(null) }
+  }
+
+  function openAdjustDialog(rec: Reconciliation) {
+    const suspense = glAccounts.find(a => a.account_type === 'SUSPENSE')
+    setOffsetAccountId(suspense?.id ?? '')
+    setAdjustingRec(rec)
+  }
+
+  async function postAdjustment() {
+    if (!adjustingRec || !offsetAccountId) return
+    setPosting(true)
+    try {
+      const res = await fetch('/api/finance/bank-reconciliations?action=adjust', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: adjustingRec.id, offsetAccountId }),
+      })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error); return }
+      toast.success(json.adjustment ? `Adjustment posted (${json.adjustment.paymentNumber})` : 'Reconciliation closed')
+      setAdjustingRec(null); fetchRecs()
+    } finally { setPosting(false) }
   }
 
   return (
@@ -111,9 +143,14 @@ export default function BankReconciliationsPage() {
                     <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${r.status === 'RECONCILED' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{r.status}</span>
                   </td>
                   <td className="px-4 py-3">
-                    {r.status === 'OPEN' && (
-                      <button type="button" onClick={() => closeRec(r)} disabled={closingId === r.id || Math.abs(r.difference) > 0.01} className="text-xs text-green-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Close reconciliation">
+                    {r.status === 'OPEN' && Math.abs(r.difference) <= 0.01 && (
+                      <button type="button" onClick={() => closeRec(r)} disabled={closingId === r.id} className="text-xs text-green-600 hover:underline disabled:opacity-40 disabled:cursor-not-allowed" aria-label="Close reconciliation">
                         {closingId === r.id ? 'Closing…' : 'Close'}
+                      </button>
+                    )}
+                    {r.status === 'OPEN' && Math.abs(r.difference) > 0.01 && (
+                      <button type="button" onClick={() => openAdjustDialog(r)} className="text-xs text-amber-600 hover:underline" aria-label="Post reconciliation adjustment">
+                        Adjust…
                       </button>
                     )}
                   </td>
@@ -151,6 +188,38 @@ export default function BankReconciliationsPage() {
               <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Starting…' : 'Start Reconciliation'}</Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!adjustingRec} onOpenChange={(open) => { if (!open) setAdjustingRec(null) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Post Reconciliation Adjustment</DialogTitle></DialogHeader>
+          {adjustingRec && (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {adjustingRec.bankAccount?.bankName} — books currently show <strong>{formatCurrency(adjustingRec.bookBalance)}</strong>,
+                the statement says <strong>{formatCurrency(adjustingRec.statementBalance)}</strong>. Posting will create a one-time
+                {' '}{adjustingRec.difference > 0 ? 'inflow' : 'outflow'} of <strong>{formatCurrency(Math.abs(adjustingRec.difference))}</strong> against
+                the bank account and the chart-of-account you choose below, then close this reconciliation.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Offset Account *</Label>
+                <Select onValueChange={setOffsetAccountId} value={offsetAccountId}>
+                  <SelectTrigger><SelectValue placeholder="Select account" /></SelectTrigger>
+                  <SelectContent>
+                    {glAccounts.map((a) => (
+                      <SelectItem key={a.id} value={a.id}>{a.account_name} ({a.account_type})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-brand-muted-light">Defaults to Suspense if one exists. Change it if you know exactly what the difference is (e.g. Bank Charges, Interest Income).</p>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setAdjustingRec(null)}>Cancel</Button>
+                <Button type="button" onClick={postAdjustment} disabled={posting || !offsetAccountId} className="bg-primary hover:bg-brand-red-dark text-white">{posting ? 'Posting…' : 'Post Adjustment'}</Button>
+              </DialogFooter>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
