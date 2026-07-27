@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,7 +9,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { ArrowDownloadRegular, DataBarVerticalRegular } from '@fluentui/react-icons';
 
-type ReportType = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'general-ledger' | 'trial-balance' | 'aged-receivables' | 'aged-payables'
+type ReportType = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'general-ledger' | 'trial-balance' | 'aged-receivables' | 'aged-payables' | 'statement-of-account'
 
 const REPORT_TABS: { key: ReportType; label: string }[] = [
   { key: 'income-statement', label: 'Income Statement' },
@@ -19,6 +19,7 @@ const REPORT_TABS: { key: ReportType; label: string }[] = [
   { key: 'trial-balance', label: 'Trial Balance' },
   { key: 'aged-receivables', label: 'Aged Receivables' },
   { key: 'aged-payables', label: 'Aged Payables' },
+  { key: 'statement-of-account', label: 'Statement of Account' },
 ]
 
 interface IncomeStatement {
@@ -54,7 +55,10 @@ interface GeneralLedgerLine { date: string; reference: string; description: stri
 interface GeneralLedgerAccount { accountId: string; accountCode: string | null; accountName: string | null; openingBalance: number; closingBalance: number; lines: GeneralLedgerLine[] }
 interface GeneralLedger { accounts: GeneralLedgerAccount[] }
 
-type ReportData = IncomeStatement | BalanceSheet | TrialBalance | AgedReceivables | AgedPayables | CashFlow | GeneralLedger
+interface StatementLine { date: string; type: string; reference: string; description: string; charge: number; payment: number; runningBalance: number }
+interface StatementOfAccount { partyId: string; partyName: string; openingBalance: number; closingBalance: number; lines: StatementLine[] }
+
+type ReportData = IncomeStatement | BalanceSheet | TrialBalance | AgedReceivables | AgedPayables | CashFlow | GeneralLedger | StatementOfAccount
 
 function AgingHeader() {
   return (
@@ -102,17 +106,29 @@ export default function FinanceReportsPage() {
   const [asAt, setAsAt] = useState(() => new Date().toISOString().split('T')[0])
   const [loading, setLoading] = useState(false)
   const [report, setReport] = useState<ReportData | null>(null)
+  const [partyType, setPartyType] = useState<'customer' | 'supplier'>('customer')
+  const [partyId, setPartyId] = useState('')
+  const [customers, setCustomers] = useState<{ id: string; name: string }[]>([])
+  const [suppliers, setSuppliers] = useState<{ id: string; name: string }[]>([])
 
+  const isStatementTab = activeTab === 'statement-of-account'
   const needsRange = activeTab !== 'balance-sheet' && activeTab !== 'aged-receivables' && activeTab !== 'aged-payables'
   const needsAsAt = activeTab === 'balance-sheet'
 
+  useEffect(() => {
+    fetch('/api/finance/customers').then((r) => r.json()).then((j) => setCustomers(j.customers ?? [])).catch(() => {})
+    fetch('/api/finance/suppliers').then((r) => r.json()).then((j) => setSuppliers(j.suppliers ?? [])).catch(() => {})
+  }, [])
+
   async function generate() {
+    if (isStatementTab && !partyId) { toast.error(`Select a ${partyType}`); return }
     setLoading(true)
     setReport(null)
     try {
       const params = new URLSearchParams({ type: activeTab })
       if (needsRange) { params.set('from', from); params.set('to', to) }
       if (needsAsAt) params.set('asAt', asAt)
+      if (isStatementTab) { params.set('partyType', partyType); params.set('partyId', partyId) }
       const res = await fetch(`/api/finance/reports?${params}`)
       const json = await res.json()
       if (!res.ok) { toast.error(json.error ?? 'Failed to load report'); setReport(null); return }
@@ -157,6 +173,7 @@ export default function FinanceReportsPage() {
   const isTrial = (d: ReportData): d is TrialBalance => 'grandDebit' in d
   const isReceivables = (): boolean => activeTab === 'aged-receivables'
   const isPayables = (): boolean => activeTab === 'aged-payables'
+  const isStatement = (d: ReportData): d is StatementOfAccount => 'partyName' in d && 'closingBalance' in d
 
   return (
     <div>
@@ -181,6 +198,24 @@ export default function FinanceReportsPage() {
 
       {/* Controls */}
       <div className="mt-4 flex flex-wrap items-end gap-4">
+        {isStatementTab && (
+          <>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Party</Label>
+              <select className="w-32 h-9 rounded-md border border-border px-2 text-sm" value={partyType} onChange={(e) => { setPartyType(e.target.value as 'customer' | 'supplier'); setPartyId('') }} aria-label="Party type">
+                <option value="customer">Customer</option>
+                <option value="supplier">Supplier</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">{partyType === 'customer' ? 'Customer' : 'Supplier'}</Label>
+              <select className="w-56 h-9 rounded-md border border-border px-2 text-sm" value={partyId} onChange={(e) => setPartyId(e.target.value)} aria-label={partyType}>
+                <option value="">Select {partyType}</option>
+                {(partyType === 'customer' ? customers : suppliers).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          </>
+        )}
         {needsRange && (
           <>
             <div className="space-y-1.5">
@@ -492,6 +527,46 @@ export default function FinanceReportsPage() {
                   </tbody>
                 </table>
               )}
+            </Section>
+          )}
+
+          {/* Statement of Account */}
+          {isStatement(report) && (
+            <Section title={`Statement of Account — ${report.partyName}`}>
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50 border-b border-border">
+                  <tr>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Date</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Type</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Reference</th>
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Description</th>
+                    <th className="text-right px-3 py-2 font-medium text-muted-foreground">Charge</th>
+                    <th className="text-right px-3 py-2 font-medium text-muted-foreground">Payment</th>
+                    <th className="text-right px-3 py-2 font-medium text-muted-foreground">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-border bg-muted/30">
+                    <td colSpan={6} className="px-3 py-2 text-muted-foreground italic">Opening Balance</td>
+                    <td className="px-3 py-2 text-right font-medium">{formatCurrency(report.openingBalance)}</td>
+                  </tr>
+                  {report.lines.map((l, i) => (
+                    <tr key={i} className="border-t border-border hover:bg-muted/50">
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{formatDate(l.date)}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{l.type}</td>
+                      <td className="px-3 py-2.5 text-muted-foreground text-xs">{l.reference}</td>
+                      <td className="px-3 py-2.5 text-foreground">{l.description}</td>
+                      <td className="px-3 py-2.5 text-right">{l.charge > 0 ? formatCurrency(l.charge) : '—'}</td>
+                      <td className="px-3 py-2.5 text-right">{l.payment > 0 ? formatCurrency(l.payment) : '—'}</td>
+                      <td className="px-3 py-2.5 text-right font-medium">{formatCurrency(l.runningBalance)}</td>
+                    </tr>
+                  ))}
+                  <tr className="border-t-2 border-border bg-muted/50">
+                    <td colSpan={6} className="px-3 py-2.5 font-bold text-foreground">Closing Balance</td>
+                    <td className="px-3 py-2.5 text-right font-bold">{formatCurrency(report.closingBalance)}</td>
+                  </tr>
+                </tbody>
+              </table>
             </Section>
           )}
 

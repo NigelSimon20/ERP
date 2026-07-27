@@ -7,6 +7,7 @@ import { convertToReportingCurrency } from '@/lib/currency'
 import { computeBalanceSheet, computeTrialBalance } from '@/lib/balance-sheet'
 import { computeCashFlow } from '@/lib/cash-flow'
 import { computeGeneralLedger } from '@/lib/general-ledger'
+import { computeCustomerStatement, computeSupplierStatement } from '@/lib/statement-of-account'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -153,5 +154,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ type, rows, totals })
   }
 
-  return NextResponse.json({ error: 'Invalid report type. Use: income-statement, balance-sheet, cash-flow, general-ledger, trial-balance, aged-receivables, aged-payables' }, { status: 400 })
+  if (type === 'statement-of-account') {
+    const partyType = searchParams.get('partyType')
+    const partyId = searchParams.get('partyId')
+    if (!partyType || !partyId || !from || !to) return NextResponse.json({ error: 'partyType, partyId, from and to required' }, { status: 400 })
+    if (partyType !== 'customer' && partyType !== 'supplier') return NextResponse.json({ error: 'partyType must be customer or supplier' }, { status: 400 })
+
+    const statement = partyType === 'customer'
+      ? await computeCustomerStatement(prisma, companyId, partyId, new Date(from), new Date(to))
+      : await computeSupplierStatement(prisma, companyId, partyId, new Date(from), new Date(to))
+
+    return NextResponse.json({ type, partyType, from, to, ...statement })
+  }
+
+  return NextResponse.json({ error: 'Invalid report type. Use: income-statement, balance-sheet, cash-flow, general-ledger, trial-balance, aged-receivables, aged-payables, statement-of-account' }, { status: 400 })
 }

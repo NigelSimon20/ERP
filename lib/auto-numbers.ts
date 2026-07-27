@@ -120,3 +120,45 @@ export async function nextSiteNumber(companyId: string): Promise<string> {
   const n = await claimCounter(companyId, 'nextSiteNumber')
   return `${tag}-${String(n).padStart(4, '0')}`
 }
+
+export async function nextProformaNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { proformaPrefix: true } })
+  const tag = company?.proformaPrefix || 'PRO'
+  const n = await claimCounter(companyId, 'nextProformaNumber')
+  return `${tag}-${String(n).padStart(6, '0')}`
+}
+
+export async function nextCreditNoteNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { creditNotePrefix: true } })
+  const tag = company?.creditNotePrefix || 'CRN'
+  const n = await claimCounter(companyId, 'nextCreditNoteNumber')
+  return `${tag}-${String(n).padStart(6, '0')}`
+}
+
+export async function nextDebitNoteNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { debitNotePrefix: true } })
+  const tag = company?.debitNotePrefix || 'DBN'
+  const n = await claimCounter(companyId, 'nextDebitNoteNumber')
+  return `${tag}-${String(n).padStart(6, '0')}`
+}
+
+export async function nextPoNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { poPrefix: true } })
+  const tag = company?.poPrefix || 'PO'
+  const n = await claimCounter(companyId, 'nextPoNumber')
+  return `${tag}-${String(n).padStart(6, '0')}`
+}
+
+export async function nextGrnNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { grnPrefix: true } })
+  const tag = company?.grnPrefix || 'GRN'
+  const n = await claimCounter(companyId, 'nextGrnNumber')
+  return `${tag}-${String(n).padStart(6, '0')}`
+}
+
+export async function nextExpenseClaimNumber(companyId: string): Promise<string> {
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { expenseClaimPrefix: true } })
+  const tag = company?.expenseClaimPrefix || 'EXP'
+  const n = await claimCounter(companyId, 'nextExpenseClaimNumber')
+  return `${tag}-${String(n).padStart(6, '0')}`
+}

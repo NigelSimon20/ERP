@@ -148,3 +148,156 @@ export async function postPurchaseInvoiceToGL(
 
   return journalId
 }
+
+/**
+ * Posts an issued Credit Note to the GL: the mirror-reverse of
+ * postSalesInvoiceToGL — Debit Revenue (and VAT, if applicable) for the
+ * amount being credited back, Credit Accounts Receivable, since the note
+ * reduces what the customer owes.
+ */
+export async function postCreditNoteToGL(
+  tx: Prisma.TransactionClient,
+  params: {
+    companyId: string
+    creditNoteId: string
+    creditNoteNumber: string
+    entryDate: string
+    subtotal: number
+    taxAmount: number
+    totalAmount: number
+    receivablesAccountId: string
+    revenueAccountId: string
+    vatAccountId: string | null
+    userId: string
+  },
+): Promise<string | null> {
+  const { companyId, creditNoteId, creditNoteNumber, entryDate, subtotal, taxAmount, totalAmount, receivablesAccountId, revenueAccountId, vatAccountId, userId } = params
+  if (totalAmount <= 0) return null
+
+  const journalId = crypto.randomUUID()
+  const lines: { accountId: string; debit: number; credit: number; description: string }[] = [
+    { accountId: revenueAccountId, debit: subtotal, credit: 0, description: `Credit Note ${creditNoteNumber}` },
+    { accountId: receivablesAccountId, debit: 0, credit: totalAmount, description: `Credit Note ${creditNoteNumber}` },
+  ]
+  if (taxAmount > 0 && vatAccountId) {
+    lines.push({ accountId: vatAccountId, debit: taxAmount, credit: 0, description: `Credit Note ${creditNoteNumber} — VAT` })
+  } else if (taxAmount > 0) {
+    lines[0].debit += taxAmount
+  }
+
+  await tx.journalEntry.create({
+    data: {
+      id: journalId, companyId,
+      reference: `JE-auto-CRN-${creditNoteNumber}`,
+      entry_date: entryDate,
+      description: `Credit note ${creditNoteNumber}`,
+      total_debit: totalAmount,
+      total_credit: totalAmount,
+      status: 'POSTED',
+      created_by_id: userId,
+    },
+  })
+  await tx.journalLine.createMany({
+    data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: journalId, ...l })),
+  })
+  await applyBalanceDeltas(tx, lines)
+  await tx.creditNote.update({ where: { id: creditNoteId }, data: { journalEntryId: journalId } }).catch(() => {})
+
+  return journalId
+}
+
+/**
+ * Posts an issued Debit Note to the GL: the mirror-reverse of
+ * postPurchaseInvoiceToGL — Debit Accounts Payable, Credit the expense
+ * account, since the note reduces what's owed to the supplier.
+ */
+export async function postDebitNoteToGL(
+  tx: Prisma.TransactionClient,
+  params: {
+    companyId: string
+    debitNoteId: string
+    debitNoteNumber: string
+    entryDate: string
+    totalAmount: number
+    payableAccountId: string
+    expenseAccountId: string
+    userId: string
+  },
+): Promise<string | null> {
+  const { companyId, debitNoteId, debitNoteNumber, entryDate, totalAmount, payableAccountId, expenseAccountId, userId } = params
+  if (totalAmount <= 0) return null
+
+  const journalId = crypto.randomUUID()
+  const lines = [
+    { accountId: payableAccountId, description: `Debit Note ${debitNoteNumber}`, debit: totalAmount, credit: 0 },
+    { accountId: expenseAccountId, description: `Debit Note ${debitNoteNumber}`, debit: 0, credit: totalAmount },
+  ]
+
+  await tx.journalEntry.create({
+    data: {
+      id: journalId, companyId,
+      reference: `JE-auto-DBN-${debitNoteNumber}`,
+      entry_date: entryDate,
+      description: `Debit note ${debitNoteNumber}`,
+      total_debit: totalAmount,
+      total_credit: totalAmount,
+      status: 'POSTED',
+      created_by_id: userId,
+    },
+  })
+  await tx.journalLine.createMany({
+    data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: journalId, ...l })),
+  })
+  await applyBalanceDeltas(tx, lines)
+  await tx.debitNote.update({ where: { id: debitNoteId }, data: { journalEntryId: journalId } }).catch(() => {})
+
+  return journalId
+}
+
+/**
+ * Posts a paid Expense Claim to the GL: Debit the expense category's account,
+ * Credit the bank account it was paid from. Only reachable once a claim is
+ * marked PAID (approval alone doesn't move cash or hit the books).
+ */
+export async function postExpenseClaimToGL(
+  tx: Prisma.TransactionClient,
+  params: {
+    companyId: string
+    expenseClaimId: string
+    claimNumber: string
+    entryDate: string
+    amount: number
+    expenseAccountId: string
+    bankAccountId: string
+    userId: string
+  },
+): Promise<string | null> {
+  const { companyId, expenseClaimId, claimNumber, entryDate, amount, expenseAccountId, bankAccountId, userId } = params
+  if (amount <= 0) return null
+
+  const journalId = crypto.randomUUID()
+  const lines = [
+    { accountId: expenseAccountId, description: `Expense Claim ${claimNumber}`, debit: amount, credit: 0 },
+    { accountId: bankAccountId, description: `Expense Claim ${claimNumber}`, debit: 0, credit: amount },
+  ]
+
+  await tx.journalEntry.create({
+    data: {
+      id: journalId, companyId,
+      reference: `JE-auto-EXP-${claimNumber}`,
+      entry_date: entryDate,
+      description: `Expense claim ${claimNumber}`,
+      total_debit: amount,
+      total_credit: amount,
+      status: 'POSTED',
+      created_by_id: userId,
+    },
+  })
+  await tx.journalLine.createMany({
+    data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: journalId, ...l })),
+  })
+  await applyBalanceDeltas(tx, lines)
+  await tx.expenseClaim.update({ where: { id: expenseClaimId }, data: { journalEntryId: journalId } }).catch(() => {})
+
+  return journalId
+}

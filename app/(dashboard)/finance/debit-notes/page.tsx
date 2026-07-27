@@ -1,0 +1,256 @@
+'use client'
+
+import { useState, useEffect, useMemo } from 'react'
+import { useForm, useFieldArray, Controller, useWatch } from 'react-hook-form'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { PageHeader } from '@/components/shared/PageHeader'
+import { EmptyState } from '@/components/shared/EmptyState'
+import { formatCurrency, formatDate } from '@/lib/utils'
+import { calculateInvoiceTotals } from '@/lib/calculations'
+import toast from 'react-hot-toast'
+import { AddRegular, CheckmarkCircleRegular, DeleteRegular, DocumentRegular, ProhibitedRegular } from '@fluentui/react-icons'
+
+interface DebitNote {
+  id: string
+  debitNoteNumber: string
+  issueDate: string
+  reason: string
+  totalAmount: number
+  status: string
+  supplier: { id: string; name: string }
+}
+interface Supplier { id: string; name: string }
+interface GLAccount { id: string; account_name: string; account_code: string; account_type: string }
+type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
+type DebitNoteForm = { supplierId: string; issueDate: string; reason: string; lineItems: LineItem[] }
+
+const STATUS_STYLES: Record<string, string> = {
+  DRAFT: 'bg-muted text-foreground',
+  ISSUED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
+  VOID: 'bg-muted text-brand-muted-light line-through',
+}
+function blankLine(): LineItem { return { description: '', quantity: '1', unitPrice: '', taxRate: '0' } }
+function StatusBadge({ status }: { status: string }) {
+  return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status] ?? 'bg-muted text-foreground'}`}>{status}</span>
+}
+
+export default function DebitNotesPage() {
+  const [rows, setRows] = useState<DebitNote[]>([])
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
+  const [glAccounts, setGlAccounts] = useState<GLAccount[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [issueTarget, setIssueTarget] = useState<DebitNote | null>(null)
+  const [issueAccountId, setIssueAccountId] = useState('')
+  const expenseAccounts = useMemo(() => glAccounts.filter((a) => a.account_type === 'EXPENSE'), [glAccounts])
+
+  const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<DebitNoteForm>({
+    defaultValues: { supplierId: '', issueDate: '', reason: '', lineItems: [blankLine()] },
+  })
+  const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' })
+  const watchedItems = useWatch({ control, name: 'lineItems' }) ?? []
+  const totals = useMemo(() => calculateInvoiceTotals(watchedItems.map((i) => ({ quantity: Number(i?.quantity) || 0, unitPrice: Number(i?.unitPrice) || 0, taxRate: Number(i?.taxRate) || 0 }))), [watchedItems])
+
+  async function fetchRows() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/finance/debit-notes')
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Failed to load debit notes'); setRows([]); return }
+      setRows(json.debitNotes ?? [])
+    } catch { toast.error('Network error loading debit notes'); setRows([]) } finally { setLoading(false) }
+  }
+
+  useEffect(() => { fetchRows() }, [])
+  useEffect(() => {
+    fetch('/api/finance/suppliers').then((r) => r.json()).then((j) => setSuppliers(j.suppliers ?? [])).catch((err) => console.error(err))
+    fetch('/api/finance/accounts').then((r) => r.json()).then((j) => setGlAccounts(j.accounts ?? [])).catch((err) => console.error(err))
+  }, [])
+
+  async function onCreate(data: DebitNoteForm) {
+    const payload = { ...data, lineItems: data.lineItems.filter((l) => l.description).map((l) => ({ description: l.description, quantity: Number(l.quantity) || 1, unitPrice: Number(l.unitPrice) || 0, taxRate: Number(l.taxRate) || 0 })) }
+    const res = await fetch('/api/finance/debit-notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error); return }
+    toast.success(`Debit note ${json.debitNote.debitNoteNumber} created (DRAFT)`)
+    setShowCreateDialog(false)
+    reset({ supplierId: '', issueDate: '', reason: '', lineItems: [blankLine()] })
+    fetchRows()
+  }
+
+  function openIssue(row: DebitNote) {
+    setIssueTarget(row)
+    setIssueAccountId(expenseAccounts[0]?.id ?? '')
+  }
+
+  async function confirmIssue() {
+    if (!issueTarget) return
+    if (!issueAccountId) { toast.error('Select an expense account'); return }
+    const res = await fetch(`/api/finance/debit-notes/${issueTarget.id}?action=issue`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ expenseAccountId: issueAccountId }) })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error); return }
+    toast.success(`${issueTarget.debitNoteNumber} issued and posted to the GL`)
+    setIssueTarget(null)
+    fetchRows()
+  }
+
+  async function voidRow(row: DebitNote) {
+    if (!confirm(`Void ${row.debitNoteNumber}? ${row.status === 'ISSUED' ? 'This reverses its GL posting.' : ''}`)) return
+    const res = await fetch(`/api/finance/debit-notes/${row.id}?action=void`, { method: 'PUT' })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error); return }
+    toast.success('Debit note voided')
+    fetchRows()
+  }
+
+  return (
+    <div>
+      <PageHeader
+        title="Debit Notes"
+        description="Reduce the amount owed to a supplier for returns or overcharges"
+        action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Debit Note</Button>}
+      />
+
+      <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
+        {loading ? (
+          <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
+        ) : rows.length === 0 ? (
+          <div className="py-16"><EmptyState icon={DocumentRegular} title="No debit notes found" description="Create your first debit note" /></div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm min-w-[800px]">
+              <thead className="bg-muted/50 border-b border-border">
+                <tr>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Debit Note #</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Supplier</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Issue Date</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Reason</th>
+                  <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Total</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                  <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {rows.map((row) => (
+                  <tr key={row.id} className="hover:bg-muted/50">
+                    <td className="px-4 py-3 font-mono text-xs text-primary font-semibold">{row.debitNoteNumber}</td>
+                    <td className="px-4 py-3 font-medium text-foreground">{row.supplier?.name}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{formatDate(new Date(row.issueDate))}</td>
+                    <td className="px-4 py-3 text-muted-foreground truncate max-w-[200px]">{row.reason}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(Number(row.totalAmount))}</td>
+                    <td className="px-4 py-3"><StatusBadge status={row.status} /></td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        {row.status === 'DRAFT' && (
+                          <button type="button" onClick={() => openIssue(row)} className="p-1 rounded hover:bg-green-50 text-brand-muted-light hover:text-green-600" title="Issue" aria-label="Issue debit note">
+                            <CheckmarkCircleRegular className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                        {row.status !== 'VOID' && (
+                          <button type="button" onClick={() => voidRow(row)} className="p-1 rounded hover:bg-red-50 text-brand-muted-light hover:text-red-500" title="Void" aria-label="Void debit note">
+                            <ProhibitedRegular className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>New Debit Note</DialogTitle></DialogHeader>
+          <form onSubmit={handleSubmit(onCreate)} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Supplier *</Label>
+                <Controller control={control} name="supplierId" render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
+                    <SelectContent>{suppliers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
+                  </Select>
+                )} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Issue Date *</Label>
+                <Input type="date" {...register('issueDate', { required: true })} />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label>Reason *</Label>
+                <Textarea placeholder="Why is this debit note being issued?" {...register('reason', { required: true })} />
+              </div>
+            </div>
+
+            <div>
+              <div className="grid grid-cols-12 gap-2 mb-1 text-xs font-medium text-muted-foreground px-1">
+                <div className="col-span-5">Description</div>
+                <div className="col-span-2 text-right">Qty</div>
+                <div className="col-span-2 text-right">Unit Price</div>
+                <div className="col-span-2 text-right">Tax %</div>
+                <div className="col-span-1" />
+              </div>
+              <div className="space-y-2">
+                {fields.map((field, index) => (
+                  <div key={field.id} className="grid grid-cols-12 gap-2 items-center">
+                    <div className="col-span-5"><Input className="h-8 text-xs" placeholder="Item description" {...register(`lineItems.${index}.description`)} /></div>
+                    <div className="col-span-2"><Input className="h-8 text-xs text-right" type="number" step="1" min="0" {...register(`lineItems.${index}.quantity`)} /></div>
+                    <div className="col-span-2"><Input className="h-8 text-xs text-right" type="number" step="0.01" min="0" {...register(`lineItems.${index}.unitPrice`)} /></div>
+                    <div className="col-span-2"><Input className="h-8 text-xs text-right" type="number" step="0.01" min="0" max="100" {...register(`lineItems.${index}.taxRate`)} /></div>
+                    <div className="col-span-1 flex justify-center">
+                      <button type="button" onClick={() => remove(index)} disabled={fields.length <= 1} className="p-1 rounded hover:bg-red-50 text-brand-muted-light hover:text-red-400 disabled:opacity-30" aria-label="Remove line">
+                        <DeleteRegular className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button type="button" onClick={() => append(blankLine())} className="mt-2 flex items-center gap-1 text-xs text-primary hover:underline font-medium">
+                <AddRegular className="h-3 w-3" /> Add Line
+              </button>
+            </div>
+
+            <div className="rounded-lg bg-muted/50 border border-border p-3 text-sm space-y-1 text-right">
+              <div className="text-muted-foreground">Sub-total: <strong>{formatCurrency(totals.subtotal)}</strong></div>
+              <div className="text-muted-foreground">Tax: <strong>{formatCurrency(totals.taxAmount)}</strong></div>
+              <div className="text-foreground font-bold text-base">Total: {formatCurrency(totals.totalAmount)}</div>
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Creating…' : 'Save as Draft'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!issueTarget} onOpenChange={(open) => !open && setIssueTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Issue {issueTarget?.debitNoteNumber}</DialogTitle></DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">Issuing posts this debit note to the general ledger and reduces the amount owed to the supplier. Choose the expense account to credit.</p>
+            <div className="space-y-1.5">
+              <Label>Expense Account *</Label>
+              <Select onValueChange={setIssueAccountId} value={issueAccountId}>
+                <SelectTrigger><SelectValue placeholder="Select expense account" /></SelectTrigger>
+                <SelectContent>{expenseAccounts.map((a) => <SelectItem key={a.id} value={a.id}>{a.account_code} — {a.account_name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIssueTarget(null)}>Cancel</Button>
+              <Button type="button" onClick={confirmIssue} className="bg-primary hover:bg-brand-red-dark text-white">Issue Debit Note</Button>
+            </DialogFooter>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}

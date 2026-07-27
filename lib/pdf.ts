@@ -125,6 +125,25 @@ export async function exportReportPdf(
     const data = reportData
     const rows = (data.rows || []).map((r: any) => [formatDate(r.createdAt), r.userName ?? '', r.module ?? '', r.action ?? '', r.recordId ?? ''])
     lastY = drawTable(ctx, { headers: ['Date', 'User', 'Module', 'Action', 'Record'], rows, colWidths: [30, 35, 30, 25, 55], aligns: ['left', 'left', 'left', 'left', 'left'], startY: lastY, pageTitle: title })
+  } else if (reportType === 'statement-of-account') {
+    const data = reportData
+    doc.setFont('Helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(30, 41, 59)
+    doc.text(data.partyName ?? '', margin, lastY)
+    lastY += 6
+    const rows = (data.lines || []).map((l: any) => [formatDate(l.date), l.type, l.reference ?? '', l.description ?? '', l.charge > 0 ? formatCurrency(l.charge) : '—', l.payment > 0 ? formatCurrency(l.payment) : '—', formatCurrency(l.runningBalance)])
+    rows.unshift(['', '', '', 'Opening Balance', '', '', formatCurrency(data.openingBalance)])
+    rows.push(['', '', '', 'Closing Balance', '', '', formatCurrency(data.closingBalance)])
+    lastY = drawTable(ctx, { headers: ['Date', 'Type', 'Ref', 'Description', 'Charge', 'Payment', 'Balance'], rows, colWidths: [22, 20, 25, 48, 22, 22, 26], aligns: ['left', 'left', 'left', 'left', 'right', 'right', 'right'], startY: lastY, pageTitle: title })
+  } else if (reportType === 'user-activity') {
+    const data = reportData
+    for (const user of (data.users || [])) {
+      doc.setFont('Helvetica', 'bold'); doc.setFontSize(10); doc.setTextColor(30, 41, 59)
+      doc.text(`${user.userName} — ${user.totalActions} action(s), ${user.loginCount} login(s)`, margin, lastY)
+      lastY += 3
+      const rows = (user.byModule || []).map((m: any) => [m.module, String(m.count)])
+      lastY = drawTable(ctx, { headers: ['Module', 'Actions'], rows, colWidths: [140, 40], aligns: ['left', 'right'], startY: lastY, pageTitle: title })
+      lastY += 8
+    }
   }
 
   finalizeBrandedDoc(ctx, company, { generatedBy: options.generatedBy })
@@ -291,7 +310,7 @@ export async function exportDocumentPdf(
 }
 
 export async function exportHrReportPdf(
-  type: 'payslip' | 'inventory' | 'assets' | 'leave-approval',
+  type: 'payslip' | 'inventory' | 'assets' | 'leave-approval' | 'overtime-approval' | 'expense-claim' | 'risk-assessment' | 'site-inspection',
   data: any,
   company: PdfCompany
 ) {
@@ -300,6 +319,10 @@ export async function exportHrReportPdf(
     inventory: 'INVENTORY REPORT',
     assets: 'FIXED ASSETS REPORT',
     'leave-approval': 'LEAVE APPROVAL FORM',
+    'overtime-approval': 'OVERTIME APPROVAL FORM',
+    'expense-claim': 'EXPENSE CLAIM FORM',
+    'risk-assessment': 'RISK ASSESSMENT REPORT',
+    'site-inspection': 'SECURITY SITE INSPECTION REPORT',
   }
   const ctx = await startBrandedDoc(company, titles[type])
   const { doc, margin, pageWidth } = ctx
@@ -376,6 +399,127 @@ export async function exportHrReportPdf(
     await addSignatureBlock(ctx, company, y)
     finalizeBrandedDoc(ctx, company, {})
     doc.save(`leave-approval-${data.guard?.employeeNumber || data.id}.pdf`)
+    return
+  }
+
+  if (type === 'overtime-approval') {
+    doc.setFont('Helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 41, 59)
+    const rows: [string, string][] = [
+      ['Employee', data.guard?.name || '—'],
+      ['Date', data.date ? formatDate(data.date) : '—'],
+      ['Hours Requested', String(data.hoursRequested ?? '—')],
+      ['Reason', data.reason || '—'],
+      ['Status', data.status || '—'],
+      ['Approved By', data.approvedByName || '—'],
+    ]
+    rows.forEach(([label, value]) => {
+      doc.setFont('Helvetica', 'bold'); doc.setTextColor(71, 85, 105)
+      doc.text(`${label}:`, margin, y)
+      doc.setFont('Helvetica', 'normal'); doc.setTextColor(15, 23, 42)
+      doc.text(String(value), margin + 45, y)
+      y += 7
+    })
+    y += 10
+    await addSignatureBlock(ctx, company, y)
+    finalizeBrandedDoc(ctx, company, {})
+    doc.save(`overtime-approval-${data.id}.pdf`)
+    return
+  }
+
+  if (type === 'expense-claim') {
+    doc.setFont('Helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 41, 59)
+    const rows: [string, string][] = [
+      ['Claim #', data.claimNumber || '—'],
+      ['Submitted By', data.submittedBy?.name || '—'],
+      ['Category', data.category || '—'],
+      ['Expense Date', data.expenseDate ? formatDate(data.expenseDate) : '—'],
+      ['Amount', formatCurrency(Number(data.amount ?? 0), data.currency)],
+      ['Description', data.description || '—'],
+      ['Status', data.status || '—'],
+    ]
+    rows.forEach(([label, value]) => {
+      doc.setFont('Helvetica', 'bold'); doc.setTextColor(71, 85, 105)
+      doc.text(`${label}:`, margin, y)
+      doc.setFont('Helvetica', 'normal'); doc.setTextColor(15, 23, 42)
+      doc.text(String(value), margin + 45, y)
+      y += 7
+    })
+    y += 10
+    await addSignatureBlock(ctx, company, y)
+    finalizeBrandedDoc(ctx, company, {})
+    doc.save(`expense-claim-${data.claimNumber || data.id}.pdf`)
+    return
+  }
+
+  if (type === 'risk-assessment') {
+    doc.setFont('Helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 41, 59)
+    const rows: [string, string][] = [
+      ['Site', data.site?.name || '—'],
+      ['Assessed By', data.assessedBy || '—'],
+      ['Assessed At', data.assessedAt ? formatDate(data.assessedAt) : '—'],
+      ['Category', data.category || '—'],
+      ['Likelihood', data.likelihood || '—'],
+      ['Impact', data.impact || '—'],
+      ['Risk Rating', data.riskRating || '—'],
+      ['Review Date', data.reviewDate ? formatDate(data.reviewDate) : '—'],
+      ['Status', data.status || '—'],
+    ]
+    rows.forEach(([label, value]) => {
+      doc.setFont('Helvetica', 'bold'); doc.setTextColor(71, 85, 105)
+      doc.text(`${label}:`, margin, y)
+      doc.setFont('Helvetica', 'normal'); doc.setTextColor(15, 23, 42)
+      doc.text(String(value), margin + 45, y)
+      y += 7
+    })
+    y += 4
+    doc.setFont('Helvetica', 'bold'); doc.setTextColor(71, 85, 105); doc.text('Findings:', margin, y); y += 6
+    doc.setFont('Helvetica', 'normal'); doc.setTextColor(15, 23, 42)
+    y = doc.splitTextToSize(data.findings || '—', pageWidth - margin * 2).reduce((yy: number, line: string) => { doc.text(line, margin, yy); return yy + 5 }, y)
+    y += 4
+    doc.setFont('Helvetica', 'bold'); doc.setTextColor(71, 85, 105); doc.text('Mitigation Plan:', margin, y); y += 6
+    doc.setFont('Helvetica', 'normal'); doc.setTextColor(15, 23, 42)
+    y = doc.splitTextToSize(data.mitigationPlan || '—', pageWidth - margin * 2).reduce((yy: number, line: string) => { doc.text(line, margin, yy); return yy + 5 }, y)
+    y += 10
+    await addSignatureBlock(ctx, company, y)
+    finalizeBrandedDoc(ctx, company, {})
+    doc.save(`risk-assessment-${data.id}.pdf`)
+    return
+  }
+
+  if (type === 'site-inspection') {
+    doc.setFont('Helvetica', 'normal'); doc.setFontSize(10); doc.setTextColor(30, 41, 59)
+    const rows: [string, string][] = [
+      ['Site', data.site?.name || '—'],
+      ['Inspected By', data.inspectedBy || '—'],
+      ['Inspected At', data.inspectedAt ? formatDate(data.inspectedAt) : '—'],
+      ['Overall Rating', data.overallRating || '—'],
+      ['Status', data.status || '—'],
+    ]
+    rows.forEach(([label, value]) => {
+      doc.setFont('Helvetica', 'bold'); doc.setTextColor(71, 85, 105)
+      doc.text(`${label}:`, margin, y)
+      doc.setFont('Helvetica', 'normal'); doc.setTextColor(15, 23, 42)
+      doc.text(String(value), margin + 45, y)
+      y += 7
+    })
+    y += 4
+    const checklist: { item: string; pass: boolean; note?: string }[] = Array.isArray(data.checklist) ? data.checklist : JSON.parse(data.checklist || '[]')
+    const checklistRows = checklist.map((c) => ['', c.item, c.pass ? 'Pass' : 'Fail', c.note || ''])
+    y = drawTable(ctx, { headers: ['', 'Checklist Item', 'Result', 'Note'], rows: checklistRows, colWidths: [6, 60, 20, 84], aligns: ['left', 'left', 'left', 'left'], startY: y, pageTitle: titles[type] })
+    y += 8
+    doc.setFont('Helvetica', 'bold'); doc.setTextColor(71, 85, 105); doc.text('Findings:', margin, y); y += 6
+    doc.setFont('Helvetica', 'normal'); doc.setTextColor(15, 23, 42)
+    y = doc.splitTextToSize(data.findings || '—', pageWidth - margin * 2).reduce((yy: number, line: string) => { doc.text(line, margin, yy); return yy + 5 }, y)
+    if (data.correctiveActions) {
+      y += 4
+      doc.setFont('Helvetica', 'bold'); doc.setTextColor(71, 85, 105); doc.text('Corrective Actions:', margin, y); y += 6
+      doc.setFont('Helvetica', 'normal'); doc.setTextColor(15, 23, 42)
+      y = doc.splitTextToSize(data.correctiveActions, pageWidth - margin * 2).reduce((yy: number, line: string) => { doc.text(line, margin, yy); return yy + 5 }, y)
+    }
+    y += 10
+    await addSignatureBlock(ctx, company, y)
+    finalizeBrandedDoc(ctx, company, {})
+    doc.save(`site-inspection-${data.id}.pdf`)
     return
   }
 

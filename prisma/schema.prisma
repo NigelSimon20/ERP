@@ -82,6 +82,18 @@ model Company {
   nextSiteNumber           Int?     @default(1) @map("next_site_number")
   employeeCodePrefix       String?  @map("employee_code_prefix")
   nextEmployeeNumber       Int?     @default(1) @map("next_employee_number")
+  proformaPrefix           String?  @map("proforma_prefix")
+  nextProformaNumber       Int?     @default(1) @map("next_proforma_number")
+  creditNotePrefix         String?  @map("credit_note_prefix")
+  nextCreditNoteNumber     Int?     @default(1) @map("next_credit_note_number")
+  debitNotePrefix          String?  @map("debit_note_prefix")
+  nextDebitNoteNumber      Int?     @default(1) @map("next_debit_note_number")
+  poPrefix                 String?  @map("po_prefix")
+  nextPoNumber             Int?     @default(1) @map("next_po_number")
+  grnPrefix                String?  @map("grn_prefix")
+  nextGrnNumber            Int?     @default(1) @map("next_grn_number")
+  expenseClaimPrefix       String?  @map("expense_claim_prefix")
+  nextExpenseClaimNumber   Int?     @default(1) @map("next_expense_claim_number")
   vatAccountId             String?  @map("vat_account_id")
   receivablesAccountId     String?  @map("receivables_account_id")
   payablesAccountId        String?  @map("payables_account_id")
@@ -127,6 +139,15 @@ model Company {
   deployments              Deployment[]
   patrols                  Patrol[]
   coverageRequests         CoverageRequest[]
+  proformaInvoices         ProformaInvoice[]
+  creditNotes              CreditNote[]
+  debitNotes               DebitNote[]
+  purchaseOrders           PurchaseOrder[]
+  goodsReceivedNotes       GoodsReceivedNote[]
+  overtimeRequests         OvertimeRequest[]
+  expenseClaims            ExpenseClaim[]
+  riskAssessments          RiskAssessment[]
+  siteInspections          SiteInspection[]
 
   // Banking details
   bankName                 String?  @map("bank_name")
@@ -212,6 +233,8 @@ model Customer {
   created_by            String?
   is_sample             Boolean?
   user                  User?
+  proformaInvoices      ProformaInvoice[]
+  creditNotes           CreditNote[]
 
   @@index([companyId])
   @@map("customers")
@@ -252,6 +275,8 @@ model Supplier {
   created_by           String?
   is_sample            Boolean?
   purchaseInvoices     PurchaseInvoice[]
+  debitNotes           DebitNote[]
+  purchaseOrders       PurchaseOrder[]
 
   @@index([companyId])
   @@map("suppliers")
@@ -318,6 +343,7 @@ model Guard {
   leaveRequests         LeaveRequest[]
   attendances           Attendance[]
   equipmentIssues       EquipmentIssue[]
+  overtimeRequests      OvertimeRequest[]
   user                  User?
 
   @@map("guards")
@@ -792,6 +818,335 @@ model VisitorLog {
   @@index([companyId])
   @@index([siteId])
   @@map("visitor_logs")
+}
+
+// ============================================================
+// SALES-SIDE DOCUMENTS (Proforma / Credit Note / Debit Note)
+// ============================================================
+
+enum ProformaStatus {
+  DRAFT
+  SENT
+  CONVERTED
+  EXPIRED
+  VOID
+}
+
+model ProformaInvoice {
+  id                 String          @id @default(cuid())
+  companyId          String
+  company            Company         @relation(fields: [companyId], references: [id])
+  customerId         String
+  customer           Customer        @relation(fields: [customerId], references: [id])
+  proformaNumber     String          @unique
+  issueDate          DateTime
+  validUntil         DateTime
+  subtotal           Float
+  taxAmount          Float           @default(0)
+  totalAmount        Float
+  status             ProformaStatus  @default(DRAFT)
+  notes              String?         @db.Text
+  convertedInvoiceId String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  lineItems          ProformaInvoiceLine[]
+
+  @@index([companyId])
+  @@index([customerId])
+  @@map("proforma_invoices")
+}
+
+model ProformaInvoiceLine {
+  id                String          @id @default(cuid())
+  proformaInvoiceId String
+  proformaInvoice   ProformaInvoice @relation(fields: [proformaInvoiceId], references: [id])
+  description       String          @db.Text
+  quantity          Float
+  unitPrice         Float
+  taxRate           Float?          @default(0)
+  lineTotal         Float
+
+  @@map("proforma_invoice_lines")
+}
+
+enum CreditNoteStatus {
+  DRAFT
+  ISSUED
+  VOID
+}
+
+model CreditNote {
+  id               String           @id @default(cuid())
+  companyId        String
+  company          Company          @relation(fields: [companyId], references: [id])
+  customerId       String
+  customer         Customer         @relation(fields: [customerId], references: [id])
+  salesInvoiceId   String?
+  creditNoteNumber String           @unique
+  issueDate        DateTime
+  reason           String           @db.Text
+  subtotal         Float
+  taxAmount        Float            @default(0)
+  totalAmount      Float
+  status           CreditNoteStatus @default(DRAFT)
+  journalEntryId   String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  lineItems        CreditNoteLine[]
+
+  @@index([companyId])
+  @@index([customerId])
+  @@map("credit_notes")
+}
+
+model CreditNoteLine {
+  id           String     @id @default(cuid())
+  creditNoteId String
+  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id])
+  description  String     @db.Text
+  quantity     Float
+  unitPrice    Float
+  taxRate      Float?     @default(0)
+  lineTotal    Float
+
+  @@map("credit_note_lines")
+}
+
+enum DebitNoteStatus {
+  DRAFT
+  ISSUED
+  VOID
+}
+
+model DebitNote {
+  id                String          @id @default(cuid())
+  companyId         String
+  company           Company         @relation(fields: [companyId], references: [id])
+  supplierId        String
+  supplier          Supplier        @relation(fields: [supplierId], references: [id])
+  purchaseInvoiceId String?
+  debitNoteNumber   String          @unique
+  issueDate         DateTime
+  reason            String          @db.Text
+  subtotal          Float
+  taxAmount         Float           @default(0)
+  totalAmount       Float
+  status            DebitNoteStatus @default(DRAFT)
+  journalEntryId    String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  lineItems         DebitNoteLine[]
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@map("debit_notes")
+}
+
+model DebitNoteLine {
+  id          String    @id @default(cuid())
+  debitNoteId String
+  debitNote   DebitNote @relation(fields: [debitNoteId], references: [id])
+  description String    @db.Text
+  quantity    Float
+  unitPrice   Float
+  taxRate     Float?    @default(0)
+  lineTotal   Float
+
+  @@map("debit_note_lines")
+}
+
+// ============================================================
+// PROCUREMENT (Purchase Order / Goods Received Note)
+// ============================================================
+
+enum PurchaseOrderStatus {
+  DRAFT
+  SENT
+  APPROVED
+  PARTIALLY_RECEIVED
+  RECEIVED
+  CLOSED
+  CANCELLED
+}
+
+model PurchaseOrder {
+  id           String                @id @default(cuid())
+  companyId    String
+  company      Company               @relation(fields: [companyId], references: [id])
+  supplierId   String
+  supplier     Supplier              @relation(fields: [supplierId], references: [id])
+  poNumber     String                @unique
+  issueDate    DateTime
+  expectedDate DateTime?
+  subtotal     Float
+  taxAmount    Float                 @default(0)
+  totalAmount  Float
+  status       PurchaseOrderStatus   @default(DRAFT)
+  notes        String?               @db.Text
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  lineItems    PurchaseOrderLine[]
+  receipts     GoodsReceivedNote[]
+
+  @@index([companyId])
+  @@index([supplierId])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id               String        @id @default(cuid())
+  purchaseOrderId  String
+  purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  description      String        @db.Text
+  quantity         Float
+  unitPrice        Float
+  taxRate          Float?        @default(0)
+  lineTotal        Float
+  quantityReceived Float         @default(0)
+
+  @@map("purchase_order_lines")
+}
+
+model GoodsReceivedNote {
+  id              String                  @id @default(cuid())
+  companyId       String
+  company         Company                 @relation(fields: [companyId], references: [id])
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder           @relation(fields: [purchaseOrderId], references: [id])
+  grnNumber       String                  @unique
+  receivedBy      String
+  receivedAt      DateTime                @default(now())
+  notes           String?                 @db.Text
+  createdAt       DateTime                @default(now())
+  lineItems       GoodsReceivedNoteLine[]
+
+  @@index([companyId])
+  @@index([purchaseOrderId])
+  @@map("goods_received_notes")
+}
+
+model GoodsReceivedNoteLine {
+  id               String            @id @default(cuid())
+  grnId            String
+  grn              GoodsReceivedNote @relation(fields: [grnId], references: [id])
+  poLineId         String
+  description      String            @db.Text
+  quantityOrdered  Float
+  quantityReceived Float
+  condition        String            @default("GOOD") // GOOD | DAMAGED | SHORT
+
+  @@map("goods_received_note_lines")
+}
+
+// ============================================================
+// HR APPROVAL WORKFLOWS (Overtime / Expense Claims)
+// ============================================================
+
+model OvertimeRequest {
+  id             String      @id @default(cuid())
+  guardId        String
+  guard          Guard       @relation(fields: [guardId], references: [id])
+  companyId      String
+  company        Company     @relation(fields: [companyId], references: [id])
+  date           DateTime
+  hoursRequested Float
+  reason         String?
+  status         LeaveStatus @default(PENDING)
+  approvedBy     String?
+  rejectionNote  String?
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  @@index([guardId])
+  @@index([companyId])
+  @@index([status])
+  @@map("overtime_requests")
+}
+
+enum ExpenseClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+model ExpenseClaim {
+  id            String              @id @default(cuid())
+  companyId     String
+  company       Company             @relation(fields: [companyId], references: [id])
+  userId        String
+  claimNumber   String              @unique
+  category      String
+  amount        Float
+  currency      String              @default("USD")
+  expenseDate   DateTime
+  description   String              @db.Text
+  receiptFileId String?
+  status        ExpenseClaimStatus  @default(PENDING)
+  approvedBy    String?
+  rejectionNote String?
+  paidAt        DateTime?
+  journalEntryId String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([status])
+  @@map("expense_claims")
+}
+
+// ============================================================
+// OPERATIONS NARRATIVE REPORTS (Risk Assessment / Site Inspection)
+// ============================================================
+
+enum ReportStatus {
+  DRAFT
+  FINAL
+  REVIEWED
+}
+
+model RiskAssessment {
+  id             String       @id @default(cuid())
+  companyId      String
+  company        Company      @relation(fields: [companyId], references: [id])
+  siteId         String
+  assessedBy     String
+  assessedAt     DateTime     @default(now())
+  category       String
+  likelihood     Severity
+  impact         Severity
+  riskRating     Severity
+  findings       String       @db.Text
+  mitigationPlan String       @db.Text
+  reviewDate     DateTime?
+  status         ReportStatus @default(DRAFT)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([companyId])
+  @@index([siteId])
+  @@map("risk_assessments")
+}
+
+model SiteInspection {
+  id                String       @id @default(cuid())
+  companyId         String
+  company           Company      @relation(fields: [companyId], references: [id])
+  siteId            String
+  inspectedBy       String
+  inspectedAt       DateTime     @default(now())
+  checklist         String       @db.Text // JSON.stringify'd array of {item, pass, note} -- fixed checklist defined in app code
+  overallRating     Severity
+  findings          String       @db.Text
+  correctiveActions String?      @db.Text
+  status            ReportStatus @default(DRAFT)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([companyId])
+  @@index([siteId])
+  @@map("site_inspections")
 }
 
 // ============================================================
