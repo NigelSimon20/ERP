@@ -12,6 +12,7 @@ export interface PdfCompany {
   phone?: string | null
   email?: string | null
   primaryColor?: string | null
+  secondaryColor?: string | null
   logo?: string | null
   watermark?: string | null
   digitalSignature?: string | null
@@ -201,10 +202,16 @@ export function finalizeBrandedDoc(ctx: BrandedDoc, company: PdfCompany, opts: {
   const { doc, margin, pageWidth, pageHeight } = ctx
   const pageCount = doc.internal.getNumberOfPages()
   const watermarkText = opts.watermark ?? company.watermark ?? null
+  // Mirrors the header's colored bar (startBrandedDoc uses primaryColor) so
+  // the company's own colors bracket every page top and bottom, not just top.
+  const footerRgb = hexToRgb(company.secondaryColor || '#f5f7fa')
 
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i)
     if (watermarkText) addWatermark(ctx, watermarkText)
+
+    doc.setFillColor(footerRgb.r, footerRgb.g, footerRgb.b)
+    doc.rect(0, pageHeight - 3, pageWidth, 3, 'F')
 
     doc.setFont('Helvetica', 'normal')
     doc.setFontSize(8)
