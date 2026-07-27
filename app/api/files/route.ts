@@ -4,8 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
+import { uploadObject } from '@/lib/storage'
 
 const MAX_SIZE = 10 * 1024 * 1024 // 10 MB
 
@@ -82,19 +81,15 @@ export async function POST(req: NextRequest) {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
   const fileName = `${timestamp}-${safeName}`
 
-  // Stored outside public/ so files are only reachable through the
-  // authenticated, company-scoped /api/files/[id]/download route below --
-  // anything under public/ is served by Next.js with no auth check at all.
-  const uploadsRoot = path.join(process.cwd(), 'storage', 'uploads')
-  const uploadDir = path.join(uploadsRoot, companyId, folder)
-  const destPath = path.join(uploadDir, fileName)
-  if (!uploadDir.startsWith(uploadsRoot + path.sep) || !destPath.startsWith(uploadDir + path.sep)) {
-    return NextResponse.json({ error: 'Invalid folder or file name' }, { status: 400 })
-  }
-  await mkdir(uploadDir, { recursive: true })
-  await writeFile(destPath, buffer)
-
+  // Stored in a private Supabase Storage bucket, only reachable through the
+  // authenticated, company-scoped /api/files/[id]/download route below.
   const fileUrl = `${companyId}/${folder}/${fileName}`
+  try {
+    await uploadObject(fileUrl, buffer, file.type)
+  } catch (err) {
+    console.error('File upload failed:', err)
+    return NextResponse.json({ error: 'Upload failed' }, { status: 500 })
+  }
 
   const record = await prisma.fileRecord.create({
     data: {

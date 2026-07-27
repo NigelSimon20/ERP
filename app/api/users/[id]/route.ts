@@ -5,6 +5,11 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 
+const VALID_ROLES = [
+  'SUPER_ADMIN', 'ADMIN', 'FINANCE_MANAGER', 'OPERATIONS_MANAGER',
+  'HR_MANAGER', 'BD_MANAGER', 'STAFF', 'GUARD', 'CLIENT', 'READ_ONLY',
+]
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -34,6 +39,29 @@ export async function PATCH(
       })
       if (superAdminCount <= 1) {
         return NextResponse.json({ error: 'Cannot deactivate the last Super Admin' }, { status: 400 })
+      }
+    }
+
+    if (role !== undefined) {
+      if (!VALID_ROLES.includes(role)) {
+        return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
+      }
+
+      if (id === session.userId) {
+        return NextResponse.json({ error: 'You cannot change your own role' }, { status: 400 })
+      }
+
+      if ((role === 'SUPER_ADMIN' || target.role === 'SUPER_ADMIN') && session.role !== 'SUPER_ADMIN') {
+        return NextResponse.json({ error: 'Only a Super Admin can grant or remove the Super Admin role' }, { status: 403 })
+      }
+
+      if (target.role === 'SUPER_ADMIN' && role !== 'SUPER_ADMIN') {
+        const superAdminCount = await prisma.user.count({
+          where: { companyId: session.companyId, role: 'SUPER_ADMIN', active: true },
+        })
+        if (superAdminCount <= 1) {
+          return NextResponse.json({ error: 'Cannot change the role of the last Super Admin' }, { status: 400 })
+        }
       }
     }
 

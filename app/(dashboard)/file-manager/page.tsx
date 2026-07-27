@@ -50,10 +50,10 @@ function formatBytes(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-function FileIcon({ mimeType, fileUrl, size = 40 }: { mimeType: string; fileUrl: string; size?: number }) {
+function FileIcon({ mimeType, fileId, size = 40 }: { mimeType: string; fileId: string; size?: number }) {
   const imgCls = size <= 20 ? 'w-5 h-5 object-cover rounded' : size <= 36 ? 'w-9 h-9 object-cover rounded' : 'w-10 h-10 object-cover rounded'
   if (mimeType.startsWith('image/')) {
-    return <img src={fileUrl} alt="" className={imgCls} />
+    return <img src={`/api/files/${fileId}/download`} alt="" className={imgCls} />
   }
   if (mimeType === 'application/pdf') return <DocumentPdfRegular fontSize={size} className="text-red-500" />
   if (mimeType.includes('wordprocessingml')) return <DocumentRegular fontSize={size} className="text-blue-500" />
@@ -283,13 +283,13 @@ export default function FileManagerPage() {
               {filteredFiles.map(file => (
                 <div key={file.id} className="relative group rounded-lg border border-border bg-card p-3 hover:shadow-md transition-shadow flex flex-col gap-2">
                   <div className="flex items-center justify-center h-12">
-                    <FileIcon mimeType={file.mimeType} fileUrl={file.fileUrl} size={36} />
+                    <FileIcon mimeType={file.mimeType} fileId={file.id} size={36} />
                   </div>
                   <p className="text-xs font-medium text-foreground truncate text-center" title={file.originalName}>{file.originalName}</p>
                   <p className="text-xs text-brand-muted-light text-center">{formatBytes(file.fileSize)}</p>
                   {/* Actions */}
                   <div className="absolute top-1.5 right-1.5 hidden group-hover:flex items-center gap-0.5 bg-card border border-border rounded-md shadow-sm">
-                    <a href={file.fileUrl} download={file.originalName} className="p-1 hover:bg-muted/50 rounded-l-md" aria-label="Download"><ArrowDownloadRegular className="h-3 w-3 text-muted-foreground" /></a>
+                    <a href={`/api/files/${file.id}/download`} download={file.originalName} className="p-1 hover:bg-muted/50 rounded-l-md" aria-label="Download"><ArrowDownloadRegular className="h-3 w-3 text-muted-foreground" /></a>
                     <button type="button" onClick={() => { setLinkTarget(file); setLinkModule(''); setLinkSearch('') }} className="p-1 hover:bg-muted/50" aria-label="Link to record"><LinkRegular className="h-3 w-3 text-muted-foreground" /></button>
                     <button type="button" onClick={() => setDeleteTarget(file)} className="p-1 hover:bg-red-50 rounded-r-md" aria-label="Delete"><DeleteRegular className="h-3 w-3 text-red-400" /></button>
                   </div>
@@ -315,7 +315,7 @@ export default function FileManagerPage() {
                   <tr key={file.id} className="hover:bg-muted/50">
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-2">
-                        <FileIcon mimeType={file.mimeType} fileUrl={file.fileUrl} size={18} />
+                        <FileIcon mimeType={file.mimeType} fileId={file.id} size={18} />
                         <span className="text-xs font-medium text-foreground max-w-[160px] truncate" title={file.originalName}>{file.originalName}</span>
                       </div>
                     </td>
@@ -329,7 +329,7 @@ export default function FileManagerPage() {
                     <td className="px-3 py-2.5 text-xs text-brand-muted-light">{formatDate(file.createdAt)}</td>
                     <td className="px-3 py-2.5">
                       <div className="flex items-center gap-1">
-                        <a href={file.fileUrl} download={file.originalName} className="p-1 rounded hover:bg-muted" aria-label="Download"><ArrowDownloadRegular className="h-3.5 w-3.5 text-brand-muted-light" /></a>
+                        <a href={`/api/files/${file.id}/download`} download={file.originalName} className="p-1 rounded hover:bg-muted" aria-label="Download"><ArrowDownloadRegular className="h-3.5 w-3.5 text-brand-muted-light" /></a>
                         <button type="button" onClick={() => { setLinkTarget(file); setLinkModule(''); setLinkSearch('') }} className="p-1 rounded hover:bg-muted" aria-label="Link"><LinkRegular className="h-3.5 w-3.5 text-brand-muted-light" /></button>
                         <button type="button" onClick={() => setDeleteTarget(file)} className="p-1 rounded hover:bg-red-50" aria-label="Delete"><DeleteRegular className="h-3.5 w-3.5 text-red-400" /></button>
                       </div>

@@ -262,7 +262,7 @@ async function importEmployees(employees: any[], companyId: string) {
           basic_salary: mapField(emp.basic_salary, 'Decimal'),
           bank_account_number: emp.bank_account,
           bank_name: emp.bank_name,
-          status: emp.status === 'active' ? 'ACTIVE' : 'INACTIVE',
+          status: emp.status === 'active' ? 'Active' : 'Terminated',
         },
         create: {
           id: emp.id || generateId(),
@@ -278,7 +278,7 @@ async function importEmployees(employees: any[], companyId: string) {
           basic_salary: mapField(emp.basic_salary, 'Decimal'),
           bank_account_number: emp.bank_account,
           bank_name: emp.bank_name,
-          status: emp.status === 'active' ? 'ACTIVE' : 'INACTIVE',
+          status: emp.status === 'active' ? 'Active' : 'Terminated',
         },
       })
       imported++

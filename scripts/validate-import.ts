@@ -189,7 +189,7 @@ async function validateOperationalData() {
     const guards = await prisma.guard.findMany()
     console.log(`✅ Total Guards: ${guards.length}`)
 
-    const activeGuards = guards.filter((g) => g.status === 'ACTIVE').length
+    const activeGuards = guards.filter((g) => g.status === 'Active').length
     console.log(`✅ Active Guards: ${activeGuards}`)
 
     // Check sites

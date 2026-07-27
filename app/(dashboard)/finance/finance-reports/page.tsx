@@ -9,11 +9,13 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { ArrowDownloadRegular, DataBarVerticalRegular } from '@fluentui/react-icons';
 
-type ReportType = 'income-statement' | 'balance-sheet' | 'trial-balance' | 'aged-receivables' | 'aged-payables'
+type ReportType = 'income-statement' | 'balance-sheet' | 'cash-flow' | 'general-ledger' | 'trial-balance' | 'aged-receivables' | 'aged-payables'
 
 const REPORT_TABS: { key: ReportType; label: string }[] = [
   { key: 'income-statement', label: 'Income Statement' },
   { key: 'balance-sheet', label: 'Balance Sheet' },
+  { key: 'cash-flow', label: 'Cash Flow' },
+  { key: 'general-ledger', label: 'General Ledger' },
   { key: 'trial-balance', label: 'Trial Balance' },
   { key: 'aged-receivables', label: 'Aged Receivables' },
   { key: 'aged-payables', label: 'Aged Payables' },
@@ -45,7 +47,14 @@ interface AgedRow { current: number; days1_30: number; days31_60: number; days61
 interface AgedReceivables { rows: ({ customer: string } & AgedRow)[]; totals: AgedRow }
 interface AgedPayables { rows: ({ supplier: string } & AgedRow)[]; totals: AgedRow }
 
-type ReportData = IncomeStatement | BalanceSheet | TrialBalance | AgedReceivables | AgedPayables
+interface CashFlowSection { lines: { label: string; amount: number }[]; total: number }
+interface CashFlow { operating: CashFlowSection; investing: CashFlowSection; financing: CashFlowSection; netChange: number; openingCash: number; closingCash: number }
+
+interface GeneralLedgerLine { date: string; reference: string; description: string; debit: number; credit: number; runningBalance: number }
+interface GeneralLedgerAccount { accountId: string; accountCode: string | null; accountName: string | null; openingBalance: number; closingBalance: number; lines: GeneralLedgerLine[] }
+interface GeneralLedger { accounts: GeneralLedgerAccount[] }
+
+type ReportData = IncomeStatement | BalanceSheet | TrialBalance | AgedReceivables | AgedPayables | CashFlow | GeneralLedger
 
 function AgingHeader() {
   return (
@@ -143,6 +152,8 @@ export default function FinanceReportsPage() {
 
   const isIncome = (d: ReportData): d is IncomeStatement => 'revenueRows' in d
   const isBalance = (d: ReportData): d is BalanceSheet => 'assets' in d && 'balanced' in d
+  const isCashFlow = (d: ReportData): d is CashFlow => 'operating' in d && 'netChange' in d
+  const isGeneralLedger = (d: ReportData): d is GeneralLedger => 'accounts' in d
   const isTrial = (d: ReportData): d is TrialBalance => 'grandDebit' in d
   const isReceivables = (): boolean => activeTab === 'aged-receivables'
   const isPayables = (): boolean => activeTab === 'aged-payables'
@@ -318,6 +329,84 @@ export default function FinanceReportsPage() {
                 </span>
               </div>
             </>
+          )}
+
+          {/* Cash Flow */}
+          {isCashFlow(report) && (
+            <>
+              {([['operating', 'Cash Flow from Operating Activities'], ['investing', 'Cash Flow from Investing Activities'], ['financing', 'Cash Flow from Financing Activities']] as const).map(([key, title]) => {
+                const section = report[key]
+                return (
+                  <Section key={key} title={title}>
+                    <table className="w-full text-sm">
+                      <tbody>
+                        {section.lines.map((l, i) => (
+                          <tr key={i} className="border-t border-border hover:bg-muted/50">
+                            <td className="px-3 py-2.5 text-foreground">{l.label}</td>
+                            <td className={`px-3 py-2.5 text-right font-medium ${l.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(l.amount)}</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t-2 border-border bg-muted/50">
+                          <td className="px-3 py-2.5 font-bold text-foreground">Net {title.replace('Cash Flow from ', '')}</td>
+                          <td className={`px-3 py-2.5 text-right font-bold ${section.total >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(section.total)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </Section>
+                )
+              })}
+              <div className="rounded-lg border border-border bg-card p-4 space-y-1.5 text-sm">
+                <div className="flex justify-between"><span className="text-muted-foreground">Opening Cash</span><span className="font-medium">{formatCurrency(report.openingCash)}</span></div>
+                <div className="flex justify-between"><span className="text-muted-foreground">Net Change in Cash</span><span className={`font-medium ${report.netChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatCurrency(report.netChange)}</span></div>
+                <div className="flex justify-between border-t border-border pt-1.5"><span className="font-bold text-foreground">Closing Cash</span><span className="font-bold text-foreground">{formatCurrency(report.closingCash)}</span></div>
+              </div>
+            </>
+          )}
+
+          {/* General Ledger */}
+          {isGeneralLedger(report) && (
+            report.accounts.length === 0 ? (
+              <p className="text-sm text-brand-muted-light text-center py-8">No posted activity for this period</p>
+            ) : (
+              <>
+                {report.accounts.map((acc) => (
+                  <Section key={acc.accountId} title={`${acc.accountCode ?? ''} — ${acc.accountName ?? ''}`}>
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 border-b border-border">
+                        <tr>
+                          <th className="text-left px-3 py-2 font-medium text-muted-foreground">Date</th>
+                          <th className="text-left px-3 py-2 font-medium text-muted-foreground">Reference</th>
+                          <th className="text-left px-3 py-2 font-medium text-muted-foreground">Description</th>
+                          <th className="text-right px-3 py-2 font-medium text-muted-foreground">Debit</th>
+                          <th className="text-right px-3 py-2 font-medium text-muted-foreground">Credit</th>
+                          <th className="text-right px-3 py-2 font-medium text-muted-foreground">Balance</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr className="border-t border-border bg-muted/30">
+                          <td colSpan={5} className="px-3 py-2 text-muted-foreground italic">Opening Balance</td>
+                          <td className="px-3 py-2 text-right font-medium">{formatCurrency(acc.openingBalance)}</td>
+                        </tr>
+                        {acc.lines.map((l, i) => (
+                          <tr key={i} className="border-t border-border hover:bg-muted/50">
+                            <td className="px-3 py-2.5 text-muted-foreground text-xs">{formatDate(l.date)}</td>
+                            <td className="px-3 py-2.5 text-muted-foreground text-xs">{l.reference}</td>
+                            <td className="px-3 py-2.5 text-foreground">{l.description}</td>
+                            <td className="px-3 py-2.5 text-right">{l.debit > 0 ? formatCurrency(l.debit) : '—'}</td>
+                            <td className="px-3 py-2.5 text-right">{l.credit > 0 ? formatCurrency(l.credit) : '—'}</td>
+                            <td className="px-3 py-2.5 text-right font-medium">{formatCurrency(l.runningBalance)}</td>
+                          </tr>
+                        ))}
+                        <tr className="border-t-2 border-border bg-muted/50">
+                          <td colSpan={5} className="px-3 py-2.5 font-bold text-foreground">Closing Balance</td>
+                          <td className="px-3 py-2.5 text-right font-bold">{formatCurrency(acc.closingBalance)}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </Section>
+                ))}
+              </>
+            )
           )}
 
           {/* Trial Balance */}

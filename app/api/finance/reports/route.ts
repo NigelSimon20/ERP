@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma'
 import { DB_STATUS_OUTSTANDING } from '@/lib/invoice-status'
 import { convertToReportingCurrency } from '@/lib/currency'
 import { computeBalanceSheet, computeTrialBalance } from '@/lib/balance-sheet'
+import { computeCashFlow } from '@/lib/cash-flow'
+import { computeGeneralLedger } from '@/lib/general-ledger'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -67,6 +69,19 @@ export async function GET(req: NextRequest) {
     const asAtDate = asAt ? new Date(asAt) : new Date()
     const bs = await computeBalanceSheet(prisma, companyId, asAtDate)
     return NextResponse.json({ type, asAt: bs.asAt, rows: bs.rows, assets: bs.assets, liabilities: bs.liabilities, equity: bs.equity, balanced: bs.balanced })
+  }
+
+  if (type === 'cash-flow') {
+    if (!from || !to) return NextResponse.json({ error: 'from and to required' }, { status: 400 })
+    const { from: cfFrom, to: cfTo, ...cf } = await computeCashFlow(prisma, companyId, new Date(from), new Date(to))
+    return NextResponse.json({ type, from, to, ...cf })
+  }
+
+  if (type === 'general-ledger') {
+    if (!from || !to) return NextResponse.json({ error: 'from and to required' }, { status: 400 })
+    const accountId = searchParams.get('accountId') || undefined
+    const gl = await computeGeneralLedger(prisma, companyId, new Date(from), new Date(to), accountId)
+    return NextResponse.json({ type, from, to, accounts: gl.accounts })
   }
 
   if (type === 'trial-balance') {
@@ -138,5 +153,5 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ type, rows, totals })
   }
 
-  return NextResponse.json({ error: 'Invalid report type. Use: income-statement, balance-sheet, trial-balance, aged-receivables, aged-payables' }, { status: 400 })
+  return NextResponse.json({ error: 'Invalid report type. Use: income-statement, balance-sheet, cash-flow, general-ledger, trial-balance, aged-receivables, aged-payables' }, { status: 400 })
 }

@@ -54,7 +54,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const body = await req.json()
   const { issueDate, dueDate, description, notes, lineItems } = body
 
-  const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { showVat: true, taxInclusive: true } })
+  const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { showVat: true, taxInclusive: true, payablesAccountId: true } })
   const taxEnabled = company?.showVat ?? true
   const taxInclusive = company?.taxInclusive ?? false
 
@@ -64,6 +64,21 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return { ...l, taxRate, ...lineTotal }
   })
   const totals = lines ? calculateInvoiceTotals(lines, 0, taxInclusive) : null
+
+  // Resolved up front (not inside the transaction) so a missing mapping
+  // returns a clean 400 instead of an uncaught rejection -- this route has
+  // no surrounding try/catch.
+  let apAccountId: string | null = null
+  if (lines && totals && invoice.journalEntryId) {
+    if (!company?.payablesAccountId) {
+      return NextResponse.json({ error: 'Accounts Payable account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
+    }
+    const apAccount = await prisma.chartOfAccount.findFirst({ where: { id: company.payablesAccountId, companyId: session.companyId } })
+    if (!apAccount) {
+      return NextResponse.json({ error: 'The configured Accounts Payable account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
+    }
+    apAccountId = apAccount.id
+  }
 
   const updated = await prisma.$transaction(async (tx) => {
     if (lines && totals) {
@@ -80,19 +95,18 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       // The GL entry was posted for the old total — reverse it and post a
       // fresh one for the new total (same accounts), or it silently goes
       // stale the moment the invoice is edited.
-      if (invoice.journalEntryId) {
+      if (invoice.journalEntryId && apAccountId) {
         const oldLines = await tx.journalLine.findMany({ where: { journalEntryId: invoice.journalEntryId } })
-        const apAccount = await tx.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'LIABILITY', account_name: { contains: 'Accounts Payable' } } })
-        const expenseLine = oldLines.find((l) => apAccount ? l.accountId !== apAccount.id : Number(l.debit) > 0)
+        const expenseLine = oldLines.find((l) => l.accountId !== apAccountId)
         await reverseJournalEntry(tx, invoice.journalEntryId)
-        if (apAccount && expenseLine) {
+        if (expenseLine) {
           await postPurchaseInvoiceToGL(tx, {
             companyId: session.companyId,
             invoiceId: params.id,
             invoiceNumber: invoice.invoiceNumber,
             entryDate: new Date(issueDate ?? invoice.issueDate).toISOString(),
             totalAmount: newTotal,
-            payableAccountId: apAccount.id,
+            payableAccountId: apAccountId,
             expenseAccountId: expenseLine.accountId,
             userId: session.userId,
           })

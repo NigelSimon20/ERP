@@ -12,7 +12,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, CalendarLtrRegular, CheckmarkCircleRegular, DismissCircleRegular } from '@fluentui/react-icons';
+import { AddRegular, ArrowDownloadRegular, CalendarLtrRegular, CheckmarkCircleRegular, DismissCircleRegular } from '@fluentui/react-icons';
 
 interface LeaveRequest { id: string; leaveType: string; startDate: string; endDate: string | null; days: number; reason: string | null; status: string; rejectionNote: string | null; createdAt: string; guard: { id: string; name: string; employeeNumber: string }; approvedByUser: { name: string } | null }
 interface Guard { id: string; name: string; employeeNumber: string }
@@ -93,6 +93,27 @@ export default function LeaveManagementPage() {
     toast.success('Leave request rejected'); setRejectTarget(null); fetchRequests()
   }
 
+  async function printApproval(req: LeaveRequest) {
+    try {
+      const { exportHrReportPdf } = await import('@/lib/pdf')
+      const settingsRes = await fetch('/api/settings')
+      const company = settingsRes.ok ? (await settingsRes.json()).company ?? {} : {}
+      await exportHrReportPdf('leave-approval', {
+        id: req.id,
+        guard: { name: req.guard?.name, employeeNumber: req.guard?.employeeNumber },
+        leaveType: req.leaveType,
+        startDate: req.startDate,
+        endDate: req.endDate,
+        days: req.days,
+        reason: req.reason,
+        status: req.status,
+        approvedByName: req.approvedByUser?.name,
+      }, company)
+    } catch {
+      toast.error('Failed to export PDF')
+    }
+  }
+
   return (
     <div>
       <PageHeader title="Leave Management" description="Manage guard leave and time-off requests" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} />
@@ -149,6 +170,11 @@ export default function LeaveManagementPage() {
                           <DismissCircleRegular className="h-4 w-4" />
                         </button>
                       </div>
+                    )}
+                    {req.status === 'APPROVED' && (
+                      <button type="button" onClick={() => printApproval(req)} className="p-1 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" aria-label="Print approval form">
+                        <ArrowDownloadRegular className="h-4 w-4" />
+                      </button>
                     )}
                   </td>
                 </tr>

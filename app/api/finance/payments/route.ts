@@ -7,7 +7,6 @@ import { logAudit } from '@/lib/audit'
 import { nextPaymentReference } from '@/lib/auto-numbers'
 import {
   determineInvoiceStatus,
-  calculateNewBankBalance,
   calculateBalanceDue,
   calculateSupplierOutstandingBalance,
   round2dp,
@@ -113,10 +112,23 @@ export async function POST(req: NextRequest) {
     // against a real expense account, not the AP control account — see the
     // GL-posting fix below.
     let expenseAccount: any = null
+    let apAccountId: string | null = null
     if (data.entityType === 'EXPENSE') {
       if (!data.expenseAccountId) return NextResponse.json({ error: 'Expense account is required' }, { status: 400 })
       expenseAccount = await prisma.chartOfAccount.findFirst({ where: { id: data.expenseAccountId, companyId: session.companyId, account_type: 'EXPENSE' } })
       if (!expenseAccount) return NextResponse.json({ error: 'Expense account not found' }, { status: 404 })
+    } else {
+      // AP settlement (supplier payment or general payment) -- explicit
+      // Company-level mapping replaces fuzzy account-name matching.
+      const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { payablesAccountId: true } })
+      if (!company?.payablesAccountId) {
+        return NextResponse.json({ error: 'Accounts Payable account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
+      }
+      const apAccount = await prisma.chartOfAccount.findFirst({ where: { id: company.payablesAccountId, companyId: session.companyId } })
+      if (!apAccount) {
+        return NextResponse.json({ error: 'The configured Accounts Payable account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
+      }
+      apAccountId = apAccount.id
     }
 
     const reference = await nextPaymentReference(session.companyId)
@@ -147,9 +159,17 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      // update bank balance
-      const newBankBalance = calculateNewBankBalance(currentBank, data.amount, 'OUT')
-      await tx.bankAccount.update({ where: { id: data.bankAccountId }, data: { current_balance: newBankBalance } })
+      // Atomic, guarded decrement — Postgres evaluates the WHERE against the
+      // live row in the same statement, so this is safe under concurrent
+      // payments against the same account (no lost update, no TOCTOU
+      // overdraft) unlike a read-then-write of an absolute value.
+      const decremented = await tx.bankAccount.updateMany({
+        where: { id: data.bankAccountId, current_balance: { gte: data.amount } },
+        data: { current_balance: { decrement: data.amount } },
+      })
+      if (decremented.count === 0) throw new Error('Insufficient bank funds')
+      const refreshedBank = await tx.bankAccount.findUnique({ where: { id: data.bankAccountId }, select: { current_balance: true } })
+      const newBankBalance = Number(refreshedBank?.current_balance ?? 0)
 
       let updatedInvoice: any = null
       let newInvoiceBalance: number | undefined = undefined
@@ -175,12 +195,7 @@ export async function POST(req: NextRequest) {
       // it against Accounts Payable would falsely imply the amount was ever
       // a recorded payable, which for an ad-hoc expense it never was.
       const isExpense = data.entityType === 'EXPENSE'
-      // 'Payable' alone also matches unrelated liability accounts like "PAYE
-      // Payable" (payroll tax) - match the real control-account name specifically.
-      const apAccount = isExpense
-        ? null
-        : await tx.chartOfAccount.findFirst({ where: { account_type: 'LIABILITY', account_name: { contains: 'Accounts Payable' }, companyId: session.companyId }, select: { id: true } }).catch(() => null)
-      const debitAccountId = isExpense ? expenseAccount.id : apAccount?.id
+      const debitAccountId = isExpense ? expenseAccount.id : apAccountId
       const debitDescription = isExpense ? `Expense — ${data.notes || data.payee || 'Direct expense'}` : 'AP settlement'
 
       if (bankLedger?.chart_account_id && debitAccountId) {

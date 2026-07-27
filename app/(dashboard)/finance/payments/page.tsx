@@ -106,13 +106,13 @@ export default function PaymentsPage() {
         const settingsRes = await fetch('/api/settings')
         if (settingsRes.ok) company = (await settingsRes.json()).company ?? {}
       } catch { /* use defaults */ }
-      await exportDocumentPdf('payment', {
+      await exportDocumentPdf('voucher', {
         payment_number: p.reference,
         payment_date: p.paymentDate,
         party_name: p.payee,
         reference: p.reference,
-        subtotal: p.amount,
-        total_amount: p.amount,
+        amount: p.amount,
+        payment_method: p.method,
         notes: p.notes,
       }, company)
     } catch {

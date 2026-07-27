@@ -40,7 +40,7 @@ export async function GET() {
     // the executive dashboard: monthly billing estimated from real
     // billing-rate + shift-assignment columns.
     prisma.site.findMany({
-      where: { status: 'Active' },
+      where: { companyId, status: 'Active' },
       select: { billing_rate_day: true, billing_rate_night: true, day_shift_assigned: true, night_shift_assigned: true },
     }),
     prisma.lead.groupBy({ by: ['status'], where: { companyId }, _count: { _all: true } }),

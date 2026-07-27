@@ -19,17 +19,22 @@ export async function GET(req: NextRequest) {
     orderBy: { createdAt: 'desc' },
   })
 
-  const [sites, requesters, approvers] = await Promise.all([
-    prisma.site.findMany({ where: { id: { in: requests.map((r) => r.siteId) } }, select: { id: true, site_name: true } }),
+  const [sites, requesters, approvers, filledCounts] = await Promise.all([
+    prisma.site.findMany({ where: { id: { in: requests.map((r) => r.siteId) } }, select: { id: true, site_name: true, billing_rate_day: true, billing_rate_night: true } }),
     prisma.user.findMany({ where: { id: { in: requests.map((r) => r.requestedBy) } }, select: { id: true, name: true } }),
     prisma.user.findMany({ where: { id: { in: requests.map((r) => r.approvedBy).filter((v): v is string => !!v) } }, select: { id: true, name: true } }),
+    prisma.deployment.groupBy({ by: ['sourceCoverageRequestId'], where: { sourceCoverageRequestId: { in: requests.map((r) => r.id) }, status: 'ACTIVE' }, _count: { _all: true } }),
   ])
   const siteById = new Map(sites.map((s) => [s.id, s]))
   const userById = new Map([...requesters, ...approvers].map((u) => [u.id, u]))
+  const filledById = new Map(filledCounts.map((f) => [f.sourceCoverageRequestId, f._count._all]))
   const enrichedRequests = requests.map((r) => ({
     ...r,
     guardsNeeded: r.requiredGuards,
-    site: siteById.get(r.siteId) ? { name: siteById.get(r.siteId)!.site_name } : null,
+    filledCount: filledById.get(r.id) ?? 0,
+    site: siteById.get(r.siteId)
+      ? { name: siteById.get(r.siteId)!.site_name, billingRateDay: siteById.get(r.siteId)!.billing_rate_day, billingRateNight: siteById.get(r.siteId)!.billing_rate_night }
+      : null,
     requestedByUser: userById.get(r.requestedBy) ? { name: userById.get(r.requestedBy)!.name } : null,
     approvedByUser: r.approvedBy && userById.get(r.approvedBy) ? { name: userById.get(r.approvedBy)!.name } : null,
   }))

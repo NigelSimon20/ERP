@@ -6,7 +6,6 @@ import { logAudit } from '@/lib/audit'
 import { nextReceiptReference } from '@/lib/auto-numbers'
 import {
   determineInvoiceStatus,
-  calculateNewBankBalance,
   calculateBalanceDue,
   round2dp,
 } from '@/lib/calculations'
@@ -101,6 +100,18 @@ export async function POST(req: NextRequest) {
     const bankAccount = await prisma.bankAccount.findFirst({ where: { id: data.bankAccountId, companyId: session.companyId } })
     if (!bankAccount) return NextResponse.json({ error: 'Bank account not found' }, { status: 404 })
 
+    // Explicit Company-level account mapping replaces fuzzy account-name
+    // matching -- a receipt can no longer post successfully while silently
+    // never reaching the GL.
+    const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { receivablesAccountId: true } })
+    if (!company?.receivablesAccountId) {
+      return NextResponse.json({ error: 'Accounts Receivable account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
+    }
+    const arAccountRecord = await prisma.chartOfAccount.findFirst({ where: { id: company.receivablesAccountId, companyId: session.companyId } })
+    if (!arAccountRecord) {
+      return NextResponse.json({ error: 'The configured Accounts Receivable account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
+    }
+
     // If invoice provided, validate it belongs to company and does not exceed balance
     let invoice: any = null
     if (data.invoiceId) {
@@ -144,9 +155,12 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      // STEP b: update bank account currentBalance to new running total
-      const newBankBalance = calculateNewBankBalance(Number(bankAccount.current_balance ?? 0), data.amount, 'IN')
-      await tx.bankAccount.update({ where: { id: data.bankAccountId }, data: { current_balance: newBankBalance } })
+      // STEP b: update bank account currentBalance via an atomic increment —
+      // safe under concurrent receipts against the same account, unlike a
+      // read-then-write of an absolute value.
+      await tx.bankAccount.update({ where: { id: data.bankAccountId }, data: { current_balance: { increment: data.amount } } })
+      const refreshedBank = await tx.bankAccount.findUnique({ where: { id: data.bankAccountId }, select: { current_balance: true } })
+      const newBankBalance = Number(refreshedBank?.current_balance ?? 0)
 
       let updatedInvoice: any = null
       let newInvoiceStatus: string | undefined = undefined
@@ -167,14 +181,12 @@ export async function POST(req: NextRequest) {
         await recalculateCustomerOutstandingBalance(tx, customerId)
       }
 
-      // STEP e: Create Journal Entry (auto-POSTED) and update GL balances
+      // STEP e: Create Journal Entry (auto-POSTED) and update GL balances.
+      // arAccountRecord was resolved from the explicit Company mapping
+      // before the transaction opened -- no fuzzy name matching here.
       const bankLedger = await tx.bankAccount.findUnique({ where: { id: data.bankAccountId }, select: { chart_account_id: true } }).catch(() => null)
-      // Match the real control-account name specifically, not just any
-      // ASSET account containing "Receivable" — same fragile-match class of
-      // bug found and fixed for the AP side in payments/route.ts.
-      const arAccount = await tx.chartOfAccount.findFirst({ where: { account_type: 'ASSET', account_name: { contains: 'Accounts Receivable' }, companyId: session.companyId }, select: { id: true } }).catch(() => null)
 
-      if (bankLedger?.chart_account_id && arAccount) {
+      if (bankLedger?.chart_account_id) {
         const bankGLId = bankLedger.chart_account_id
         const je = await tx.journalEntry.create({
           data: {
@@ -203,7 +215,7 @@ export async function POST(req: NextRequest) {
             {
               id: crypto.randomUUID(),
               journalEntryId: je.id,
-              accountId: arAccount.id,
+              accountId: arAccountRecord.id,
               description: 'Invoice settled',
               debit: 0,
               credit: data.amount,
@@ -213,7 +225,7 @@ export async function POST(req: NextRequest) {
 
         // Update account balances
         await tx.chartOfAccount.update({ where: { id: bankGLId }, data: { current_balance: { increment: data.amount } } })
-        await tx.chartOfAccount.update({ where: { id: arAccount.id }, data: { current_balance: { decrement: data.amount } } })
+        await tx.chartOfAccount.update({ where: { id: arAccountRecord.id }, data: { current_balance: { decrement: data.amount } } })
       }
 
       return { receipt: r, newBankBalance, updatedInvoice, newInvoiceStatus, newInvoiceBalance }

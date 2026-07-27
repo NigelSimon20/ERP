@@ -33,7 +33,7 @@ export default function HRDashboardPage() {
       fetch('/api/hr/leave?status=PENDING').then(r => r.json()),
     ]).then(([emp, payroll, leave]) => {
       const guards: { status: string; hourlyRate: number }[] = emp.guards ?? []
-      const activeGuards = guards.filter(g => g.status === 'ACTIVE')
+      const activeGuards = guards.filter(g => g.status === 'Active')
       const runs: { runDate: string; totalNet: number }[] = payroll.runs ?? []
       const lastRun = runs[0]
       const avgRate = activeGuards.length ? activeGuards.reduce((s, g) => s + Number(g.hourlyRate), 0) / activeGuards.length : 0

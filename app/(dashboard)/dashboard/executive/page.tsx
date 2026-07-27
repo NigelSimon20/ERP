@@ -127,9 +127,33 @@ export default function ExecutiveDashboardPage() {
   const vc = data?.viewCurrency || 'USD'
   const isNativeView = !!data && data.viewCurrency !== data.reportingCurrency
 
+  async function exportExecutivePdf() {
+    if (!data) return
+    try {
+      const { exportExecutiveReportPdf } = await import('@/lib/pdf')
+      const settingsRes = await fetch('/api/settings')
+      const company = settingsRes.ok ? (await settingsRes.json()).company ?? {} : {}
+      await exportExecutiveReportPdf(data, company)
+    } catch {
+      // non-blocking -- dashboard stays usable even if export fails
+    }
+  }
+
   return (
     <DashboardPageShell title="Executive Dashboard" subtitle="Company-wide performance overview">
       <div className="space-y-6 animate-fade-in">
+
+        {data && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={exportExecutivePdf}
+              className="erp-btn erp-btn-ghost erp-btn-sm flex items-center gap-1.5"
+            >
+              <ArrowDownloadRegular className="h-3.5 w-3.5" /> Export PDF
+            </button>
+          </div>
+        )}
 
         {data && data.availableCurrencies.length > 1 && (
           <div className="flex justify-end">

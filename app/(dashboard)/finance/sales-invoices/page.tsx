@@ -20,6 +20,7 @@ interface Invoice {
   invoiceNumber: string
   issueDate: string
   dueDate: string
+  currency?: string
   totalAmount: number
   paidAmount: number
   balanceDue: number
@@ -298,9 +299,9 @@ export default function SalesInvoicesPage() {
                     <td className="px-4 py-3 font-medium text-foreground">{inv.customer?.name}</td>
                     <td className="px-4 py-3 text-muted-foreground">{formatDate(new Date(inv.issueDate))}</td>
                     <td className="px-4 py-3 text-muted-foreground">{formatDate(new Date(inv.dueDate))}</td>
-                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(Number(inv.totalAmount))}</td>
-                    <td className="px-4 py-3 text-right text-green-600">{formatCurrency(Number(inv.paidAmount))}</td>
-                    <td className="px-4 py-3 text-right font-medium text-foreground">{formatCurrency(Number(inv.balanceDue))}</td>
+                    <td className="px-4 py-3 text-right font-medium">{formatCurrency(Number(inv.totalAmount), inv.currency)}</td>
+                    <td className="px-4 py-3 text-right text-green-600">{formatCurrency(Number(inv.paidAmount), inv.currency)}</td>
+                    <td className="px-4 py-3 text-right font-medium text-foreground">{formatCurrency(Number(inv.balanceDue), inv.currency)}</td>
                     <td className="px-4 py-3"><StatusBadge status={inv.status} /></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">

@@ -27,38 +27,6 @@ export const registerSchema = z
     path: ['confirmPassword'],
   })
 
-export const guardSchema = z.object({
-  employeeNumber: z.string().min(1, 'Employee number is required'),
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  idNumber: z.string().min(1, 'ID number is required'),
-  phone: z.string().min(7, 'Invalid phone number'),
-  whatsapp: z.string().optional(),
-  email: z.string().email('Invalid email').optional().or(z.literal('')),
-  department: z.string().optional(),
-  rank: z.string().optional(),
-  status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED', 'TERMINATED']).default('ACTIVE'),
-  hireDate: z.string().min(1, 'Hire date is required'),
-  dateOfBirth: z.string().optional(),
-  hourlyRate: z.coerce.number().positive('Hourly rate must be positive'),
-  basicSalary: z.coerce.number().min(0).default(0),
-  bankAccount: z.string().optional(),
-  bankName: z.string().optional(),
-  bankBranch: z.string().optional(),
-})
-
-export const siteSchema = z.object({
-  name: z.string().min(2, 'Site name is required'),
-  address: z.string().min(5, 'Address is required'),
-  customerId: z.string().optional(),
-  contractValue: z.coerce.number().positive('Contract value must be positive'),
-  contractStart: z.string().optional(),
-  contractEnd: z.string().optional(),
-  currency: z.string().length(3, 'Invalid currency code').default('USD'),
-  guardsRequired: z.coerce.number().int().positive().default(1),
-  status: z.enum(['ACTIVE', 'INACTIVE', 'SUSPENDED']).default('ACTIVE'),
-  notes: z.string().optional(),
-})
-
 export const deploymentSchema = z.object({
   guardId: z.string().min(1, 'Guard is required'),
   siteId: z.string().min(1, 'Site is required'),

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
-import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { generateToken } from '@/lib/auth'
@@ -67,33 +66,14 @@ export async function POST(req: NextRequest) {
       include: { company: { select: { id: true, name: true } } },
     })
 
-    // If user doesn't exist, create one
+    // Invitation-only: an admin must create the user (Settings -> Users) before
+    // they can sign in with Google. We never auto-attach a new account to an
+    // arbitrary/first company here.
     if (!user) {
-      // Try to find or create a company (default company for OAuth users)
-      let company = await prisma.company.findFirst()
-      if (!company) {
-        company = await prisma.company.create({
-          data: {
-            name: 'Default Company',
-            email: lowerEmail,
-            currency: 'USD',
-          },
-        })
-      }
-
-      user = await prisma.user.create({
-        data: {
-          id: crypto.randomUUID(),
-          email: lowerEmail,
-          name: name || email.split('@')[0],
-          password: '', // OAuth users don't have passwords
-          role: 'STAFF',
-          companyId: company.id,
-          avatar: picture,
-          active: true,
-        },
-        include: { company: { select: { id: true, name: true } } },
-      }) as any
+      return NextResponse.json(
+        { error: 'No account found for this email. Contact your administrator to be added.' },
+        { status: 401 }
+      )
     }
 
     if (!user.active) {

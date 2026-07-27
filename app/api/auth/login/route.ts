@@ -88,32 +88,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
-    if (!user && supabaseUser) {
-      const company =
-        (await prisma.company.findFirst()) ||
-        (await prisma.company.create({
-          data: {
-            name: 'Default Company',
-            email: lowerEmail,
-            currency: 'USD',
-          },
-        }))
-
-      const hashedPassword = await hashPassword(password)
-      user = await prisma.user.create({
-        data: {
-          id: supabaseUser.id,
-          companyId: company.id,
-          email: lowerEmail,
-          name: supabaseUser.user_metadata?.full_name || lowerEmail,
-          password: hashedPassword,
-          role: 'STAFF',
-          avatar: supabaseUser.user_metadata?.avatar_url || undefined,
-          active: true,
-          lastLogin: new Date(),
-        },
-        include: { company: { select: { id: true, name: true } } },
-      })
+    // Invitation-only: a Supabase-verified password proves identity, but not
+    // company membership. An admin must create the local User row (Settings ->
+    // Users) before this account can sign in — we never auto-attach a new
+    // account to an arbitrary/first company here.
+    if (!user) {
+      await recordFail(lowerEmail)
+      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 })
     }
 
     if (user && !valid && supabaseUser) {

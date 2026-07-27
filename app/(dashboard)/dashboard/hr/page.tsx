@@ -102,7 +102,7 @@ export default function HRDashboardPage() {
         <div className="flex flex-wrap gap-2">
           {[
             { label: 'Add Employee', href: '/human-resources/employees', Icon: ContactCardRegular },
-            { label: 'Review Leave', href: '/human-resources/leave-requests', Icon: CalendarLtrRegular },
+            { label: 'Review Leave', href: '/human-resources/leave-management', Icon: CalendarLtrRegular },
             { label: 'Run Payroll', href: '/human-resources/payroll', Icon: PaymentRegular },
             { label: 'Attendance', href: '/operations/attendance', Icon: PersonAvailableRegular },
           ].map(({ label, href, Icon }) => (

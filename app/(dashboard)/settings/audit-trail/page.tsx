@@ -121,26 +121,77 @@ export default function AuditTrailPage() {
     fetch('/api/users').then(r => r.json()).then(j => setUsers(j.users ?? [])).catch(() => {})
   }, [])
 
-  function exportCSV() {
-    const header = 'Timestamp,User,Action,Module,Record,OldValues,NewValues'
-    const rows = logs.map(l =>
-      [
-        new Date(l.createdAt).toISOString(),
-        `"${l.userName}"`,
-        l.action,
-        l.module,
-        l.recordId ?? '',
-        l.oldValues ? `"${JSON.stringify(l.oldValues).replace(/"/g, '""')}"` : '',
-        l.newValues ? `"${JSON.stringify(l.newValues).replace(/"/g, '""')}"` : '',
-      ].join(',')
-    )
-    const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `audit-trail-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
+  const [exporting, setExporting] = useState(false)
+
+  // The on-screen `logs` state is just the current page (PAGE_SIZE=50) --
+  // both exports need every row matching the active filters, not only what's
+  // currently rendered, so this re-fetches every page up front.
+  async function fetchAllMatchingLogs(): Promise<AuditLog[]> {
+    const all: AuditLog[] = []
+    let pg = 1
+    while (true) {
+      const params = new URLSearchParams({ page: String(pg) })
+      if (filterUser) params.set('userId', filterUser)
+      if (filterModule) params.set('module', filterModule)
+      if (filterAction) params.set('action', filterAction)
+      if (dateFrom) params.set('dateFrom', dateFrom)
+      if (dateTo) params.set('dateTo', dateTo)
+      const res = await fetch(`/api/audit?${params}`)
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'Failed to load audit trail')
+      all.push(...(json.logs ?? []))
+      if (all.length >= (json.total ?? 0) || !json.logs?.length) break
+      pg++
+    }
+    return all
+  }
+
+  async function exportCSV() {
+    setExporting(true)
+    try {
+      const allLogs = await fetchAllMatchingLogs()
+      const header = 'Timestamp,User,Action,Module,Record,OldValues,NewValues'
+      const rows = allLogs.map(l =>
+        [
+          new Date(l.createdAt).toISOString(),
+          `"${l.userName}"`,
+          l.action,
+          l.module,
+          l.recordId ?? '',
+          l.oldValues ? `"${JSON.stringify(l.oldValues).replace(/"/g, '""')}"` : '',
+          l.newValues ? `"${JSON.stringify(l.newValues).replace(/"/g, '""')}"` : '',
+        ].join(',')
+      )
+      const blob = new Blob([[header, ...rows].join('\n')], { type: 'text/csv' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `audit-trail-${new Date().toISOString().slice(0, 10)}.csv`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast.error('Failed to export CSV')
+    } finally {
+      setExporting(false)
+    }
+  }
+
+  async function exportPdf() {
+    setExporting(true)
+    try {
+      const allLogs = await fetchAllMatchingLogs()
+      const { exportReportPdf } = await import('@/lib/pdf')
+      const settingsRes = await fetch('/api/settings')
+      const company = settingsRes.ok ? (await settingsRes.json()).company ?? {} : {}
+      await exportReportPdf('audit-trail', {
+        rows: allLogs.map((l) => ({ createdAt: l.createdAt, userName: l.userName, module: l.module, action: l.action, recordId: l.recordId })),
+      }, company, {})
+      toast.success('PDF exported')
+    } catch {
+      toast.error('Failed to export PDF')
+    } finally {
+      setExporting(false)
+    }
   }
 
   const totalPages = Math.ceil(total / 50)
@@ -202,10 +253,18 @@ export default function AuditTrailPage() {
         <button
           type="button"
           onClick={exportCSV}
-          disabled={logs.length === 0}
+          disabled={logs.length === 0 || exporting}
           className="ml-auto flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-border hover:bg-muted/50 disabled:opacity-40"
         >
-          <ArrowDownloadRegular className="h-4 w-4" /> Export CSV
+          <ArrowDownloadRegular className="h-4 w-4" /> {exporting ? 'Exporting…' : 'Export CSV'}
+        </button>
+        <button
+          type="button"
+          onClick={exportPdf}
+          disabled={logs.length === 0 || exporting}
+          className="flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-border hover:bg-muted/50 disabled:opacity-40"
+        >
+          <ArrowDownloadRegular className="h-4 w-4" /> {exporting ? 'Exporting…' : 'Export PDF'}
         </button>
       </div>
 

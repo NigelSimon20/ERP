@@ -175,7 +175,7 @@ export default function GuardDashboardPage() {
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-2">
           {[
-            { label: 'Request Leave', href: '/human-resources/leave-requests', Icon: CalendarLtrRegular },
+            { label: 'Request Leave', href: '/human-resources/leave-management', Icon: CalendarLtrRegular },
             { label: 'My Payslips', href: '/human-resources/payslips', Icon: DocumentRegular },
             { label: 'My Tasks', href: '/tasks-requests/tasks', Icon: TaskListLtrRegular },
           ].map(({ label, href, Icon }) => (

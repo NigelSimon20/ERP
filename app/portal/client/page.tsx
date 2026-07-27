@@ -251,7 +251,7 @@ export default function ClientPortalPage() {
                         <p className="font-semibold text-foreground">{site.name}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">{site.address}</p>
                       </div>
-                      <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${site.status === 'ACTIVE' ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>{site.status}</span>
+                      <span className={`text-xs rounded-full px-2 py-0.5 font-medium ${site.status === 'Active' ? 'bg-green-100 text-green-700' : 'bg-muted text-muted-foreground'}`}>{site.status}</span>
                     </div>
                     <div className="mt-3 text-xs text-muted-foreground flex items-center gap-1">
                       <LocationRegular className="h-3 w-3" /> {site.guardsRequired} guard{site.guardsRequired !== 1 ? 's' : ''} required

@@ -12,28 +12,41 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, CheckmarkCircleRegular, DismissCircleRegular, PeopleRegular } from '@fluentui/react-icons';
+import { AddRegular, CheckmarkCircleRegular, DismissCircleRegular, PeopleRegular, PersonAddRegular } from '@fluentui/react-icons';
 
-interface CoverageRequest { id: string; reason: string; guardsNeeded: number; startDate: string; endDate: string | null; status: string; rejectionReason: string | null; createdAt: string; site: { id: string; name: string }; requestedByUser: { id: string; name: string }; approvedByUser: { name: string } | null }
+interface CoverageRequest {
+  id: string; reason: string; guardsNeeded: number; filledCount: number; startDate: string; endDate: string | null
+  status: string; rejectionReason: string | null; createdAt: string
+  site: { id: string; name: string; billingRateDay: number | null; billingRateNight: number | null }
+  requestedByUser: { id: string; name: string }; approvedByUser: { name: string } | null
+}
 interface Site { id: string; name: string }
+interface GuardOption { id: string; name: string | null }
 type FormValues = { siteId: string; reason: string; guardsNeeded: string; startDate: string; endDate: string }
 type RejectForm = { rejectionReason: string }
+type AssignForm = { guardId: string; shiftType: 'DAY' | 'NIGHT'; hoursPerDay: string; ratePerHour: string }
 
 const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', FULFILLED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' }
 
 export default function CoverageRequestsPage() {
   const [requests, setRequests] = useState<CoverageRequest[]>([])
   const [sites, setSites] = useState<Site[]>([])
+  const [guards, setGuards] = useState<GuardOption[]>([])
   const [loading, setLoading] = useState(true)
   const [filterStatus, setFilterStatus] = useState('')
   const [showCreateDialog, setShowCreateDialog] = useState(false)
   const [rejectTarget, setRejectTarget] = useState<CoverageRequest | null>(null)
+  const [assignTarget, setAssignTarget] = useState<CoverageRequest | null>(null)
   const [processingId, setProcessingId] = useState<string | null>(null)
 
   const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<FormValues>({
     defaultValues: { siteId: '', reason: '', guardsNeeded: '1', startDate: '', endDate: '' },
   })
   const { register: rr, handleSubmit: rSubmit, reset: rReset, formState: { isSubmitting: rSubmitting } } = useForm<RejectForm>()
+  const { register: ar, handleSubmit: aSubmit, control: aControl, reset: aReset, watch: aWatch, setValue: aSetValue, formState: { isSubmitting: aSubmitting } } = useForm<AssignForm>({
+    defaultValues: { guardId: '', shiftType: 'DAY', hoursPerDay: '8', ratePerHour: '0' },
+  })
+  const assignShiftType = aWatch('shiftType')
 
   async function fetchRequests() {
     setLoading(true)
@@ -53,6 +66,7 @@ export default function CoverageRequestsPage() {
   useEffect(() => { fetchRequests() }, [filterStatus])
   useEffect(() => {
     fetch('/api/operations/sites').then(r => r.json()).then(j => setSites(j.sites ?? [])).catch((err) => console.error(err))
+    fetch('/api/hr/employees').then(r => r.json()).then(j => setGuards(j.guards ?? [])).catch(() => {})
   }, [])
 
   async function onCreate(data: FormValues) {
@@ -93,6 +107,35 @@ export default function CoverageRequestsPage() {
     if (!res.ok) { toast.error(json.error); return }
     toast.success('Request rejected — requester notified')
     setRejectTarget(null); fetchRequests()
+  }
+
+  function openAssign(req: CoverageRequest) {
+    setAssignTarget(req)
+    const defaultRate = req.site?.billingRateDay ?? 0
+    aReset({ guardId: '', shiftType: 'DAY', hoursPerDay: '8', ratePerHour: String(defaultRate) })
+  }
+
+  function onShiftChange(shift: 'DAY' | 'NIGHT') {
+    aSetValue('shiftType', shift)
+    if (!assignTarget) return
+    const rate = shift === 'NIGHT' ? assignTarget.site?.billingRateNight : assignTarget.site?.billingRateDay
+    if (rate != null) aSetValue('ratePerHour', String(rate))
+  }
+
+  async function onAssign(data: AssignForm) {
+    if (!assignTarget) return
+    const res = await fetch(`/api/operations/coverage-requests/${assignTarget.id}/assign`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        guardId: data.guardId, shiftType: data.shiftType,
+        hoursPerDay: Number(data.hoursPerDay) || 8, ratePerHour: Number(data.ratePerHour) || 0,
+      }),
+    })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error); return }
+    toast.success(json.request?.status === 'FULFILLED' ? 'Guard assigned — request fulfilled' : 'Guard assigned')
+    setAssignTarget(null)
+    fetchRequests()
   }
 
   return (
@@ -140,7 +183,7 @@ export default function CoverageRequestsPage() {
                       <p className="truncate">{req.reason}</p>
                       {req.rejectionReason && <p className="text-xs text-primary mt-0.5">Rejected: {req.rejectionReason}</p>}
                     </td>
-                    <td className="px-4 py-3 text-right font-medium">{req.guardsNeeded}</td>
+                    <td className="px-4 py-3 text-right font-medium">{req.filledCount}/{req.guardsNeeded}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(new Date(req.startDate))}</td>
                     <td className="px-4 py-3 text-muted-foreground text-xs">{req.endDate ? formatDate(new Date(req.endDate)) : <span className="text-brand-muted-light">Open</span>}</td>
                     <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[req.status] ?? 'bg-muted text-muted-foreground'}`}>{req.status}</span></td>
@@ -158,6 +201,11 @@ export default function CoverageRequestsPage() {
                             <DismissCircleRegular className="h-4 w-4" />
                           </button>
                         </div>
+                      )}
+                      {req.status === 'APPROVED' && (
+                        <Button type="button" size="sm" variant="outline" onClick={() => openAssign(req)} className="flex gap-1.5">
+                          <PersonAddRegular className="h-3.5 w-3.5" /> Assign Guard ({req.filledCount}/{req.guardsNeeded})
+                        </Button>
                       )}
                     </td>
                   </tr>
@@ -208,6 +256,40 @@ export default function CoverageRequestsPage() {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setRejectTarget(null)}>Cancel</Button>
               <Button type="submit" disabled={rSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{rSubmitting ? 'Rejecting…' : 'Reject Request'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Assign Guard Dialog */}
+      <Dialog open={!!assignTarget} onOpenChange={(open) => !open && setAssignTarget(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Assign Guard — {assignTarget?.site?.name}</DialogTitle></DialogHeader>
+          <form onSubmit={aSubmit(onAssign)} className="space-y-4">
+            <p className="text-xs text-brand-muted-light -mt-2">{assignTarget?.filledCount ?? 0} of {assignTarget?.guardsNeeded ?? 0} guards assigned so far.</p>
+            <div className="space-y-1.5">
+              <Label>Guard *</Label>
+              <Controller control={aControl} name="guardId" render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger><SelectValue placeholder="Select guard" /></SelectTrigger>
+                  <SelectContent>{guards.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label>Shift</Label>
+                <Select value={assignShiftType} onValueChange={(v) => onShiftChange(v as 'DAY' | 'NIGHT')}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent><SelectItem value="DAY">Day</SelectItem><SelectItem value="NIGHT">Night</SelectItem></SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5"><Label>Hours/Day</Label><Input type="number" min="1" max="24" {...ar('hoursPerDay')} /></div>
+              <div className="space-y-1.5"><Label>Rate/Hour</Label><Input type="number" min="0" step="0.01" {...ar('ratePerHour')} /></div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setAssignTarget(null)}>Cancel</Button>
+              <Button type="submit" disabled={aSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{aSubmitting ? 'Assigning…' : 'Assign Guard'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -1,14 +1,12 @@
-import { writeFile, mkdir, readFile } from 'fs/promises'
-import path from 'path'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { uploadObject, downloadObject } from '@/lib/storage'
 import type { FileRecord } from '@prisma/client'
 
-// Mirrors app/api/files/route.ts's storage convention (outside public/, only
-// reachable through code that checks companyId) but under its own
-// 'import-staging' folder so staged import files are distinguishable from
-// user-facing attachments.
-const uploadsRoot = path.join(process.cwd(), 'storage', 'uploads')
+// Mirrors app/api/files/route.ts's storage convention (same private Supabase
+// Storage bucket, only reachable through code that checks companyId) but
+// under its own 'import-staging' folder so staged import files are
+// distinguishable from user-facing attachments.
 const STAGING_FOLDER = 'import-staging'
 
 export async function stageImportFile(
@@ -20,15 +18,9 @@ export async function stageImportFile(
   const timestamp = Date.now()
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
   const fileName = `${timestamp}-${safeName}`
-  const uploadDir = path.join(uploadsRoot, companyId, STAGING_FOLDER)
-  const destPath = path.join(uploadDir, fileName)
+  const fileUrl = `${companyId}/${STAGING_FOLDER}/${fileName}`
 
-  if (!uploadDir.startsWith(uploadsRoot + path.sep) || !destPath.startsWith(uploadDir + path.sep)) {
-    throw new Error('Invalid file name')
-  }
-
-  await mkdir(uploadDir, { recursive: true })
-  await writeFile(destPath, file.buffer)
+  await uploadObject(fileUrl, file.buffer, file.type || 'application/octet-stream')
 
   return prisma.fileRecord.create({
     data: {
@@ -37,7 +29,7 @@ export async function stageImportFile(
       uploadedBy,
       fileName,
       originalName: file.name,
-      fileUrl: `${companyId}/${STAGING_FOLDER}/${fileName}`,
+      fileUrl,
       fileSize: file.size,
       mimeType: file.type || 'application/octet-stream',
       folder: STAGING_FOLDER,
@@ -50,8 +42,5 @@ export async function readStagedFile(companyId: string, fileRecordId: string): P
   const record = await prisma.fileRecord.findFirst({ where: { id: fileRecordId, companyId } })
   if (!record) throw new Error('Staged import file not found')
 
-  const resolved = path.join(uploadsRoot, record.fileUrl)
-  if (!resolved.startsWith(uploadsRoot + path.sep)) throw new Error('Invalid staged file path')
-
-  return readFile(resolved)
+  return downloadObject(record.fileUrl)
 }

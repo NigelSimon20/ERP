@@ -5,7 +5,6 @@ import { prisma } from '@/lib/prisma'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { logAudit } from '@/lib/audit'
 import { getIpAddress } from '@/lib/utils'
-import { randomUUID } from 'crypto'
 
 export const dynamic = 'force-dynamic'
 
@@ -73,34 +72,16 @@ export async function GET(req: NextRequest) {
       include: { company: { select: { id: true, name: true } } },
     })
 
-    // If user doesn't exist, create one
+    // Invitation-only: an admin must create the user (Settings -> Users) before
+    // they can sign in via OAuth. We never auto-attach a new account to an
+    // arbitrary/first company here.
     if (!dbUser) {
-      let company = await prisma.company.findFirst()
-      if (!company) {
-        company = await prisma.company.create({
-          data: {
-            name: 'Default Company',
-            email,
-            currency: 'USD',
-          },
-        })
-      }
-
-      dbUser = await prisma.user.create({
-        data: {
-          id: randomUUID(),
-          email,
-          name,
-          password: '', // OAuth users don't have passwords
-          role: 'STAFF',
-          companyId: company.id,
-          avatar: picture,
-          active: true,
-        },
-      }) as any
+      return NextResponse.redirect(
+        new URL('/login?error=No account found for this email. Contact your administrator.', origin)
+      )
     }
 
-    if (!dbUser || !dbUser.active) {
+    if (!dbUser.active) {
       return NextResponse.redirect(new URL('/login?error=Account is inactive', origin))
     }
 

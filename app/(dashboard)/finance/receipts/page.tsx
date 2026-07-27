@@ -109,13 +109,14 @@ export default function ReceiptsPage() {
         const settingsRes = await fetch('/api/settings')
         if (settingsRes.ok) company = (await settingsRes.json()).company ?? {}
       } catch { /* use defaults */ }
-      await exportDocumentPdf('receipt', {
+      await exportDocumentPdf('voucher', {
         payment_number: r.reference,
-        receiptDate: r.receiptDate,
+        payment_type: 'Customer Receipt',
+        payment_date: r.receiptDate,
         party_name: r.customer?.name ?? r.payer,
         reference: r.reference,
-        subtotal: r.amount,
-        total_amount: r.amount,
+        amount: r.amount,
+        payment_method: r.method,
       }, company)
     } catch {
       toast.error('Failed to export PDF')

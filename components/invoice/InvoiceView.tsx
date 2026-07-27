@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState, useRef } from 'react'
 import InvoiceToolbar from './InvoiceToolbar'
-import { generateInvoiceHtml } from '@/lib/invoice-pdf'
 import toast from 'react-hot-toast'
 
 type Company = any
@@ -40,13 +39,13 @@ export default function InvoiceView({ invoiceId }: { invoiceId: string }) {
     root.style.setProperty('--text-color', '#0f172a')
   }, [company])
 
-  const handleDownloadPdf = async () => {
+  const handleDownloadPdf = async (mode: 'download' | 'preview' = 'download') => {
     try {
       const res = await fetch(`/api/finance/sales-invoices/${invoiceId}?action=pdf`, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) { toast.error(data.error ?? 'Failed to generate PDF'); return }
       const { exportDocumentPdf } = await import('@/lib/pdf')
-      await exportDocumentPdf('invoice', data.invoice, company)
+      await exportDocumentPdf('invoice', data.invoice, company, { mode })
     } catch {
       toast.error('Network error generating PDF')
     }
@@ -61,17 +60,7 @@ export default function InvoiceView({ invoiceId }: { invoiceId: string }) {
     w.print()
   }
 
-  const handlePreview = () => {
-    // simple preview in modal or new tab
-    if (!invoice || !company) return
-    const html = generateInvoiceHtml(invoice, company)
-    const w = window.open('', '_blank')
-    if (w) {
-      w.document.open()
-      w.document.write(html)
-      w.document.close()
-    }
-  }
+  const handlePreview = () => handleDownloadPdf('preview')
 
   if (!invoice || !company) return <div>Loading invoice...</div>
 

@@ -13,6 +13,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const existing = await prisma.task.findFirst({ where: { id: params.id, companyId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+  const canEdit = userId === existing.assignedBy || userId === existing.assignedTo || ['SUPER_ADMIN', 'ADMIN'].includes(session.role)
+  if (!canEdit) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   const body = await req.json()
   const { title, description, assignedTo, dueDate, priority, status, whatsappReminder, reminderTime } = body
 
@@ -45,6 +48,9 @@ export async function DELETE(_req: NextRequest, { params }: { params: { id: stri
   const { companyId, userId } = session
   const existing = await prisma.task.findFirst({ where: { id: params.id, companyId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  const canDelete = userId === existing.assignedBy || ['SUPER_ADMIN', 'ADMIN'].includes(session.role)
+  if (!canDelete) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
 
   await prisma.task.delete({ where: { id: params.id } })
   await logAudit({ companyId, userId, userName: session.name, action: 'DELETE', module: 'Tasks', recordId: params.id, oldValues: { title: existing.title } })

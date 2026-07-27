@@ -15,7 +15,11 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
-  const { name, code, equipmentClass, category, quantityInStock, quantityIssued, quantityDamaged, quantityLost, unitCost, location, notes, isActive } = body
+  // quantityIssued/quantityDamaged/quantityLost are intentionally NOT accepted
+  // here -- they're derived counters maintained only by the issue/return
+  // endpoints (POST .../issue, POST .../issues/[issueId]/return) so "who has
+  // what" always has a transactional record behind it.
+  const { name, code, equipmentClass, category, quantityInStock, unitCost, location, notes, isActive } = body
 
   const item = await prisma.equipment.update({
     where: { id: params.id },
@@ -25,9 +29,6 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       ...(equipmentClass !== undefined ? { equipment_class: equipmentClass || null } : {}),
       ...(category ? { category } : {}),
       ...(quantityInStock != null ? { quantity_in_stock: Number(quantityInStock) } : {}),
-      ...(quantityIssued != null ? { quantity_issued: Number(quantityIssued) } : {}),
-      ...(quantityDamaged != null ? { quantity_damaged: Number(quantityDamaged) } : {}),
-      ...(quantityLost != null ? { quantity_lost: Number(quantityLost) } : {}),
       ...(unitCost != null ? { unit_cost: Number(unitCost) } : {}),
       ...(location !== undefined ? { location: location || null } : {}),
       ...(notes !== undefined ? { notes: notes || null } : {}),

@@ -68,14 +68,23 @@ export async function POST(req: NextRequest) {
     const reference = await nextTransferReference(session.companyId)
 
     const transfer = await prisma.$transaction(async (tx) => {
-      const updatedFromAccount = await tx.bankAccount.update({
-        where: { id: data.fromAccountId },
-        data: { current_balance: transferImpact.newFromBalance },
+      // Atomic, guarded decrement/increment — Postgres evaluates the WHERE
+      // against the live row in the same statement, so this is safe under
+      // concurrent transfers touching either account (no lost update, no
+      // TOCTOU overdraft) unlike writing the pre-computed absolute balances.
+      const decremented = await tx.bankAccount.updateMany({
+        where: { id: data.fromAccountId, current_balance: { gte: data.amount } },
+        data: { current_balance: { decrement: data.amount } },
       })
-      const updatedToAccount = await tx.bankAccount.update({
+      if (decremented.count === 0) throw new Error('Insufficient balance in source account')
+      await tx.bankAccount.update({
         where: { id: data.toAccountId },
-        data: { current_balance: transferImpact.newToBalance },
+        data: { current_balance: { increment: data.amount } },
       })
+      const [updatedFromAccount, updatedToAccount] = await Promise.all([
+        tx.bankAccount.findUniqueOrThrow({ where: { id: data.fromAccountId } }),
+        tx.bankAccount.findUniqueOrThrow({ where: { id: data.toAccountId } }),
+      ])
 
       const t = await tx.bankTransfer.create({
         data: {

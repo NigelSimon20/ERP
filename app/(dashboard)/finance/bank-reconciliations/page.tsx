@@ -11,7 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { AddRegular, CheckmarkCircleRegular, DismissCircleRegular } from '@fluentui/react-icons';
+import { AddRegular, ArrowDownloadRegular, CheckmarkCircleRegular, DismissCircleRegular } from '@fluentui/react-icons';
 
 interface Reconciliation { id: string; reconcileDate: string; statementBalance: number; bookBalance: number; difference: number; status: string; bankAccountId: string; bankAccount: { bankName: string; accountNumber: string; currency: string } }
 interface BankAccount { id: string; bankName: string; accountNumber: string; currency: string; currentBalance: number }
@@ -83,6 +83,24 @@ export default function BankReconciliationsPage() {
     } finally { setClosingId(null) }
   }
 
+  async function exportPdf() {
+    try {
+      const { exportReportPdf } = await import('@/lib/pdf')
+      const settingsRes = await fetch('/api/settings')
+      const company = settingsRes.ok ? (await settingsRes.json()).company ?? {} : {}
+      await exportReportPdf('bank-reconciliation', {
+        rows: recs.map((r) => ({
+          bankName: r.bankAccount?.bankName, accountNumber: r.bankAccount?.accountNumber,
+          reconcileDate: r.reconcileDate, statementBalance: r.statementBalance, bookBalance: r.bookBalance,
+          difference: r.difference, status: r.status,
+        })),
+      }, company, {})
+      toast.success('PDF exported')
+    } catch {
+      toast.error('Failed to export PDF')
+    }
+  }
+
   function openAdjustDialog(rec: Reconciliation) {
     const suspense = glAccounts.find(a => a.account_type === 'SUSPENSE')
     setOffsetAccountId(suspense?.id ?? '')
@@ -106,7 +124,12 @@ export default function BankReconciliationsPage() {
 
   return (
     <div>
-      <PageHeader title="Bank Reconciliations" description="Compare your book balance with bank statements" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Start Reconciliation</Button>} />
+      <PageHeader title="Bank Reconciliations" description="Compare your book balance with bank statements" action={
+        <div className="flex gap-2">
+          {recs.length > 0 && <Button type="button" variant="outline" onClick={exportPdf} className="gap-1.5"><ArrowDownloadRegular className="h-3.5 w-3.5" /> Export PDF</Button>}
+          <Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Start Reconciliation</Button>
+        </div>
+      } />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (

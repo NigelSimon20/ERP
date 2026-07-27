@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
   if (guardId) where.guardId = guardId
   if (documentType) where.documentType = documentType
 
-  const [documents, total] = await Promise.all([
+  const [rows, total] = await Promise.all([
     prisma.hRDocument.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -28,6 +28,15 @@ export async function GET(req: NextRequest) {
     }),
     prisma.hRDocument.count({ where }),
   ])
+
+  // HRDocument.guardId is a plain scalar (no Prisma relation), so the guard
+  // display name is attached with a separate lookup rather than `include`.
+  const guardIds = Array.from(new Set(rows.map((d) => d.guardId).filter(Boolean))) as string[]
+  const guardRows = guardIds.length
+    ? await prisma.guard.findMany({ where: { id: { in: guardIds } }, select: { id: true, full_name: true, employee_code: true } })
+    : []
+  const guardMap = Object.fromEntries(guardRows.map((g) => [g.id, g]))
+  const documents = rows.map((d) => ({ ...d, guard: d.guardId ? guardMap[d.guardId] : undefined }))
 
   // Check for expiring documents
   const expiringDocs = await prisma.hRDocument.findMany({

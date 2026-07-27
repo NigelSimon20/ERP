@@ -165,6 +165,62 @@ function InvoiceTab() {
   )
 }
 
+const GL_MAPPING_FIELDS: { key: string; label: string; type: string; help: string }[] = [
+  { key: 'receivablesAccountId', label: 'Accounts Receivable', type: 'ASSET', help: 'Debited on every new Sales Invoice.' },
+  { key: 'payablesAccountId', label: 'Accounts Payable', type: 'LIABILITY', help: 'Credited on every new Purchase Invoice; debited when a supplier bill is settled.' },
+  { key: 'vatAccountId', label: 'VAT Payable', type: 'LIABILITY', help: 'Credited for tax collected on invoices with tax enabled.' },
+  { key: 'salariesExpenseAccountId', label: 'Salaries Expense', type: 'EXPENSE', help: 'Debited for gross pay on every payroll run.' },
+  { key: 'payrollLiabilitiesAccountId', label: 'Payroll Liabilities', type: 'LIABILITY', help: 'Credited for total deductions on every payroll run.' },
+]
+
+function GLAccountMappingSection({ company, setCompany }: { company: any; setCompany: (c: any) => void }) {
+  const [accounts, setAccounts] = useState<{ id: string; account_name: string | null; account_code: string | null; account_type: string | null }[]>([])
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/finance/accounts')
+        const json = await res.json()
+        if (res.ok) setAccounts(json.accounts ?? [])
+      } catch {
+        // Non-fatal — dropdowns just render empty if the chart of accounts can't load.
+      }
+    })()
+  }, [])
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-card p-6 space-y-4">
+      <div>
+        <p className="text-sm font-semibold">General Ledger Account Mapping</p>
+        <p className="text-xs text-slate-500 mt-1">
+          Invoices, payments, and payroll post to these accounts automatically. Until each is set,
+          the corresponding transaction type is blocked from posting to the GL rather than posting
+          silently to the wrong place.
+        </p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        {GL_MAPPING_FIELDS.map((field) => (
+          <div key={field.key}>
+            <label htmlFor={field.key} className="block text-sm font-medium">{field.label}</label>
+            <select
+              id={field.key}
+              title={field.label}
+              value={company[field.key] ?? ''}
+              onChange={(e) => setCompany({ ...company, [field.key]: e.target.value || null })}
+              className="mt-1 input"
+            >
+              <option value="">Not configured</option>
+              {accounts.filter((a) => a.account_type === field.type).map((a) => (
+                <option key={a.id} value={a.id}>{a.account_code ? `${a.account_code} — ${a.account_name}` : a.account_name}</option>
+              ))}
+            </select>
+            <p className="text-xs text-slate-500 mt-1">{field.help}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 function TaxTab() {
   const [company, setCompany] = useState<any | null>(null)
   const [saving, setSaving] = useState(false)
@@ -194,6 +250,11 @@ function TaxTab() {
           taxEnabled: company.taxEnabled,
           taxInclusive: company.taxInclusive,
           taxAppliedByDefault: company.taxAppliedByDefault,
+          vatAccountId: company.vatAccountId,
+          receivablesAccountId: company.receivablesAccountId,
+          payablesAccountId: company.payablesAccountId,
+          salariesExpenseAccountId: company.salariesExpenseAccountId,
+          payrollLiabilitiesAccountId: company.payrollLiabilitiesAccountId,
         }),
       })
       const json = await res.json()
@@ -245,6 +306,8 @@ function TaxTab() {
           Apply Tax By Default To New Lines
         </label>
       </div>
+
+      <GLAccountMappingSection company={company} setCompany={setCompany} />
 
       <div className="flex justify-end">
         <button disabled={saving} onClick={save} className="btn btn-primary">Save Tax Settings</button>

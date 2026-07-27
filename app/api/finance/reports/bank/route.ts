@@ -3,6 +3,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { round2dp } from '@/lib/calculations'
+import { buildCurrencyConverter } from '@/lib/currency'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -27,7 +28,12 @@ export async function GET(req: NextRequest) {
   const from = new Date(searchParams.get('from') || `${new Date().getFullYear()}-01-01`)
   const to = new Date(searchParams.get('to') || new Date().toISOString())
 
-  const accounts = await prisma.bankAccount.findMany({ where: { companyId: session.companyId }, orderBy: { bank_name: 'asc' } })
+  const [accounts, company] = await Promise.all([
+    prisma.bankAccount.findMany({ where: { companyId: session.companyId }, orderBy: { bank_name: 'asc' } }),
+    prisma.company.findUnique({ where: { id: session.companyId }, select: { currency: true } }),
+  ])
+  const reportingCurrency = company?.currency || 'USD'
+  const convert = await buildCurrencyConverter(reportingCurrency, to)
   const accountIds = accounts.map((a) => a.id)
 
   const [payments, reconciliations] = await Promise.all([
@@ -82,16 +88,27 @@ export async function GET(req: NextRequest) {
     status: r.status,
   }))
 
+  // Per-account figures in accountSummaries stay in their own native
+  // currency; only the blended totals need converting to the reporting
+  // currency before summing -- otherwise a USD + ZWG mix silently adds raw
+  // numbers under one "$" label.
+  const totalBalance = accountSummaries
+    .filter((a) => a.isActive)
+    .reduce((s, a) => s + convert(a.currentBalance, a.currency).amount, 0)
+  const totalIn = accountSummaries.reduce((s, a) => s + convert(a.totalIn, a.currency).amount, 0)
+  const totalOut = accountSummaries.reduce((s, a) => s + convert(a.totalOut, a.currency).amount, 0)
+
   return NextResponse.json({
     from: from.toISOString(),
     to: to.toISOString(),
+    reportingCurrency,
     accountSummaries,
     reconciliationSummary,
     monthlyCashFlow: monthlyBuckets,
     totals: {
-      totalBalance: round2dp(accountSummaries.filter((a) => a.isActive).reduce((s, a) => s + a.currentBalance, 0)),
-      totalIn: round2dp(accountSummaries.reduce((s, a) => s + a.totalIn, 0)),
-      totalOut: round2dp(accountSummaries.reduce((s, a) => s + a.totalOut, 0)),
+      totalBalance: round2dp(totalBalance),
+      totalIn: round2dp(totalIn),
+      totalOut: round2dp(totalOut),
     },
   })
 }

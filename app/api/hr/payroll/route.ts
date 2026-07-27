@@ -165,21 +165,34 @@ export async function POST(req: NextRequest) {
     const totalDeductions = r2(guardPayslips.reduce((s: number, p: { totalDeductions: number }) => s + p.totalDeductions, 0))
     const totalNet = r2(guardPayslips.reduce((s: number, p: { netPay: number }) => s + p.netPay, 0))
 
+    // Explicit Company-level account mapping (Settings -> Company -> Tax)
+    // replaces fuzzy account-name matching -- payroll can no longer move
+    // real money while silently posting no GL entry (or a partial one) for it.
+    const glCompany = await prisma.company.findUnique({ where: { id: companyId }, select: { salariesExpenseAccountId: true, payrollLiabilitiesAccountId: true } })
+    if (!glCompany?.salariesExpenseAccountId) {
+      return NextResponse.json({ error: 'Salaries Expense account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
+    }
+    if (totalDeductions > 0 && !glCompany.payrollLiabilitiesAccountId) {
+      return NextResponse.json({ error: 'This payroll run has deductions, but no Payroll Liabilities account is configured. Set it in Settings → Company → Tax.' }, { status: 400 })
+    }
+
     const reference = await nextJournalReference(companyId)
     const paymentReference = await nextPaymentReference(companyId)
     const runId = crypto.randomUUID()
     const journalId = crypto.randomUUID()
 
-    // Match real chart-of-account names exactly rather than guessing by
-    // substring — the previous 'alary'/'bank' substring tricks assumed
-    // singular "Salary" (real account is plural "Salaries Expense") and
-    // never matched anything for "bank" at all (real accounts are
-    // capitalized "Bank ..."), and the liability lookup had no name filter
-    // whatsoever, matching whichever LIABILITY account sorted first.
     const [expenseAccount, liabilityAccount] = await Promise.all([
-      prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'EXPENSE', account_name: 'Salaries Expense' } }),
-      prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'LIABILITY', account_name: 'Payroll Liabilities' } }),
+      prisma.chartOfAccount.findFirst({ where: { id: glCompany.salariesExpenseAccountId, companyId } }),
+      glCompany.payrollLiabilitiesAccountId
+        ? prisma.chartOfAccount.findFirst({ where: { id: glCompany.payrollLiabilitiesAccountId, companyId } })
+        : null,
     ])
+    if (!expenseAccount) {
+      return NextResponse.json({ error: 'The configured Salaries Expense account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
+    }
+    if (totalDeductions > 0 && !liabilityAccount) {
+      return NextResponse.json({ error: 'The configured Payroll Liabilities account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
+    }
 
     // Use the disbursement bank account's own linked GL account, same as
     // receipts/payments/transfers already do, instead of guessing by name.
@@ -202,6 +215,8 @@ export async function POST(req: NextRequest) {
       // active guards, the per-guard loop meant hundreds of sequential
       // round trips inside a single interactive transaction, which reliably
       // exceeded the transaction timeout against this DB's pooler latency.
+      const nowIso = new Date().toISOString()
+      const payDate = new Date(periodEnd).toISOString().split('T')[0]
       const payslipRows = guardPayslips.map((g) => {
         const payslipId = crypto.randomUUID()
         return {
@@ -209,6 +224,7 @@ export async function POST(req: NextRequest) {
           basic_salary: g.basicSalary, net_pay: g.netPay, total_deductions: g.totalDeductions,
           total_earnings: g.grossPay, status: 'Approved', created_by_id: userId,
           hours_worked: g.hoursWorked ?? null, overtime_hours: g.overtimeHours ?? null, overtime_pay: g.overtimePay ?? null,
+          created_date: nowIso, pay_date: payDate,
         }
       })
       await tx.payslip.createMany({ data: payslipRows })

@@ -15,6 +15,7 @@ interface MonthlyRow { month: string; totalIn: number; totalOut: number }
 interface BankReportResult {
   from: string
   to: string
+  reportingCurrency: string
   accountSummaries: AccountSummary[]
   reconciliationSummary: ReconciliationRow[]
   monthlyCashFlow: MonthlyRow[]
@@ -110,16 +111,16 @@ export default function BankReportsPage() {
         <div className="mt-5 space-y-6">
           <div className="grid grid-cols-3 gap-4">
             <div className="erp-card !p-4">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Total Balance (Active)</p>
-              <p className="text-xl font-bold text-foreground mt-1">{formatCurrency(result.totals.totalBalance)}</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Total Balance (Active, {result.reportingCurrency})</p>
+              <p className="text-xl font-bold text-foreground mt-1">{formatCurrency(result.totals.totalBalance, result.reportingCurrency)}</p>
             </div>
             <div className="erp-card !p-4">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Total In (Period)</p>
-              <p className="text-xl font-bold text-green-600 mt-1">{formatCurrency(result.totals.totalIn)}</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Total In (Period, {result.reportingCurrency})</p>
+              <p className="text-xl font-bold text-green-600 mt-1">{formatCurrency(result.totals.totalIn, result.reportingCurrency)}</p>
             </div>
             <div className="erp-card !p-4">
-              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Total Out (Period)</p>
-              <p className="text-xl font-bold text-red-600 mt-1">{formatCurrency(result.totals.totalOut)}</p>
+              <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Total Out (Period, {result.reportingCurrency})</p>
+              <p className="text-xl font-bold text-red-600 mt-1">{formatCurrency(result.totals.totalOut, result.reportingCurrency)}</p>
             </div>
           </div>
 

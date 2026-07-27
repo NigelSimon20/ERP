@@ -58,6 +58,8 @@ const nav: NavItem[] = [
       { label: 'Deployments', href: '/operations/deployments' },
       { label: 'Attendance', href: '/operations/attendance' },
       { label: 'Equipment', href: '/operations/equipment' },
+      { label: 'Vehicles', href: '/operations/vehicles' },
+      { label: 'Visitor Register', href: '/operations/visitors' },
       { label: 'Incidents', href: '/operations/incidents' },
       { label: 'Occurrence Book', href: '/operations/occurrence-book' },
       { label: 'Patrols', href: '/operations/patrols' },
@@ -74,6 +76,8 @@ const nav: NavItem[] = [
       { label: 'Payslips', href: '/human-resources/payslips' },
       { label: 'Pay Items', href: '/human-resources/payslip-items' },
       { label: 'Leave Management', href: '/human-resources/leave-management' },
+      { label: 'Documents', href: '/human-resources/documents' },
+      { label: 'Trainings', href: '/human-resources/trainings' },
     ],
   },
   {

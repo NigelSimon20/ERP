@@ -105,7 +105,7 @@ export async function POST(req: NextRequest) {
   const supplier = await prisma.supplier.findFirst({ where: { id: supplierId, companyId } })
   if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 })
 
-  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { showVat: true, taxInclusive: true } })
+  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { showVat: true, taxInclusive: true, payablesAccountId: true } })
   const taxEnabled = company?.showVat ?? true
   const taxInclusive = company?.taxInclusive ?? false
 
@@ -119,10 +119,18 @@ export async function POST(req: NextRequest) {
   const status = determineInvoiceStatus(totals.totalAmount, 0, due)
   const id = crypto.randomUUID()
 
+  // Explicit Company-level account mapping (Settings -> Company -> Tax)
+  // replaces fuzzy account-name matching -- a bill can no longer post
+  // successfully while silently never reaching the GL.
+  if (!company?.payablesAccountId) {
+    return NextResponse.json({ error: 'Accounts Payable account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
+  }
+
   const [payableAccount, expenseAccount] = await Promise.all([
-    prisma.chartOfAccount.findFirst({ where: { companyId, account_type: 'LIABILITY', account_name: { contains: 'Accounts Payable' } } }),
+    prisma.chartOfAccount.findFirst({ where: { id: company.payablesAccountId, companyId } }),
     prisma.chartOfAccount.findFirst({ where: { id: expenseAccountId, companyId, account_type: 'EXPENSE' } }),
   ])
+  if (!payableAccount) return NextResponse.json({ error: 'The configured Accounts Payable account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
   if (!expenseAccount) return NextResponse.json({ error: 'Selected expense account was not found' }, { status: 400 })
 
   try {
@@ -158,7 +166,9 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      if (payableAccount && expenseAccount) {
+      // payableAccount/expenseAccount are guaranteed resolved above -- this
+      // is no longer a silent skip, it's an unconditional post.
+      {
         await postPurchaseInvoiceToGL(tx, {
           companyId,
           invoiceId: inv.id,

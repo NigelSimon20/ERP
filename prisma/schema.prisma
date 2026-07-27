@@ -83,6 +83,10 @@ model Company {
   employeeCodePrefix       String?  @map("employee_code_prefix")
   nextEmployeeNumber       Int?     @default(1) @map("next_employee_number")
   vatAccountId             String?  @map("vat_account_id")
+  receivablesAccountId     String?  @map("receivables_account_id")
+  payablesAccountId        String?  @map("payables_account_id")
+  salariesExpenseAccountId String?  @map("salaries_expense_account_id")
+  payrollLiabilitiesAccountId String? @map("payroll_liabilities_account_id")
   // Notifications / integrations
   whatsappEnabled          Boolean? @default(false) @map("whatsapp_enabled")
   whatsappNumber           String?  @map("whatsapp_number")
@@ -117,6 +121,9 @@ model Company {
   sites                    Site[]
   incidents                Incident[]
   equipment                Equipment[]
+  equipmentIssues          EquipmentIssue[]
+  vehicles                 Vehicle[]
+  visitorLogs              VisitorLog[]
   deployments              Deployment[]
   patrols                  Patrol[]
   coverageRequests         CoverageRequest[]
@@ -302,7 +309,7 @@ model Guard {
   next_of_kin_relationship String?
   position              String?
   region                String?
-  status                String?
+  status                GuardStatus?
   created_date          String?
   updated_date          String?
   created_by_id         String?
@@ -310,6 +317,7 @@ model Guard {
   is_sample             Boolean?
   leaveRequests         LeaveRequest[]
   attendances           Attendance[]
+  equipmentIssues       EquipmentIssue[]
   user                  User?
 
   @@map("guards")
@@ -583,7 +591,7 @@ model Site {
   customer_name         String?
   allowances            String?  @db.Text
   customer_id           String?
-  status                String?
+  status                SiteStatus?
   created_date          String?
   updated_date          String?
   created_by_id         String?
@@ -692,9 +700,98 @@ model Equipment {
   created_by_id    String?
   created_by       String?
   is_sample        Boolean?
+  equipmentIssues  EquipmentIssue[]
 
   @@index([companyId])
   @@map("equipment")
+}
+
+// Transactional issue/return ledger -- Equipment's quantity_issued/damaged/lost
+// counters are derived from this table (updated by the issue/return endpoints)
+// rather than being directly hand-editable, so "who has what" is always
+// reconstructable and can't drift from an arbitrary manual edit.
+model EquipmentIssue {
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id])
+  equipmentId     String
+  equipment       Equipment @relation(fields: [equipmentId], references: [id])
+  guardId         String
+  guard           Guard     @relation(fields: [guardId], references: [id])
+  quantity        Float     @default(1)
+  serialNumber    String?
+  condition       String    @default("GOOD")
+  issuedAt        DateTime  @default(now())
+  issuedBy        String
+  returnedAt      DateTime?
+  returnedBy      String?
+  returnCondition String?
+  notes           String?
+
+  @@index([companyId])
+  @@index([equipmentId])
+  @@index([guardId])
+  @@map("equipment_issues")
+}
+
+// ============================================================
+// VEHICLES / VISITORS
+// ============================================================
+
+model Vehicle {
+  id                 String   @id @default(cuid())
+  companyId          String
+  company            Company  @relation(fields: [companyId], references: [id])
+  registrationNumber String
+  make               String?
+  model              String?
+  assignedSiteId     String?
+  assignedGuardId    String?
+  status             String   @default("ACTIVE") // ACTIVE | IN_MAINTENANCE | DECOMMISSIONED
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  inspections        VehicleInspection[]
+
+  @@index([companyId])
+  @@map("vehicles")
+}
+
+model VehicleInspection {
+  id           String   @id @default(cuid())
+  companyId    String
+  vehicleId    String
+  vehicle      Vehicle  @relation(fields: [vehicleId], references: [id])
+  inspectedBy  String
+  inspectedAt  DateTime @default(now())
+  odometer     Int?
+  fuelLevel    String?
+  condition    String   // GOOD | NEEDS_ATTENTION | UNSAFE
+  defectsNoted String?
+
+  @@index([companyId])
+  @@index([vehicleId])
+  @@map("vehicle_inspections")
+}
+
+model VisitorLog {
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id])
+  siteId          String
+  visitorName     String
+  idNumber        String?
+  companyVisited  String?   // the visitor's own employer, not the tenant company
+  hostName        String?
+  vehicleReg      String?
+  checkIn         DateTime  @default(now())
+  checkOut        DateTime?
+  badgeNumber     String?
+  notes           String?
+  createdAt       DateTime  @default(now())
+
+  @@index([companyId])
+  @@index([siteId])
+  @@map("visitor_logs")
 }
 
 // ============================================================
@@ -1015,17 +1112,21 @@ enum Role {
   READ_ONLY
 }
 
+// Member names match the real Title-Case values already written/read
+// throughout the app (Guard: lib/import-export/registry.ts:42, the Employees
+// page status filter/form; Site: registry.ts:366, the Sites page status
+// select) -- these enums previously existed with different, unused
+// SCREAMING_CASE members that matched nothing actually stored in the DB.
 enum GuardStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
-  TERMINATED
+  Active
+  Resigned
+  Terminated
+  Blacklisted
 }
 
 enum SiteStatus {
-  ACTIVE
-  INACTIVE
-  SUSPENDED
+  Active
+  Terminated
 }
 
 enum ShiftType {
@@ -1178,6 +1279,11 @@ model Deployment {
   notes String?
   createdAt DateTime @default(now())
   updatedAt DateTime
+  // Set only when this deployment was created via a Coverage Request's
+  // "Assign Guard" action -- lets the request count how many of its
+  // requiredGuards have been filled. Deployments created the normal way
+  // (POST /api/operations/deployments directly) leave this null.
+  sourceCoverageRequestId String?
 
   @@index([companyId])
   @@map("deployments")

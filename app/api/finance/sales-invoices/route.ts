@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
     invoiceNumber: r.invoice_number,
     issueDate: r.invoice_date,
     dueDate: r.due_date,
+    currency: r.currency ?? undefined,
     totalAmount: Number(r.total_amount ?? 0),
     paidAmount: Number(r.amount_paid ?? 0),
     balanceDue: Number(r.balance_due ?? 0),
@@ -109,7 +110,7 @@ export async function POST(req: NextRequest) {
 
     const invoiceNumber = await nextInvoiceNumber(session.companyId)
 
-    const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { showVat: true, taxInclusive: true } })
+    const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { showVat: true, taxInclusive: true, receivablesAccountId: true, vatAccountId: true } })
     const taxEnabled = company?.showVat ?? true
     const taxInclusive = company?.taxInclusive ?? false
 
@@ -122,14 +123,29 @@ export async function POST(req: NextRequest) {
     const { subTotal, taxTotal, totalAmount } = calculateInvoiceTotals(lines, 0, taxInclusive)
     const status = toDbInvoiceStatus(determineInvoiceStatus(totalAmount, 0, dueDate))
 
-    const [receivablesAccount, vatAccount, revenueAccount] = await Promise.all([
-      prisma.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'ASSET', account_name: { contains: 'Accounts Receivable' } } }),
-      prisma.chartOfAccount.findFirst({ where: { companyId: session.companyId, account_type: 'LIABILITY', account_name: { contains: 'VAT' } } }),
+    // Explicit Company-level account mapping (Settings -> Company -> Tax)
+    // replaces fuzzy account-name matching -- an invoice can no longer post
+    // successfully while silently never reaching the GL.
+    if (!company?.receivablesAccountId) {
+      return NextResponse.json({ error: 'Accounts Receivable account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
+    }
+    if ((taxTotal ?? 0) > 0 && !company.vatAccountId) {
+      return NextResponse.json({ error: 'This invoice has tax, but no VAT Payable account is configured. Set it in Settings → Company → Tax.' }, { status: 400 })
+    }
+
+    const [receivablesAccount, revenueAccount] = await Promise.all([
+      prisma.chartOfAccount.findFirst({ where: { id: company.receivablesAccountId, companyId: session.companyId } }),
       prisma.chartOfAccount.findFirst({ where: { id: data.revenueAccountId, companyId: session.companyId, account_type: 'REVENUE' } }),
     ])
+    if (!receivablesAccount) {
+      return NextResponse.json({ error: 'The configured Accounts Receivable account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
+    }
     if (!revenueAccount) {
       return NextResponse.json({ error: 'Selected revenue account was not found' }, { status: 400 })
     }
+    const vatAccount = company.vatAccountId
+      ? await prisma.chartOfAccount.findFirst({ where: { id: company.vatAccountId, companyId: session.companyId } })
+      : null
 
     const invoice = await prisma.$transaction(async (tx) => {
       const inv = await tx.salesInvoice.create({
@@ -163,7 +179,9 @@ export async function POST(req: NextRequest) {
         })),
       })
 
-      if (receivablesAccount && revenueAccount) {
+      // receivablesAccount/revenueAccount are guaranteed resolved above --
+      // this is no longer a silent skip, it's an unconditional post.
+      {
         await postSalesInvoiceToGL(tx, {
           companyId: session.companyId,
           invoiceId: inv.id,

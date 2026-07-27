@@ -4,8 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { unlink } from 'fs/promises'
-import path from 'path'
+import { deleteObject } from '@/lib/storage'
 
 export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -16,12 +15,13 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   const record = await prisma.fileRecord.findFirst({ where: { id: params.id, companyId } })
   if (!record) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+  const canDelete = userId === record.uploadedBy || ['SUPER_ADMIN', 'ADMIN'].includes(session.role)
+  if (!canDelete) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+
   try {
-    const uploadsRoot = path.join(process.cwd(), 'storage', 'uploads')
-    const filePath = path.join(uploadsRoot, record.fileUrl)
-    if (filePath.startsWith(uploadsRoot + path.sep)) await unlink(filePath)
+    await deleteObject(record.fileUrl)
   } catch {
-    // File may already be missing from disk — continue with DB delete
+    // File may already be missing from storage — continue with DB delete
   }
 
   await prisma.fileRecord.delete({ where: { id: params.id } })
