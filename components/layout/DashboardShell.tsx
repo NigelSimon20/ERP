@@ -14,9 +14,15 @@ import { usePresenceHeartbeat } from '@/hooks/usePresenceHeartbeat'
 interface DashboardShellProps {
   user: UserInfo
   children: React.ReactNode
+  // Company header/sidebar/button color overrides, pre-computed server-side
+  // (app/(dashboard)/layout.tsx) as HSL triplet strings -- applied as inline
+  // custom properties here so Sidebar/TopBar/Button (which reference
+  // hsl(var(--company-sidebar,var(--primary))) etc) pick them up via normal
+  // CSS inheritance, with zero extra client fetch or flash.
+  themeVars?: Record<string, string>
 }
 
-export function DashboardShell({ user, children }: DashboardShellProps) {
+export function DashboardShell({ user, children, themeVars }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [welcomeData, setWelcomeData] = useState<WelcomeData | null>(null)
 
@@ -39,7 +45,7 @@ export function DashboardShell({ user, children }: DashboardShellProps) {
         {welcomeData && (
           <WelcomeModal data={welcomeData} onClose={() => setWelcomeData(null)} />
         )}
-        <div className="flex h-screen overflow-hidden bg-brand-light">
+        <div className="flex h-screen overflow-hidden bg-brand-light" style={themeVars as React.CSSProperties}>
           {/* Desktop sidebar */}
           <div className="hidden lg:flex">
             <Sidebar role={user.role} />

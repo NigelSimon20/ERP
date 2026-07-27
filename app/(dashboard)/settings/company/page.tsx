@@ -3,6 +3,42 @@
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import PortalsTab from '@/components/settings/PortalsTab'
+import { hexToHslTriplet } from '@/lib/color'
+
+// Mini live mockup of the sidebar/header/button chrome, using the exact same
+// CSS-var mechanism (--company-sidebar/--company-header/--company-button)
+// the real app shell reads -- so what's shown here is a faithful preview,
+// not a separate re-implementation that could drift from reality.
+function ChromePreview({ headerColor, sidebarColor, buttonColor, primaryColor }: { headerColor: string; sidebarColor: string; buttonColor: string; primaryColor: string }) {
+  const fallback = primaryColor || '#0b5fff'
+  const vars = {
+    ['--company-header']: hexToHslTriplet(headerColor || fallback),
+    ['--company-sidebar']: hexToHslTriplet(sidebarColor || fallback),
+    ['--company-button']: hexToHslTriplet(buttonColor || fallback),
+  } as React.CSSProperties
+  return (
+    <div style={vars} className="rounded-xl border border-slate-200 overflow-hidden">
+      <div className="flex h-24">
+        <div className="w-16 bg-white p-2 space-y-1.5 border-r border-slate-200 flex-shrink-0">
+          <div className="h-2 w-10 rounded-full bg-[hsl(var(--company-sidebar))]" />
+          <div className="h-5 rounded bg-[hsl(var(--company-sidebar)/0.1)] flex items-center px-1.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--company-sidebar))]" />
+          </div>
+          <div className="h-2 w-8 rounded-full bg-slate-200" />
+          <div className="h-2 w-9 rounded-full bg-slate-200" />
+        </div>
+        <div className="flex-1 flex flex-col min-w-0">
+          <div className="h-8 bg-white border-b border-slate-200 flex items-center justify-end px-2 flex-shrink-0">
+            <div className="h-4 w-4 rounded-full bg-[hsl(var(--company-header))]" />
+          </div>
+          <div className="flex-1 bg-slate-50 flex items-center justify-center">
+            <span className="px-3 py-1 rounded text-white text-[10px] font-medium bg-[hsl(var(--company-button))]">Button</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const tabs = [
   { key: 'company-info', label: 'Company Info' },
@@ -155,6 +191,34 @@ function BrandingTab() {
           <input id="company-secondary-color" type="color" title="Secondary Colour" value={company.secondaryColor||'#f5f7fa'} onChange={e=>setCompany({...company,secondaryColor:e.target.value})} className="mt-1" />
           <label htmlFor="company-accent-color" className="block text-sm font-medium mt-4">Accent Colour</label>
           <input id="company-accent-color" type="color" title="Accent Colour" value={company.accentColor||'#06b6d4'} onChange={e=>setCompany({...company,accentColor:e.target.value})} className="mt-1" />
+        </div>
+
+        <div className="rounded-2xl border border-slate-200 bg-card p-5 md:col-span-2">
+          <p className="text-sm font-semibold">App Chrome &amp; Document Colours</p>
+          <p className="text-xs text-slate-500 mt-1 mb-4">
+            Colour the sidebar, top bar, and buttons across the whole app, plus the accent used
+            in generated PDF reports. Leave any of these unset to keep using Primary Colour above.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-4">
+            <div>
+              <label htmlFor="company-header-color" className="block text-sm font-medium">Header Colour</label>
+              <input id="company-header-color" type="color" title="Header Colour" value={company.headerColor||company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,headerColor:e.target.value})} className="mt-1" />
+            </div>
+            <div>
+              <label htmlFor="company-sidebar-color" className="block text-sm font-medium">Sidebar Colour</label>
+              <input id="company-sidebar-color" type="color" title="Sidebar Colour" value={company.sidebarColor||company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,sidebarColor:e.target.value})} className="mt-1" />
+            </div>
+            <div>
+              <label htmlFor="company-button-color" className="block text-sm font-medium">Button Colour</label>
+              <input id="company-button-color" type="color" title="Button Colour" value={company.buttonColor||company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,buttonColor:e.target.value})} className="mt-1" />
+            </div>
+            <div>
+              <label htmlFor="company-pdf-theme-color" className="block text-sm font-medium">PDF Theme Colour</label>
+              <input id="company-pdf-theme-color" type="color" title="PDF Theme Colour" value={company.pdfThemeColor||company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,pdfThemeColor:e.target.value})} className="mt-1" />
+            </div>
+          </div>
+          <p className="text-xs font-medium text-slate-600 mb-1.5">Live preview</p>
+          <ChromePreview headerColor={company.headerColor} sidebarColor={company.sidebarColor} buttonColor={company.buttonColor} primaryColor={company.primaryColor} />
         </div>
       </div>
       <div className="flex justify-end">

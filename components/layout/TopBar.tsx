@@ -72,7 +72,7 @@ export function TopBar({ user, onMenuClick }: TopBarProps) {
 
         {/* Live Clock */}
         <div className="hidden md:flex items-center gap-1.5 px-3 py-1.5 bg-muted/50 rounded-lg border border-border mr-0.5">
-          <ClockRegular className="h-3.5 w-3.5 text-primary" />
+          <ClockRegular className="h-3.5 w-3.5 text-[hsl(var(--company-header,var(--primary)))]" />
           <span className="text-xs font-semibold text-foreground tabular-nums">{timeString}</span>
           <span className="text-xs text-muted-foreground">{dateShort}</span>
         </div>
@@ -96,7 +96,7 @@ export function TopBar({ user, onMenuClick }: TopBarProps) {
           <DropdownMenuTrigger asChild>
             <button type="button" className="flex items-center gap-1.5 p-1 rounded-xl hover:bg-muted transition-colors duration-200">
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
+                <AvatarFallback className="bg-[hsl(var(--company-header,var(--primary)))] text-primary-foreground text-xs font-bold">
                   {initials}
                 </AvatarFallback>
               </Avatar>

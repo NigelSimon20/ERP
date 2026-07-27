@@ -13,6 +13,7 @@ export interface PdfCompany {
   email?: string | null
   primaryColor?: string | null
   secondaryColor?: string | null
+  pdfThemeColor?: string | null
   logo?: string | null
   watermark?: string | null
   digitalSignature?: string | null
@@ -38,6 +39,18 @@ function hexToRgb(hex: string) {
   const cleanHex = hex.replace('#', '')
   const num = parseInt(cleanHex, 16)
   return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 }
+}
+
+// Blends a color toward white -- used for table header/total-row fills so
+// they carry a light wash of the company's theme color instead of a fixed
+// generic gray, while staying pale enough that dark-slate row text stays
+// legible on top of it.
+function tintWhite(rgb: { r: number; g: number; b: number }, amount = 0.92) {
+  return {
+    r: Math.round(rgb.r + (255 - rgb.r) * amount),
+    g: Math.round(rgb.g + (255 - rgb.g) * amount),
+    b: Math.round(rgb.b + (255 - rgb.b) * amount),
+  }
 }
 
 // Best-effort image fetch -> data URL. Company.logo/digitalSignature/companyStamp
@@ -66,7 +79,7 @@ export async function startBrandedDoc(company: PdfCompany, title: string, subtit
   const margin = 14
   const pageWidth = doc.internal.pageSize.width
   const pageHeight = doc.internal.pageSize.height
-  const themeRgb = hexToRgb(company.primaryColor || '#0b5fff')
+  const themeRgb = hexToRgb(company.pdfThemeColor || company.primaryColor || '#0b5fff')
   const ctx: BrandedDoc = { doc, themeRgb, margin, pageWidth, pageHeight }
 
   doc.setFillColor(themeRgb.r, themeRgb.g, themeRgb.b)
@@ -240,12 +253,13 @@ export interface DrawTableOptions {
 // of silently drawing past the bottom margin (exportDocumentPdf's line-item
 // table had no such check before this).
 export function drawTable(ctx: BrandedDoc, opts: DrawTableOptions): number {
-  const { doc, margin, pageWidth, pageHeight } = ctx
+  const { doc, margin, pageWidth, pageHeight, themeRgb } = ctx
   const { headers, rows, colWidths, aligns, pageTitle } = opts
   let currentY = opts.startY
+  const headerFill = tintWhite(themeRgb)
 
   const drawHeaderRow = (y: number) => {
-    doc.setFillColor(248, 250, 252)
+    doc.setFillColor(headerFill.r, headerFill.g, headerFill.b)
     doc.rect(margin, y, pageWidth - margin * 2, 8, 'F')
     doc.setFont('Helvetica', 'bold')
     doc.setFontSize(9)
@@ -281,7 +295,7 @@ export function drawTable(ctx: BrandedDoc, opts: DrawTableOptions): number {
     const isTotal = row.some((cell) => typeof cell === 'string' && (cell.startsWith('Total') || cell.includes('Net Profit') || cell.includes('Net Loss') || cell === 'Totals'))
     doc.setFont('Helvetica', isTotal ? 'bold' : 'normal')
     if (isTotal) {
-      doc.setFillColor(248, 250, 252)
+      doc.setFillColor(headerFill.r, headerFill.g, headerFill.b)
       doc.rect(margin, currentY, pageWidth - margin * 2, 8, 'F')
     }
     doc.setFontSize(9)

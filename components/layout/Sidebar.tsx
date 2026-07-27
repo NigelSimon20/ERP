@@ -194,7 +194,7 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
     return pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
   }
 
-  const hoverBg = 'hover:bg-[#FFF5F5] dark:hover:bg-primary/10'
+  const hoverBg = 'hover:bg-[#FFF5F5] dark:hover:bg-[hsl(var(--company-sidebar,var(--primary))/0.1)]'
 
   function renderItem(item: NavItem) {
     const Icon = item.icon
@@ -211,11 +211,11 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
             title={item.label}
             className={cn(
               'relative flex items-center justify-center h-10 w-10 mx-auto rounded-lg transition-all duration-200 ease-in-out',
-              active ? 'bg-primary/10' : hoverBg
+              active ? 'bg-[hsl(var(--company-sidebar,var(--primary))/0.1)]' : hoverBg
             )}
           >
-            {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-primary" />}
-            <Icon className={cn('h-[18px] w-[18px]', active ? 'text-primary' : 'text-muted-foreground')} />
+            {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-[hsl(var(--company-sidebar,var(--primary)))]" />}
+            <Icon className={cn('h-[18px] w-[18px]', active ? 'text-[hsl(var(--company-sidebar,var(--primary)))]' : 'text-muted-foreground')} />
           </Link>
         )
       }
@@ -228,12 +228,12 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
           className={cn(
             'group relative flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg text-sm transition-all duration-200 ease-in-out',
             active
-              ? 'bg-primary/10 text-foreground font-semibold'
+              ? 'bg-[hsl(var(--company-sidebar,var(--primary))/0.1)] text-foreground font-semibold'
               : cn('text-muted-foreground font-medium hover:text-foreground', hoverBg)
           )}
         >
-          {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-primary" />}
-          <Icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-primary' : 'text-muted-foreground/80 group-hover:text-primary')} />
+          {active && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-[hsl(var(--company-sidebar,var(--primary)))]" />}
+          <Icon className={cn('h-4 w-4 flex-shrink-0', active ? 'text-[hsl(var(--company-sidebar,var(--primary)))]' : 'text-muted-foreground/80 group-hover:text-[hsl(var(--company-sidebar,var(--primary)))]')} />
           {item.label}
         </Link>
       )
@@ -250,11 +250,11 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
             title={item.label}
             className={cn(
               'relative flex items-center justify-center h-10 w-10 mx-auto rounded-lg transition-all duration-200 ease-in-out',
-              hasActive ? 'bg-primary/10' : hoverBg
+              hasActive ? 'bg-[hsl(var(--company-sidebar,var(--primary))/0.1)]' : hoverBg
             )}
           >
-            {hasActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-primary" />}
-            <Icon className={cn('h-[18px] w-[18px]', hasActive ? 'text-primary' : 'text-muted-foreground')} />
+            {hasActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-[hsl(var(--company-sidebar,var(--primary)))]" />}
+            <Icon className={cn('h-[18px] w-[18px]', hasActive ? 'text-[hsl(var(--company-sidebar,var(--primary)))]' : 'text-muted-foreground')} />
           </button>
 
           <div className="invisible opacity-0 translate-x-1 group-hover:visible group-hover:opacity-100 group-hover:translate-x-0 group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-x-0 absolute left-full top-0 ml-2 w-56 rounded-lg border border-border bg-card p-2 shadow-lg transition-all duration-150 ease-in-out z-50">
@@ -269,7 +269,7 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
                     onClick={onClose}
                     className={cn(
                       'block px-3 py-1.5 rounded-md text-xs transition-colors duration-150',
-                      childActive ? 'bg-primary/10 text-primary font-semibold' : cn('text-muted-foreground hover:text-foreground', hoverBg)
+                      childActive ? 'bg-[hsl(var(--company-sidebar,var(--primary))/0.1)] text-[hsl(var(--company-sidebar,var(--primary)))] font-semibold' : cn('text-muted-foreground hover:text-foreground', hoverBg)
                     )}
                   >
                     {child.label}
@@ -289,12 +289,12 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
           className={cn(
             'group relative w-full flex items-center gap-3 pl-4 pr-3 py-2.5 rounded-lg text-sm transition-all duration-200 ease-in-out',
             hasActive
-              ? 'bg-primary/10 text-foreground font-semibold'
+              ? 'bg-[hsl(var(--company-sidebar,var(--primary))/0.1)] text-foreground font-semibold'
               : cn('text-muted-foreground font-medium hover:text-foreground', hoverBg)
           )}
         >
-          {hasActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-primary" />}
-          <Icon className={cn('h-4 w-4 flex-shrink-0', hasActive ? 'text-primary' : 'text-muted-foreground/80 group-hover:text-primary')} />
+          {hasActive && <span className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-full bg-[hsl(var(--company-sidebar,var(--primary)))]" />}
+          <Icon className={cn('h-4 w-4 flex-shrink-0', hasActive ? 'text-[hsl(var(--company-sidebar,var(--primary)))]' : 'text-muted-foreground/80 group-hover:text-[hsl(var(--company-sidebar,var(--primary)))]')} />
           <span className="flex-1 text-left">{item.label}</span>
           <ChevronRightRegular
             className={cn(
@@ -316,11 +316,11 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
                   className={cn(
                     'relative block px-3 py-1.5 rounded-md text-xs transition-all duration-200 ease-in-out',
                     childActive
-                      ? 'bg-primary/10 text-primary font-semibold'
+                      ? 'bg-[hsl(var(--company-sidebar,var(--primary))/0.1)] text-[hsl(var(--company-sidebar,var(--primary)))] font-semibold'
                       : cn('text-muted-foreground font-medium hover:text-foreground', hoverBg)
                   )}
                 >
-                  {childActive && <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-primary" />}
+                  {childActive && <span className="absolute left-0 top-1 bottom-1 w-0.5 rounded-full bg-[hsl(var(--company-sidebar,var(--primary)))]" />}
                   {child.label}
                 </Link>
               )
@@ -383,7 +383,7 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
             onClick={toggleCollapsed}
             title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             className={cn(
-              'flex items-center gap-2 rounded-lg text-muted-foreground transition-all duration-200 ease-in-out py-2 hover:text-primary',
+              'flex items-center gap-2 rounded-lg text-muted-foreground transition-all duration-200 ease-in-out py-2 hover:text-[hsl(var(--company-sidebar,var(--primary)))]',
               hoverBg,
               isCollapsed ? 'w-10 h-10 mx-auto justify-center' : 'w-full px-2'
             )}
