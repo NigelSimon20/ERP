@@ -23,7 +23,7 @@ interface JournalEntry {
   totalCredit: number
 }
 
-interface Account { id: string; accountCode: string; name: string; type: string }
+interface Account { id: string; account_code: string; account_name: string; account_type: string }
 
 type LineItem = { accountId: string; description: string; debit: string; credit: string }
 type FormValues = { description: string; date: string; lines: LineItem[] }
@@ -294,7 +294,7 @@ export default function JournalEntriesPage() {
                           <SelectContent>
                             {accounts.map((a) => (
                               <SelectItem key={a.id} value={a.id} className="text-xs">
-                                {a.accountCode} — {a.name}
+                                {a.account_code} — {a.account_name}
                               </SelectItem>
                             ))}
                           </SelectContent>

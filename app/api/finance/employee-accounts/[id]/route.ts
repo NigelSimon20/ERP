@@ -20,18 +20,24 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!ownerGuard) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   const body = await req.json()
-  const { accountType, bankName, accountNumber, branch, currency, active } = body
+  const { accountType, bankName, accountNumber, branch, currency, active, isPrimary } = body
 
-  const updated = await prisma.employeeAccount.update({
-    where: { id: params.id },
-    data: {
-      ...(accountType && { accountType }),
-      ...(bankName && { bankName }),
-      ...(accountNumber && { accountNumber }),
-      ...(branch !== undefined && { branch }),
-      ...(currency && { currency }),
-      ...(active !== undefined && { active }),
-    },
+  const updated = await prisma.$transaction(async (tx) => {
+    if (isPrimary) {
+      await tx.employeeAccount.updateMany({ where: { guardId: account.guardId, isPrimary: true, id: { not: params.id } }, data: { isPrimary: false } })
+    }
+    return tx.employeeAccount.update({
+      where: { id: params.id },
+      data: {
+        ...(accountType && { accountType }),
+        ...(bankName && { bankName }),
+        ...(accountNumber && { accountNumber }),
+        ...(branch !== undefined && { branch }),
+        ...(currency && { currency }),
+        ...(active !== undefined && { active }),
+        ...(isPrimary !== undefined && { isPrimary }),
+      },
+    })
   })
   await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'UPDATE', module: 'EmployeeAccounts', recordId: params.id, oldValues: account, newValues: updated })
   return NextResponse.json({ account: updated })

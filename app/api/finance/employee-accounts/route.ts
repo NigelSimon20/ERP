@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await req.json()
-  const { guardId, accountType, bankName, accountNumber, branch, currency } = body
+  const { guardId, accountType, bankName, accountNumber, branch, currency, isPrimary } = body
 
   if (!guardId || !accountType || !bankName || !accountNumber) {
     return NextResponse.json({ error: 'guardId, accountType, bankName, accountNumber required' }, { status: 400 })
@@ -50,17 +50,25 @@ export async function POST(req: NextRequest) {
   const guard = await prisma.guard.findFirst({ where: { id: guardId, companyId: session.companyId } })
   if (!guard) return NextResponse.json({ error: 'Employee not found' }, { status: 404 })
 
-  const account = await prisma.employeeAccount.create({
-    data: {
-      id: crypto.randomUUID(),
-      guardId,
-      accountType,
-      bankName,
-      accountNumber,
-      branch: branch || null,
-      currency: currency || 'USD',
-      active: true,
-    },
+  const account = await prisma.$transaction(async (tx) => {
+    // Only one account per guard may be primary -- unset any existing one
+    // before this create, rather than leaving two accounts both marked primary.
+    if (isPrimary) {
+      await tx.employeeAccount.updateMany({ where: { guardId, isPrimary: true }, data: { isPrimary: false } })
+    }
+    return tx.employeeAccount.create({
+      data: {
+        id: crypto.randomUUID(),
+        guardId,
+        accountType,
+        bankName,
+        accountNumber,
+        branch: branch || null,
+        currency: currency || 'USD',
+        active: true,
+        isPrimary: !!isPrimary,
+      },
+    })
   })
   await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'CREATE', module: 'EmployeeAccounts', recordId: account.id })
   return NextResponse.json({ account }, { status: 201 })

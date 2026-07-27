@@ -53,6 +53,11 @@ function tintWhite(rgb: { r: number; g: number; b: number }, amount = 0.92) {
   }
 }
 
+// Ravenshield's actual brand mark, bundled with the app -- used whenever a
+// company hasn't uploaded (or can't reach) a logo of its own, so PDFs never
+// go out with a blank header.
+const DEFAULT_LOGO_URL = '/assets/raven-logo.jpeg'
+
 // Best-effort image fetch -> data URL. Company.logo/digitalSignature/companyStamp
 // are free-text URL fields (not guaranteed to be same-origin or even valid), so
 // every failure mode here (network, CORS, 404, malformed image) must degrade to
@@ -73,6 +78,19 @@ async function fetchImageDataUrl(url: string): Promise<string | null> {
   }
 }
 
+// jsPDF's addImage() needs a format that matches the actual encoding of the
+// data -- passing 'PNG' for a JPEG data URL (e.g. raven-logo.jpeg) makes it
+// silently fail to decode, dropping the logo from the page with no visible
+// error. Read the real mime type off the "data:image/xxx;base64,..." prefix
+// instead of assuming one.
+function imageFormatFromDataUrl(dataUrl: string): string {
+  const match = /^data:image\/([a-zA-Z0-9+.-]+);base64,/.exec(dataUrl)
+  const subtype = (match?.[1] || 'png').toLowerCase()
+  if (subtype === 'jpg' || subtype === 'jpeg') return 'JPEG'
+  if (subtype === 'webp') return 'WEBP'
+  return 'PNG'
+}
+
 export async function startBrandedDoc(company: PdfCompany, title: string, subtitle?: string): Promise<BrandedDoc> {
   const { default: jsPDF } = await import('jspdf')
   const doc = new jsPDF()
@@ -86,16 +104,14 @@ export async function startBrandedDoc(company: PdfCompany, title: string, subtit
   doc.rect(0, 0, pageWidth, 8, 'F')
 
   let textX = margin
-  if (company.logo) {
-    const dataUrl = await fetchImageDataUrl(company.logo)
-    if (dataUrl) {
-      try {
-        doc.addImage(dataUrl, 'PNG', margin, 12, 20, 20)
-        textX = margin + 24
-      } catch {
-        // Not a decodable image (e.g. logo URL points at an SVG, which jsPDF
-        // can't embed directly) -- fall back to text-only header.
-      }
+  const dataUrl = await fetchImageDataUrl(company.logo || DEFAULT_LOGO_URL)
+  if (dataUrl) {
+    try {
+      doc.addImage(dataUrl, imageFormatFromDataUrl(dataUrl), margin, 12, 20, 20)
+      textX = margin + 24
+    } catch {
+      // Not a decodable image (e.g. logo URL points at an SVG, which jsPDF
+      // can't embed directly) -- fall back to text-only header.
     }
   }
 
@@ -159,13 +175,13 @@ export async function addSignatureBlock(ctx: BrandedDoc, company: PdfCompany, y:
   if (company.digitalSignature) {
     const dataUrl = await fetchImageDataUrl(company.digitalSignature)
     if (dataUrl) {
-      try { doc.addImage(dataUrl, 'PNG', margin, y, 40, 16) } catch { /* skip */ }
+      try { doc.addImage(dataUrl, imageFormatFromDataUrl(dataUrl), margin, y, 40, 16) } catch { /* skip */ }
     }
   }
   if (company.companyStamp) {
     const dataUrl = await fetchImageDataUrl(company.companyStamp)
     if (dataUrl) {
-      try { doc.addImage(dataUrl, 'PNG', pageWidth - margin - 30, y, 30, 30) } catch { /* skip */ }
+      try { doc.addImage(dataUrl, imageFormatFromDataUrl(dataUrl), pageWidth - margin - 30, y, 30, 30) } catch { /* skip */ }
     }
   }
 

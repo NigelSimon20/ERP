@@ -1777,6 +1777,7 @@ model ExchangeRate {
   targetCurrency String
   rate Decimal
   effectiveDate DateTime
+  createdBy String?
   createdAt DateTime @default(now())
 
   @@map("exchange_rates")
@@ -1786,6 +1787,7 @@ model LockDate {
   id String @id
   companyId String
   module String
+  reason String?
   lockedUntil DateTime
   lockedBy String
   createdAt DateTime @default(now())
@@ -1828,6 +1830,7 @@ model EmployeeAccount {
   branch String?
   currency String @default("USD")
   active Boolean @default(true)
+  isPrimary Boolean @default(false)
   createdAt DateTime @default(now())
 
   @@map("employee_accounts")

@@ -19,7 +19,15 @@ export async function GET(req: NextRequest) {
     where: { companyId: session.companyId },
     orderBy: { lockedUntil: 'desc' },
   })
-  return NextResponse.json({ locks })
+
+  const users = await prisma.user.findMany({
+    where: { id: { in: Array.from(new Set(locks.map((l) => l.lockedBy))) } },
+    select: { id: true, name: true },
+  })
+  const userMap = Object.fromEntries(users.map((u) => [u.id, u]))
+
+  const result = locks.map((l) => ({ ...l, createdByUser: userMap[l.lockedBy] ? { name: userMap[l.lockedBy].name } : null }))
+  return NextResponse.json({ locks: result })
 }
 
 export async function POST(req: NextRequest) {
@@ -31,15 +39,16 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { module, lockedUntil } = body
+  const { lockedUntil, reason } = body
 
-  if (!module || !lockedUntil) return NextResponse.json({ error: 'module and lockedUntil required' }, { status: 400 })
+  if (!lockedUntil) return NextResponse.json({ error: 'lockedUntil required' }, { status: 400 })
 
   const lock = await prisma.lockDate.create({
     data: {
       id: crypto.randomUUID(),
       companyId: session.companyId,
-      module,
+      module: 'ALL',
+      reason: reason || null,
       lockedUntil: new Date(lockedUntil),
       lockedBy: session.userId,
     },

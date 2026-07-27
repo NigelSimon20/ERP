@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
 
   const guards = await prisma.guard.findMany({
     where: { companyId, status: 'Active' },
-    select: { id: true, employee_code: true, first_name: true, last_name: true, department: true, daily_rate: true },
+    select: { id: true, employee_code: true, first_name: true, last_name: true, department: true, position: true, daily_rate: true },
     orderBy: { last_name: 'asc' },
   })
 
@@ -67,6 +67,8 @@ export async function GET(req: NextRequest) {
     // app/api/hr/payroll/route.ts), not employee_code -- must key by g.id.
     return {
       ...g,
+      name: `${g.first_name} ${g.last_name}`.trim(),
+      employeeNumber: g.employee_code,
       dailyRate: Number(g.daily_rate ?? 0),
       ytdCost: Number(payslipMap[g.id]?._sum.net_pay ?? 0),
       ytdGross: Number(payslipMap[g.id]?._sum.total_earnings ?? 0),

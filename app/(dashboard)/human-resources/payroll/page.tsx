@@ -12,7 +12,7 @@ import { formatCurrency, formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
 import { CheckmarkCircleRegular, ChevronLeftRegular, LinkRegular } from '@fluentui/react-icons';
 
-interface BankAccount { id: string; name: string; currency: string; currentBalance: number }
+interface BankAccount { id: string; bankName: string; currency: string; currentBalance: number }
 interface GuardPreview { guardId: string; guardName: string; employeeNumber: string; hoursWorked: number; overtimeHours: number; basicSalary: number; overtimePay: number; totalEarnings: number; grossPay: number; totalDeductions: number; netPay: number; earningsLines: { name: string; amount: number }[]; deductionLines: { name: string; amount: number }[] }
 interface PreviewResult { previews: GuardPreview[]; totalGross: number; totalDeductions: number; totalNet: number }
 interface PayrollRun { id: string; reference: string; payPeriodStart: string; payPeriodEnd: string; runDate: string; totalGross: number; totalDeductions: number; totalNet: number; status: string; processedBy: { name: string } | null; bankAccount: { name: string } | null }
@@ -118,7 +118,7 @@ export default function PayrollPage() {
                     <SelectTrigger><SelectValue placeholder="Select bank account" /></SelectTrigger>
                     <SelectContent>
                       {bankAccounts.map(b => (
-                        <SelectItem key={b.id} value={b.id}>{b.name} — {formatCurrency(Number(b.currentBalance))}</SelectItem>
+                        <SelectItem key={b.id} value={b.id}>{b.bankName} — {formatCurrency(Number(b.currentBalance))}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -180,7 +180,7 @@ export default function PayrollPage() {
               {selectedBank && (
                 <div className="mt-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-4 py-3 text-sm">
                   <span className="font-medium text-amber-800 dark:text-amber-400">Bank deduction: </span>
-                  <span className="text-amber-700 dark:text-amber-400">{formatCurrency(preview.totalNet)} will be deducted from <strong>{selectedBank.name}</strong> (current balance: {formatCurrency(Number(selectedBank.currentBalance))})</span>
+                  <span className="text-amber-700 dark:text-amber-400">{formatCurrency(preview.totalNet)} will be deducted from <strong>{selectedBank.bankName}</strong> (current balance: {formatCurrency(Number(selectedBank.currentBalance))})</span>
                 </div>
               )}
 

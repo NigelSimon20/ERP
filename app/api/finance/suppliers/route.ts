@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
     suppliers: suppliers.map((s) => ({
       ...s,
       name: s.company_name ?? '',
+      paymentTerms: s.payment_terms ?? 30,
       outstandingBal: Number(balanceMap[s.id]?._sum.balanceDue ?? 0),
       invoiceCount: balanceMap[s.id]?._count.id ?? 0,
       lastInvoiceDate: balanceMap[s.id]?._max.issueDate ?? null,

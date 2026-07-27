@@ -12,7 +12,7 @@ const transferSchema = z.object({
   fromAccountId: z.string().min(1),
   toAccountId: z.string().min(1),
   amount: z.coerce.number().positive('Amount must be greater than 0'),
-  date: z.string(),
+  transferDate: z.string(),
   notes: z.string().optional(),
 })
 
@@ -26,13 +26,22 @@ export async function GET(req: NextRequest) {
   const session = await getSession(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const companyAccounts = await prisma.bankAccount.findMany({ where: { companyId: session.companyId }, select: { id: true } })
+  const companyAccounts = await prisma.bankAccount.findMany({ where: { companyId: session.companyId }, select: { id: true, bank_name: true, account_number: true } })
   const accountIds = companyAccounts.map((a) => a.id)
+  const accountMap = Object.fromEntries(companyAccounts.map((a) => [a.id, { bankName: a.bank_name, accountNumber: a.account_number }]))
+
   const transfers = await prisma.bankTransfer.findMany({
     where: { OR: [{ fromAccountId: { in: accountIds } }, { toAccountId: { in: accountIds } }] },
     orderBy: { transferDate: 'desc' },
   })
-  return NextResponse.json({ transfers })
+
+  const result = transfers.map((t) => ({
+    ...t,
+    fromAccount: accountMap[t.fromAccountId] ?? null,
+    toAccount: accountMap[t.toAccountId] ?? null,
+  }))
+
+  return NextResponse.json({ transfers: result })
 }
 
 export async function POST(req: NextRequest) {
@@ -46,7 +55,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Source and destination accounts must differ' }, { status: 400 })
     }
 
-    const lockError = await checkLockDate(session.companyId, new Date(data.date))
+    const lockError = await checkLockDate(session.companyId, new Date(data.transferDate))
     if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
 
     const [fromAccount, toAccount] = await Promise.all([
@@ -93,7 +102,7 @@ export async function POST(req: NextRequest) {
           toAccountId: data.toAccountId,
           amount: data.amount,
           reference,
-          transferDate: new Date(data.date),
+          transferDate: new Date(data.transferDate),
           notes: data.notes ?? '',
           createdBy: session.userId,
         },
@@ -113,7 +122,7 @@ export async function POST(req: NextRequest) {
             id: crypto.randomUUID(),
             companyId: session.companyId,
             reference: `JE-auto-${reference}`,
-            entry_date: new Date(data.date).toISOString(),
+            entry_date: new Date(data.transferDate).toISOString(),
             description: `Bank transfer`,
             total_debit: data.amount,
             total_credit: data.amount,

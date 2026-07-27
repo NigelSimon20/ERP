@@ -32,6 +32,12 @@ export async function GET(req: NextRequest) {
     orderBy: { effectiveDate: 'desc' },
   })
 
+  const creatorIds = Array.from(new Set(rates.map((r) => r.createdBy).filter((v): v is string => !!v)))
+  const creators = creatorIds.length
+    ? await prisma.user.findMany({ where: { id: { in: creatorIds } }, select: { id: true, name: true } })
+    : []
+  const creatorMap = Object.fromEntries(creators.map((u) => [u.id, u]))
+
   // Current + previous rate per pair, to compute day-over-day movement —
   // "previous" is the next-most-recent row for that pair, not necessarily
   // yesterday (rates aren't guaranteed to sync every single day).
@@ -52,7 +58,7 @@ export async function GET(req: NextRequest) {
   })
 
   return NextResponse.json({
-    rates: rates.map((r) => ({ ...r, rate: Number(r.rate) })),
+    rates: rates.map((r) => ({ ...r, rate: Number(r.rate), createdByUser: r.createdBy && creatorMap[r.createdBy] ? { name: creatorMap[r.createdBy].name } : null })),
     currentRates,
   })
 }
@@ -92,6 +98,7 @@ export async function POST(req: NextRequest) {
       targetCurrency,
       rate: Number(rate),
       effectiveDate: new Date(effectiveDate),
+      createdBy: session.userId,
     },
   })
   await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'CREATE', module: 'ExchangeRates', recordId: entry.id })
