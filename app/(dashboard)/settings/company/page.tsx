@@ -87,6 +87,7 @@ function CompanyInfoTab() {
 function BrandingTab() {
   const [company, setCompany] = useState<any | null>(null)
   const [saving, setSaving] = useState(false)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -101,13 +102,46 @@ function BrandingTab() {
     })()
   }, [])
   const save = async ()=>{ if(!company)return; setSaving(true); await fetch('/api/settings',{method:'PUT', body: JSON.stringify(company)}); setSaving(false) }
+
+  async function uploadLogo(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !company) return
+    setUploadingLogo(true)
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const res = await fetch('/api/settings/logo', { method: 'POST', body: formData })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Logo upload failed'); return }
+      setCompany({ ...company, logo: json.logo })
+      toast.success('Logo uploaded')
+    } catch {
+      toast.error('Network error uploading logo')
+    } finally {
+      setUploadingLogo(false)
+      e.target.value = ''
+    }
+  }
+
   if(!company) return <div>Loading...</div>
 
   return (
     <div className="space-y-4">
       <div className="grid gap-4 md:grid-cols-2">
         <div className="rounded-2xl border border-slate-200 bg-card p-5">
-          <label htmlFor="company-logo" className="block text-sm font-medium">Logo URL</label>
+          <label className="block text-sm font-medium">Logo</label>
+          <div className="mt-1 flex items-center gap-3">
+            {company.logo ? (
+              <img src={company.logo} alt="Company logo" className="h-14 w-14 object-contain rounded border border-slate-200 bg-white" />
+            ) : (
+              <div className="h-14 w-14 rounded border border-dashed border-slate-300 flex items-center justify-center text-[10px] text-slate-400">No logo</div>
+            )}
+            <div className="flex-1">
+              <input type="file" accept="image/png,image/jpeg,image/webp" title="Upload company logo" onChange={uploadLogo} disabled={uploadingLogo} className="text-sm" />
+              <p className="text-xs text-slate-500 mt-1">{uploadingLogo ? 'Uploading…' : 'PNG, JPEG, or WEBP — under 5 MB. Saved immediately, shows on generated PDFs.'}</p>
+            </div>
+          </div>
+          <label htmlFor="company-logo" className="block text-xs text-slate-500 mt-3">Or paste an image URL directly</label>
           <input id="company-logo" title="Company Logo URL" placeholder="Logo URL" value={company.logo||''} onChange={e=>setCompany({...company,logo:e.target.value})} className="mt-1 input" />
           <label htmlFor="company-favicon" className="block text-sm font-medium mt-4">Favicon URL</label>
           <input id="company-favicon" title="Company Favicon URL" placeholder="Favicon URL" value={company.favicon||''} onChange={e=>setCompany({...company,favicon:e.target.value})} className="mt-1 input" />

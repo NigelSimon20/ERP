@@ -32,3 +32,24 @@ export async function deleteObject(key: string): Promise<void> {
   const { error } = await supabase.storage.from(UPLOADS_BUCKET).remove([key])
   if (error) throw new Error(`Storage delete failed: ${error.message}`)
 }
+
+// Branding assets (logo, favicon, login screen images, ...) need to render
+// inside client-generated PDFs via a plain unauthenticated `fetch(url)` (see
+// lib/pdf-engine.ts's fetchImageDataUrl), so unlike UPLOADS_BUCKET they can't
+// live behind the company-scoped /api/files/[id]/download route -- they need
+// a real public URL. Kept in a separate public bucket rather than making
+// UPLOADS_BUCKET public, since that one intentionally gates general documents
+// behind auth.
+export const BRANDING_BUCKET = 'branding'
+
+// `upsert: true` so re-uploading under the same key (e.g. "companyId/logo.png")
+// replaces the previous file in place instead of erroring or accumulating
+// old copies under new names.
+export async function uploadBrandingObject(key: string, buffer: Buffer, contentType: string): Promise<string> {
+  const { error } = await supabase.storage.from(BRANDING_BUCKET).upload(key, buffer, {
+    contentType,
+    upsert: true,
+  })
+  if (error) throw new Error(`Storage upload failed: ${error.message}`)
+  return supabase.storage.from(BRANDING_BUCKET).getPublicUrl(key).data.publicUrl
+}
