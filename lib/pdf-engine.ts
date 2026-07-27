@@ -5,12 +5,6 @@ import { formatDate } from './utils'
 // of which, exportDocumentPdf, had none at all) with one consistent engine:
 // real per-page pagination, a rendered company logo, page numbers on every
 // page, an optional watermark, and a signature/stamp block.
-//
-// QR code and barcode support (addQrCode/addBarcode below) are intentionally
-// left as no-op stubs: the `qrcode`/`jsbarcode` packages could not be
-// installed in this session (npm registry unreachable). Nothing else in this
-// file depends on them -- once they're installed, fill in their bodies and
-// every caller that already invokes them will start rendering automatically.
 
 export interface PdfCompany {
   name?: string | null
@@ -173,16 +167,30 @@ export async function addSignatureBlock(ctx: BrandedDoc, company: PdfCompany, y:
   return lineY + 12
 }
 
-// TODO: fill in once `qrcode` can be installed (blocked this session by an
-// npm registry outage). Callers already pass what they need; nothing else
-// changes when this is implemented.
-export async function addQrCode(_ctx: BrandedDoc, _value: string, _x: number, _y: number, _size = 24) {
-  // no-op until the `qrcode` package is available
+export async function addQrCode(ctx: BrandedDoc, value: string, x: number, y: number, size = 24) {
+  if (!value) return
+  try {
+    const QRCode = await import('qrcode')
+    // Render well above the target print size and let jsPDF scale down --
+    // avoids visible pixelation on a 24mm-square code.
+    const dataUrl = await QRCode.toDataURL(value, { margin: 0, width: size * 8 })
+    ctx.doc.addImage(dataUrl, 'PNG', x, y, size, size)
+  } catch {
+    // QR rendering must never break PDF generation -- skip on any failure
+    // (unsupported value, canvas unavailable, etc).
+  }
 }
 
-// TODO: fill in once `jsbarcode` can be installed (same npm outage as above).
-export async function addBarcode(_ctx: BrandedDoc, _value: string, _x: number, _y: number, _width = 50, _height = 12) {
-  // no-op until the `jsbarcode` package is available
+export async function addBarcode(ctx: BrandedDoc, value: string, x: number, y: number, width = 50, height = 12) {
+  if (!value) return
+  try {
+    const { default: JsBarcode } = await import('jsbarcode')
+    const canvas = document.createElement('canvas')
+    JsBarcode(canvas, value, { format: 'CODE128', displayValue: false, margin: 0 })
+    ctx.doc.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, width, height)
+  } catch {
+    // Same failure policy as addQrCode -- skip rather than break the document.
+  }
 }
 
 // Stamps every page of the finished document with page numbers, a

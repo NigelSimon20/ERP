@@ -1,5 +1,5 @@
 import { formatCurrency, formatDate } from './utils'
-import { startBrandedDoc, finalizeBrandedDoc, drawTable, addSignatureBlock, addQrCode, type PdfCompany } from './pdf-engine'
+import { startBrandedDoc, finalizeBrandedDoc, drawTable, addSignatureBlock, addQrCode, addBarcode, type PdfCompany } from './pdf-engine'
 
 // Programmatic client-side PDF generation, built on the shared engine in
 // lib/pdf-engine.ts (real per-page pagination via drawTable, a rendered
@@ -292,6 +292,9 @@ export async function exportDocumentPdf(
   }
   if (company.qrEnabled) {
     await addQrCode(ctx, `${type}:${number}`, pageWidth - margin - 24, lastY)
+  }
+  if (company.barcodeEnabled) {
+    await addBarcode(ctx, `${type}:${number}`, margin, lastY, 40, 12)
   }
 
   if (company.bankName) {
