@@ -1670,7 +1670,7 @@ model CoverageRequest {
   reason String
   requiredGuards Int
   startDate DateTime
-  endDate DateTime
+  endDate DateTime?
   status CoverageStatus @default(PENDING)
   approvedBy String?
   rejectionReason String?
@@ -1854,6 +1854,7 @@ model PayslipItem {
 model PayrollRun {
   id String @id
   companyId String
+  reference String?
   periodStart DateTime
   periodEnd DateTime
   runDate DateTime @default(now())

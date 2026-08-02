@@ -94,7 +94,7 @@ export async function GET() {
   return NextResponse.json({
     runs: runs.map((r) => ({
       id: r.id,
-      reference: null,
+      reference: r.reference,
       payPeriodStart: r.periodStart.toISOString(),
       payPeriodEnd: r.periodEnd.toISOString(),
       runDate: r.runDate.toISOString(),
@@ -203,7 +203,7 @@ export async function POST(req: NextRequest) {
     await prisma.$transaction(async (tx) => {
       await tx.payrollRun.create({
         data: {
-          id: runId, companyId, periodStart: new Date(periodStart), periodEnd: new Date(periodEnd),
+          id: runId, companyId, reference, periodStart: new Date(periodStart), periodEnd: new Date(periodEnd),
           runDate: new Date(), status: 'PAID',
           totalGross, totalDeductions, totalNet,
           bankAccountId, processedBy: userId,

@@ -51,7 +51,7 @@ export default function BdReportsPage() {
     Promise.all([
       fetch('/api/bd/leads').then(r => r.json()),
       fetch('/api/bd/quotations').then(r => r.json()),
-      fetch('/api/finance/invoices').then(r => r.json()),
+      fetch('/api/bd/revenue-by-customer').then(r => r.json()),
     ]).then(([l, q, inv]) => {
       setLeads(l.leads ?? [])
       setQuotations(q.quotations ?? [])

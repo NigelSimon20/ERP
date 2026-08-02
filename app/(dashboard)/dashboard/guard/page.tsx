@@ -1,12 +1,31 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useForm, Controller } from 'react-hook-form'
 import { DashboardPageShell } from '@/components/dashboard/DashboardPageShell'
 import { KPICard } from '@/components/dashboard/KPICard'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
 import { EmptyState } from '@/components/shared/EmptyState'
 import Link from 'next/link'
-import { CalculatorRegular, CalendarLtrRegular, CheckmarkCircleRegular, ClockRegular, DocumentRegular, LocationRegular, PersonAvailableRegular, PersonClockRegular, ShieldRegular, TaskListLtrRegular } from '@fluentui/react-icons';
+import toast from 'react-hot-toast'
+import { AddRegular, CalculatorRegular, CalendarLtrRegular, CheckmarkCircleRegular, ClockRegular, DocumentRegular, LocationRegular, PersonAvailableRegular, PersonClockRegular, ShieldRegular, TaskListLtrRegular } from '@fluentui/react-icons';
+
+interface Payslip { id: string; grossPay: number; totalDeductions: number; netPay: number; status: string; payrollRun?: { periodStart: string; periodEnd: string } }
+interface LeaveRequestRow { id: string; leaveType: string; startDate: string; endDate: string; days: number; reason: string | null; status: string }
+type LeaveFormValues = { leaveType: string; startDate: string; endDate: string; reason: string }
+
+const LEAVE_TYPES = ['ANNUAL', 'SICK', 'MATERNITY', 'PATERNITY', 'COMPASSIONATE', 'UNPAID', 'STUDY', 'CASH_IN_LIEU']
+const LEAVE_STATUS_BADGE: Record<string, string> = {
+  PENDING: 'bg-amber-100 text-amber-700',
+  APPROVED: 'bg-green-100 text-green-700',
+  REJECTED: 'bg-red-100 text-red-700',
+}
 
 interface GuardData {
   myProfile: { name: string; rank: string | null; department: string | null; employeeNumber: string; status: string } | null
@@ -31,6 +50,20 @@ export default function GuardDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [time, setTime] = useState(new Date())
+  const [payslips, setPayslips] = useState<Payslip[]>([])
+  const [leaveRequests, setLeaveRequests] = useState<LeaveRequestRow[]>([])
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false)
+
+  const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<LeaveFormValues>({
+    defaultValues: { leaveType: 'ANNUAL', startDate: '', endDate: '', reason: '' },
+  })
+
+  function fetchPayslips() {
+    fetch('/api/portal/guard/payslips').then(r => r.json()).then(j => setPayslips(j.payslips ?? [])).catch(() => {})
+  }
+  function fetchLeaveRequests() {
+    fetch('/api/portal/guard/leave').then(r => r.json()).then(j => setLeaveRequests(j.requests ?? [])).catch(() => {})
+  }
 
   useEffect(() => {
     fetch('/api/dashboard/guard')
@@ -38,12 +71,28 @@ export default function GuardDashboardPage() {
       .then(setData)
       .catch(() => setError(true))
       .finally(() => setLoading(false))
+    fetchPayslips()
+    fetchLeaveRequests()
   }, [])
 
   useEffect(() => {
     const id = setInterval(() => setTime(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
+
+  async function onRequestLeave(values: LeaveFormValues) {
+    const res = await fetch('/api/portal/guard/leave', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(values),
+    })
+    const json = await res.json()
+    if (!res.ok) { toast.error(json.error ?? 'Failed to submit leave request'); return }
+    toast.success('Leave request submitted')
+    setShowLeaveDialog(false)
+    reset()
+    fetchLeaveRequests()
+  }
 
   if (error) return (
     <DashboardPageShell title="My Dashboard" subtitle="Your personal workspace">
@@ -114,7 +163,6 @@ export default function GuardDashboardPage() {
               data?.myLatestPayslip ? <>
                 <p className="text-2xl font-bold text-primary">{formatCurrency(data.myLatestPayslip.netPay)}</p>
                 <p className="text-[10px] text-muted-foreground mt-1">{formatDate(data.myLatestPayslip.periodStart)} – {formatDate(data.myLatestPayslip.periodEnd)}</p>
-                <Link href="/human-resources/payslips" className="text-[10px] text-primary hover:underline font-medium">View Payslip →</Link>
               </> :
               <p className="text-sm text-brand-muted-light">No payslips yet</p>
             }
@@ -172,19 +220,91 @@ export default function GuardDashboardPage() {
           </div>
         </div>
 
+        {/* Row 4 — Payslips & Leave */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-card erp-card">
+            <h3 className="text-sm font-semibold text-foreground mb-3">My Payslips</h3>
+            {!payslips.length ? (
+              <EmptyState icon={DocumentRegular} title="No payslips yet" description="Your payslips will appear here once payroll is processed" />
+            ) : (
+              <div className="space-y-2">
+                {payslips.slice(0, 6).map((p) => (
+                  <div key={p.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-foreground">
+                        {p.payrollRun ? `${formatDate(p.payrollRun.periodStart)} – ${formatDate(p.payrollRun.periodEnd)}` : 'Pay period —'}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">Gross {formatCurrency(p.grossPay)} · Deductions {formatCurrency(p.totalDeductions)}</p>
+                    </div>
+                    <p className="text-sm font-bold text-primary shrink-0">{formatCurrency(p.netPay)}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="bg-card erp-card">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-foreground">My Leave</h3>
+              <Button type="button" size="sm" onClick={() => { reset(); setShowLeaveDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white h-7 px-2.5 text-xs">
+                <AddRegular className="h-3.5 w-3.5 mr-1" /> Request Leave
+              </Button>
+            </div>
+            {!leaveRequests.length ? (
+              <EmptyState icon={CalendarLtrRegular} title="No leave requests" description="Submit a request when you need time off" />
+            ) : (
+              <div className="space-y-2">
+                {leaveRequests.slice(0, 6).map((l) => (
+                  <div key={l.id} className="flex items-center gap-3 py-2 border-b border-border last:border-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-foreground">{l.leaveType} · {l.days} day{l.days === 1 ? '' : 's'}</p>
+                      <p className="text-[10px] text-muted-foreground">{formatDate(l.startDate)} – {formatDate(l.endDate)}</p>
+                    </div>
+                    <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold shrink-0 ${LEAVE_STATUS_BADGE[l.status] ?? 'bg-muted text-muted-foreground'}`}>{l.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-2">
-          {[
-            { label: 'Request Leave', href: '/human-resources/leave-management', Icon: CalendarLtrRegular },
-            { label: 'My Payslips', href: '/human-resources/payslips', Icon: DocumentRegular },
-            { label: 'My Tasks', href: '/tasks-requests/tasks', Icon: TaskListLtrRegular },
-          ].map(({ label, href, Icon }) => (
-            <Link key={href} href={href} className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-primary text-white hover:bg-brand-red-dark">
-              <Icon fontSize={13} /> {label}
-            </Link>
-          ))}
+          <button type="button" onClick={() => { reset(); setShowLeaveDialog(true) }} className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-primary text-white hover:bg-brand-red-dark">
+            <CalendarLtrRegular fontSize={13} /> Request Leave
+          </button>
+          <Link href="/tasks-requests/tasks" className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-primary text-white hover:bg-brand-red-dark">
+            <TaskListLtrRegular fontSize={13} /> My Tasks
+          </Link>
         </div>
       </div>
+
+      {/* Request Leave Dialog */}
+      <Dialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Request Leave</DialogTitle></DialogHeader>
+          <form onSubmit={handleSubmit(onRequestLeave)} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Leave Type</Label>
+              <Controller control={control} name="leaveType" render={({ field }) => (
+                <Select onValueChange={field.onChange} value={field.value}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{LEAVE_TYPES.map((t) => <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>)}</SelectContent>
+                </Select>
+              )} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5"><Label>From *</Label><Input type="date" {...register('startDate', { required: true })} /></div>
+              <div className="space-y-1.5"><Label>To</Label><Input type="date" {...register('endDate')} /></div>
+            </div>
+            <div className="space-y-1.5"><Label>Reason</Label><Textarea placeholder="Optional" rows={2} {...register('reason')} /></div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowLeaveDialog(false)}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </DashboardPageShell>
   )
 }

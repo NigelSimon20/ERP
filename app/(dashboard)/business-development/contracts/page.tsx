@@ -76,7 +76,7 @@ export default function ContractsPage() {
   useEffect(() => {
     Promise.all([
       fetch('/api/bd/customers').then(r => r.json()),
-      fetch('/api/operations/sites').then(r => r.json()),
+      fetch('/api/bd/sites').then(r => r.json()),
     ]).then(([c, s]) => {
       setCustomers(c.customers ?? [])
       setSites(s.sites ?? [])

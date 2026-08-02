@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { siteId, reason, guardsNeeded, startDate, endDate } = body
 
-  if (!siteId || !reason || !startDate || !endDate) {
-    return NextResponse.json({ error: 'siteId, reason, startDate, and endDate are required' }, { status: 400 })
+  if (!siteId || !reason || !startDate) {
+    return NextResponse.json({ error: 'siteId, reason, and startDate are required' }, { status: 400 })
   }
 
   const site = await prisma.site.findFirst({ where: { id: siteId, companyId } })
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
       reason,
       requiredGuards: Number(guardsNeeded) || 1,
       startDate: new Date(startDate),
-      endDate: new Date(endDate),
+      endDate: endDate ? new Date(endDate) : null,
       status: 'PENDING',
       requestedBy: userId,
       updatedAt: new Date(),

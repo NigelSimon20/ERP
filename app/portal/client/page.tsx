@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { BuildingRegular, DocumentRegular, LocationRegular, PaymentRegular, ShieldRegular, SignOutRegular, WarningRegular } from '@fluentui/react-icons';
+import { ArrowDownloadRegular, BuildingRegular, DocumentRegular, LocationRegular, PaymentRegular, ShieldRegular, SignOutRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface SessionUser { id: string; name: string; email: string; role: string; companyId: string }
 interface Invoice { id: string; invoiceNumber: string; issueDate: string; dueDate: string; totalAmount: number; paidAmount: number; balanceDue: number; status: string }
@@ -54,20 +54,40 @@ export default function ClientPortalPage() {
       .finally(() => setAuthChecked(true))
   }, [])
 
-  // Load portal data after login
+  // Load portal data after login. Each fetch gets its own timeout so one
+  // hung backend call can't leave the whole dashboard spinning forever with
+  // no error and no partial render -- a real risk in this environment,
+  // which has documented DB-pooler flakiness. A per-fetch .catch() alone
+  // doesn't help: a request that never resolves (not a network error, no
+  // response at all) never rejects and Promise.all just waits forever.
   useEffect(() => {
     if (!user) return
     setDataLoading(true)
+
+    async function fetchWithTimeout(url: string, ms = 15000) {
+      const controller = new AbortController()
+      const timer = setTimeout(() => controller.abort(), ms)
+      try {
+        const res = await fetch(url, { signal: controller.signal })
+        return await res.json()
+      } catch {
+        return null
+      } finally {
+        clearTimeout(timer)
+      }
+    }
+
     Promise.all([
-      fetch('/api/portal/client/invoices').then(r => r.json()).catch(() => ({ invoices: [] })),
-      fetch('/api/portal/client/receipts').then(r => r.json()).catch(() => ({ receipts: [] })),
-      fetch('/api/portal/client/sites').then(r => r.json()).catch(() => ({ sites: [] })),
-      fetch('/api/portal/client/incidents').then(r => r.json()).catch(() => ({ incidents: [] })),
+      fetchWithTimeout('/api/portal/client/invoices'),
+      fetchWithTimeout('/api/portal/client/receipts'),
+      fetchWithTimeout('/api/portal/client/sites'),
+      fetchWithTimeout('/api/portal/client/incidents'),
     ]).then(([inv, rec, sit, inc]) => {
-      setInvoices((inv.invoices ?? []).map((i: Record<string, unknown>) => ({ ...i, totalAmount: Number(i.totalAmount), paidAmount: Number(i.paidAmount), balanceDue: Number(i.balanceDue) })))
-      setReceipts(rec.receipts ?? [])
-      setSites(sit.sites ?? [])
-      setIncidents(inc.incidents ?? [])
+      setInvoices(((inv?.invoices ?? []) as Record<string, unknown>[]).map((i) => ({ ...i, totalAmount: Number(i.totalAmount), paidAmount: Number(i.paidAmount), balanceDue: Number(i.balanceDue) })) as Invoice[])
+      setReceipts(rec?.receipts ?? [])
+      setSites(sit?.sites ?? [])
+      setIncidents(inc?.incidents ?? [])
+      if (!inv || !rec || !sit || !inc) toast.error('Some data failed to load — please refresh to retry')
     }).finally(() => setDataLoading(false))
   }, [user])
 
@@ -91,6 +111,22 @@ export default function ClientPortalPage() {
   async function handleLogout() {
     await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
     setUser(null)
+  }
+
+  async function downloadInvoicePdf(invoiceId: string) {
+    try {
+      const [invRes, settingsRes] = await Promise.all([
+        fetch(`/api/portal/client/invoices/${invoiceId}/pdf`),
+        fetch('/api/settings'),
+      ])
+      const invJson = await invRes.json()
+      if (!invRes.ok) { toast.error(invJson.error ?? 'Failed to load invoice'); return }
+      const company = settingsRes.ok ? (await settingsRes.json()).company ?? {} : {}
+      const { exportDocumentPdf } = await import('@/lib/pdf')
+      await exportDocumentPdf('invoice', invJson.invoice, company)
+    } catch {
+      toast.error('Failed to generate PDF')
+    }
   }
 
   if (!authChecked) {
@@ -196,6 +232,7 @@ export default function ClientPortalPage() {
                         <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Total</th>
                         <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Balance Due</th>
                         <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Status</th>
+                        <th className="px-4 py-2.5 font-medium text-muted-foreground text-left">PDF</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
@@ -207,6 +244,11 @@ export default function ClientPortalPage() {
                           <td className="px-4 py-3 text-right text-foreground">{formatCurrency(inv.totalAmount)}</td>
                           <td className="px-4 py-3 text-right font-medium text-foreground">{formatCurrency(inv.balanceDue)}</td>
                           <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_COLORS[inv.status] ?? ''}`}>{inv.status}</span></td>
+                          <td className="px-4 py-3">
+                            <button type="button" onClick={() => downloadInvoicePdf(inv.id)} className="p-1.5 rounded hover:bg-muted text-brand-muted-light hover:text-foreground" aria-label="Download invoice PDF" title="Download PDF">
+                              <ArrowDownloadRegular className="h-3.5 w-3.5" />
+                            </button>
+                          </td>
                         </tr>
                       ))}
                     </tbody>

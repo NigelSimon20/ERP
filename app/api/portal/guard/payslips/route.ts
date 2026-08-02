@@ -17,7 +17,7 @@ export async function GET() {
       total_earnings: true,
       total_deductions: true,
       net_pay: true,
-      days_worked: true,
+      hours_worked: true,
       status: true,
     },
   })
@@ -39,7 +39,7 @@ export async function GET() {
         grossPay: Number(p.total_earnings ?? 0),
         totalDeductions: Number(p.total_deductions ?? 0),
         netPay: Number(p.net_pay ?? 0),
-        hoursWorked: Number(p.days_worked ?? 0),
+        hoursWorked: Number(p.hours_worked ?? 0),
         status: p.status ?? 'PENDING',
         payrollRun: run ? { periodStart: run.periodStart.toISOString(), periodEnd: run.periodEnd.toISOString() } : undefined,
       }

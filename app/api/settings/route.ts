@@ -24,7 +24,12 @@ export async function GET() {
   const company = await prisma.company.findUnique({ where: { id: session.companyId } })
   if (!company) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  return NextResponse.json({ company: withTaxAliases(company) })
+  // smtpPassword is a raw stored credential -- never round-trip it to the
+  // client, for any role. Nothing in the Settings UI reads it back (the PUT
+  // handler below only ever writes it), so stripping it here breaks nothing.
+  const { smtpPassword: _smtpPassword, ...safeCompany } = company
+
+  return NextResponse.json({ company: withTaxAliases(safeCompany) })
 }
 
 export async function PUT(req: NextRequest) {

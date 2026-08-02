@@ -113,7 +113,7 @@ export default function JournalEntriesPage() {
     try {
       const payload = {
         description: data.description,
-        date: data.date,
+        entryDate: data.date,
         lines: data.lines.filter((l) => l.accountId).map((l) => ({
           accountId: l.accountId,
           description: l.description,

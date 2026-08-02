@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { formatCurrency } from '@/lib/utils'
 import { ArrowTrendingRegular, CalendarLtrRegular, ClockRegular, ErrorCircleRegular, MoneyRegular, PeopleRegular } from '@fluentui/react-icons';
 
-interface KpiData { totalActive: number; totalHeadcount: number; lastPayrollNet: number; lastPayrollDate: string | null; pendingLeave: number; avgHourlyRate: number; onLeaveToday: number; expiredContracts: number }
+interface KpiData { totalActive: number; totalHeadcount: number; lastPayrollNet: number; lastPayrollDate: string | null; pendingLeave: number; avgDailyRate: number; onLeaveToday: number; expiredContracts: number }
 
 function KpiCard({ icon: Icon, label, value, sub, color = 'blue', href }: { icon: React.ElementType; label: string; value: string; sub?: string; color?: string; href: string }) {
   const iconColors: Record<string, string> = { blue: 'text-blue-600 bg-blue-50', red: 'text-primary bg-red-50', green: 'text-green-600 bg-green-50', amber: 'text-amber-600 bg-amber-50', navy: 'text-foreground bg-muted' }
@@ -32,18 +32,18 @@ export default function HRDashboardPage() {
       fetch('/api/hr/payroll').then(r => r.json()),
       fetch('/api/hr/leave?status=PENDING').then(r => r.json()),
     ]).then(([emp, payroll, leave]) => {
-      const guards: { status: string; hourlyRate: number }[] = emp.guards ?? []
+      const guards: { status: string; dailyRate: number | null }[] = emp.guards ?? []
       const activeGuards = guards.filter(g => g.status === 'Active')
       const runs: { runDate: string; totalNet: number }[] = payroll.runs ?? []
       const lastRun = runs[0]
-      const avgRate = activeGuards.length ? activeGuards.reduce((s, g) => s + Number(g.hourlyRate), 0) / activeGuards.length : 0
+      const avgRate = activeGuards.length ? activeGuards.reduce((s, g) => s + Number(g.dailyRate ?? 0), 0) / activeGuards.length : 0
       setKpi({
         totalActive: activeGuards.length,
         totalHeadcount: guards.length,
         lastPayrollNet: lastRun ? Number(lastRun.totalNet) : 0,
         lastPayrollDate: lastRun?.runDate ?? null,
         pendingLeave: (leave.leave ?? []).length,
-        avgHourlyRate: avgRate,
+        avgDailyRate: avgRate,
         onLeaveToday: 0,
         expiredContracts: 0,
       })
@@ -80,7 +80,7 @@ export default function HRDashboardPage() {
             <KpiCard icon={PeopleRegular} label="Active Guards" value={String(kpi.totalActive)} sub={`${kpi.totalHeadcount} total headcount`} color="navy" href="/human-resources/employees" />
             <KpiCard icon={MoneyRegular} label="Last Payroll Net" value={formatCurrency(kpi.lastPayrollNet)} sub={kpi.lastPayrollDate ? new Date(kpi.lastPayrollDate).toLocaleDateString() : 'No runs yet'} color="green" href="/human-resources/payroll" />
             <KpiCard icon={CalendarLtrRegular} label="Pending Leave" value={String(kpi.pendingLeave)} sub="Awaiting approval" color={kpi.pendingLeave > 0 ? 'amber' : 'blue'} href="/human-resources/leave-management" />
-            <KpiCard icon={ArrowTrendingRegular} label="Avg Hourly Rate" value={formatCurrency(kpi.avgHourlyRate)} sub="Per active guard" color="blue" href="/human-resources/employees" />
+            <KpiCard icon={ArrowTrendingRegular} label="Avg Daily Rate" value={formatCurrency(kpi.avgDailyRate)} sub="Per active guard" color="blue" href="/human-resources/employees" />
             <KpiCard icon={ClockRegular} label="Payslips" value="View All" sub="Filter by run or guard" color="navy" href="/human-resources/payslips" />
             <KpiCard icon={MoneyRegular} label="Payslip Items" value="Configure" sub="Earnings and deductions" color="red" href="/human-resources/payslip-items" />
           </div>

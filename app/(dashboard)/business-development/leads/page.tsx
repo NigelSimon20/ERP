@@ -22,17 +22,21 @@ interface Lead { id: string; companyName: string; contactName: string | null; co
 interface User { id: string; name: string }
 type CreateForm = { companyName: string; contactName: string; contactEmail: string; contactPhone: string; source: string; status: string; estimatedValue: string; probability: string; assignedUserId: string; notes: string }
 
+// Matches the real Prisma LeadStatus enum exactly -- these values are what
+// actually get persisted, unlike the previous INQUIRY/PROPOSAL/ON_HOLD set
+// (3 of 7 stages, including the default) which don't exist in the enum at
+// all and made lead creation fail silently every time.
 const STAGES = [
-  { id: 'INQUIRY', label: 'Inquiry', color: 'bg-muted border-border text-muted-foreground' },
+  { id: 'NEW', label: 'New', color: 'bg-muted border-border text-muted-foreground' },
+  { id: 'CONTACTED', label: 'Contacted', color: 'bg-slate-100 border-slate-200 text-slate-700 dark:bg-slate-500/15 dark:border-slate-500/30 dark:text-slate-400' },
   { id: 'QUALIFIED', label: 'Qualified', color: 'bg-blue-100 border-blue-200 text-blue-700 dark:bg-blue-500/15 dark:border-blue-500/30 dark:text-blue-400' },
-  { id: 'PROPOSAL', label: 'Proposal', color: 'bg-amber-100 border-amber-200 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-400' },
+  { id: 'PROPOSAL_SENT', label: 'Proposal Sent', color: 'bg-amber-100 border-amber-200 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-400' },
   { id: 'NEGOTIATION', label: 'Negotiation', color: 'bg-orange-100 border-orange-200 text-orange-700 dark:bg-orange-500/15 dark:border-orange-500/30 dark:text-orange-400' },
   { id: 'WON', label: 'Won', color: 'bg-green-100 border-green-200 text-green-700 dark:bg-green-500/15 dark:border-green-500/30 dark:text-green-400' },
   { id: 'LOST', label: 'Lost', color: 'bg-primary/10 border-primary/20 text-primary dark:bg-primary/15 dark:text-red-300' },
-  { id: 'ON_HOLD', label: 'On Hold', color: 'bg-muted border-border text-muted-foreground' },
 ]
 
-const STAGE_BADGE: Record<string, string> = { INQUIRY: 'bg-muted text-muted-foreground', QUALIFIED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PROPOSAL: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', NEGOTIATION: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', WON: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', LOST: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', ON_HOLD: 'bg-muted text-muted-foreground' }
+const STAGE_BADGE: Record<string, string> = { NEW: 'bg-muted text-muted-foreground', CONTACTED: 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400', QUALIFIED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PROPOSAL_SENT: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', NEGOTIATION: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', WON: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', LOST: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
 const SOURCES = ['Website', 'Referral', 'Cold Call', 'Email', 'Social Media', 'Event', 'Partner', 'Other']
 
 function DraggableCard({ lead }: { lead: Lead }) {
@@ -87,7 +91,7 @@ export default function LeadsPage() {
   const sensors = useSensors(useSensor(MouseSensor, { activationConstraint: { distance: 5 } }), useSensor(TouchSensor))
 
   const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<CreateForm>({
-    defaultValues: { companyName: '', contactName: '', contactEmail: '', contactPhone: '', source: '', status: 'INQUIRY', estimatedValue: '', probability: '20', assignedUserId: '', notes: '' },
+    defaultValues: { companyName: '', contactName: '', contactEmail: '', contactPhone: '', source: '', status: 'NEW', estimatedValue: '', probability: '20', assignedUserId: '', notes: '' },
   })
 
   async function fetchLeads() {
@@ -257,8 +261,8 @@ export default function LeadsPage() {
           <form onSubmit={handleSubmit(onCreate)} className="space-y-4">
             <div className="space-y-1.5"><Label>Company Name *</Label><Input placeholder="Prospect company" {...register('companyName', { required: true })} /></div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5"><Label>Contact Name</Label><Input placeholder="Full name" {...register('contactName')} /></div>
-              <div className="space-y-1.5"><Label>Phone</Label><Input placeholder="+263…" {...register('contactPhone')} /></div>
+              <div className="space-y-1.5"><Label>Contact Name *</Label><Input placeholder="Full name" {...register('contactName', { required: true })} /></div>
+              <div className="space-y-1.5"><Label>Phone *</Label><Input placeholder="+263…" {...register('contactPhone', { required: true })} /></div>
             </div>
             <div className="space-y-1.5"><Label>Email</Label><Input type="email" placeholder="contact@company.com" {...register('contactEmail')} /></div>
             <div className="grid grid-cols-2 gap-3">

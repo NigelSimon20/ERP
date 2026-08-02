@@ -24,7 +24,21 @@ export async function GET() {
     orderBy: { createdAt: 'desc' },
   })
 
-  return NextResponse.json({ quotations: quotations.map(mapQuotation) })
+  // Quotation.customerId has no Prisma relation to Customer (unlike leadId,
+  // which does) -- attach it manually so the list/Convert-to-Invoice flow
+  // can actually see which customer a quotation belongs to.
+  const customerIds = Array.from(new Set(quotations.map((q) => q.customerId).filter((v): v is string => !!v)))
+  const customers = customerIds.length
+    ? await prisma.customer.findMany({ where: { id: { in: customerIds } }, select: { id: true, company_name: true } })
+    : []
+  const customerById = new Map(customers.map((c) => [c.id, c]))
+
+  return NextResponse.json({
+    quotations: quotations.map((q) => ({
+      ...mapQuotation(q),
+      customer: q.customerId && customerById.has(q.customerId) ? { id: q.customerId, name: customerById.get(q.customerId)!.company_name } : null,
+    })),
+  })
 }
 
 export async function POST(req: NextRequest) {

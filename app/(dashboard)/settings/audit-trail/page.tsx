@@ -39,7 +39,6 @@ const ACTION_COLORS: Record<string, string> = {
   VIEW: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
 }
 
-const MODULES = ['Finance', 'Operations', 'HR', 'BD', 'Tasks', 'Auth', 'System', 'Settings', 'Users']
 const ACTIONS = ['CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'VIEW']
 
 function DiffRow({ old: oldVals, next: newVals }: { old: Record<string, unknown> | null; next: Record<string, unknown> | null }) {
@@ -94,6 +93,7 @@ export default function AuditTrailPage() {
   const [view, setView] = useState<'log' | 'activity'>('log')
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [users, setUsers] = useState<User[]>([])
+  const [modules, setModules] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -162,6 +162,7 @@ export default function AuditTrailPage() {
 
   useEffect(() => {
     fetch('/api/users').then(r => r.json()).then(j => setUsers(j.users ?? [])).catch(() => {})
+    fetch('/api/audit/modules').then(r => r.json()).then(j => setModules(j.modules ?? [])).catch(() => {})
   }, [])
 
   const [exporting, setExporting] = useState(false)
@@ -338,7 +339,7 @@ export default function AuditTrailPage() {
           aria-label="Filter by module"
         >
           <option value="">All Modules</option>
-          {MODULES.map(m => <option key={m} value={m}>{m}</option>)}
+          {modules.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
 
         <select

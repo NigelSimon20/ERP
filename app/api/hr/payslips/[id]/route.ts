@@ -50,7 +50,7 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
       },
       payrollRun: run ? {
         id: run.id,
-        reference: null,
+        reference: run.reference,
         payPeriodStart: run.periodStart.toISOString(),
         payPeriodEnd: run.periodEnd.toISOString(),
         runDate: run.runDate.toISOString(),

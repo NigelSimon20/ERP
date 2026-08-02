@@ -32,14 +32,16 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { companyName, contactName, contactEmail, contactPhone, source, status, estimatedValue, probability, assignedUserId, notes } = body
 
-  if (!companyName) return NextResponse.json({ error: 'companyName is required' }, { status: 400 })
+  if (!companyName || !contactName || !contactPhone) {
+    return NextResponse.json({ error: 'companyName, contactName, and contactPhone are required' }, { status: 400 })
+  }
 
   const lead = await prisma.lead.create({
     data: {
       id: crypto.randomUUID(), companyId,
-      companyName, contactName: contactName || null, contactEmail: contactEmail || null,
-      contactPhone: contactPhone || null, source: source || null,
-      status: status || 'INQUIRY',
+      companyName, contactName, contactEmail: contactEmail || null,
+      contactPhone, source: source || null,
+      status: status || 'NEW',
       estimatedValue: estimatedValue != null ? Number(estimatedValue) : 0,
       probability: probability != null ? Number(probability) : 0,
       assignedTo: assignedUserId || null, notes: notes || null,

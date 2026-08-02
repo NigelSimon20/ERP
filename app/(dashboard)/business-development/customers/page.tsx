@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
@@ -32,22 +32,37 @@ export default function CustomersPage() {
 
   const { register, handleSubmit, reset, formState: { isSubmitting } } = useForm<EditForm>()
 
-  async function fetchCustomers() {
+  // Guards against out-of-order responses -- without this, typing quickly
+  // fired one uncancelled fetch per keystroke and whichever response landed
+  // last (not necessarily the one for the final keystroke) won, so the list
+  // could settle on stale or even completely wrong results.
+  const searchSeq = useRef(0)
+
+  async function fetchCustomers(searchTerm: string) {
+    const seq = ++searchSeq.current
     setLoading(true)
     const params = new URLSearchParams()
-    if (search) params.set('search', search)
+    if (searchTerm) params.set('search', searchTerm)
     try {
       const res = await fetch(`/api/bd/customers?${params}`)
       const json = await res.json()
+      if (seq !== searchSeq.current) return // a newer search has since started; discard this stale response
       if (!res.ok) { toast.error(json.error ?? 'Failed to load customers'); setCustomers([]); return }
       setCustomers(json.customers ?? [])
     } catch {
+      if (seq !== searchSeq.current) return
       toast.error('Network error loading customers')
       setCustomers([])
-    } finally { setLoading(false) }
+    } finally {
+      if (seq === searchSeq.current) setLoading(false)
+    }
   }
 
-  useEffect(() => { fetchCustomers() }, [search])
+  // Debounced -- fires 300ms after the user stops typing, not per keystroke.
+  useEffect(() => {
+    const id = setTimeout(() => fetchCustomers(search), 300)
+    return () => clearTimeout(id)
+  }, [search])
 
   async function openDetail(customer: Customer) {
     setLoadingDetail(true)
@@ -56,7 +71,7 @@ export default function CustomersPage() {
       const res = await fetch(`/api/bd/customers/${customer.id}`)
       const json = await res.json()
       if (!res.ok) { toast.error(json.error ?? 'Failed to load customer'); setSelectedCustomer(null); return }
-      const detail = json.customer ?? json
+      const detail = { ...(json.customer ?? json), invoices: json.invoices ?? [], receipts: json.receipts ?? [], sites: json.sites ?? [], outstandingBalance: json.outstandingBalance ?? 0 }
       setSelectedCustomer(detail)
       reset({ name: detail.name, email: detail.email ?? '', phone: detail.phone ?? '', contactPerson: detail.contactPerson ?? '', address: detail.address ?? '', paymentTerms: String(detail.paymentTerms), creditLimit: String(Number(detail.creditLimit)) })
     } catch {
@@ -76,7 +91,7 @@ export default function CustomersPage() {
     toast.success('Customer updated')
     setEditing(false)
     setSelectedCustomer(prev => prev ? { ...prev, ...(json.customer ?? json) } : prev)
-    fetchCustomers()
+    fetchCustomers(search)
   }
 
   const cust = selectedCustomer

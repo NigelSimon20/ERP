@@ -131,6 +131,18 @@ export async function middleware(req: NextRequest) {
     }
   }
 
+  // GET /api/settings (exact path only, not its admin-only sub-routes like
+  // .../logo or .../backup/*) returns company profile/branding/tax fields
+  // that every department's own PDF generation (quotations, payslips,
+  // reports...) legitimately needs to read regardless of role -- the PUT
+  // handler already independently re-enforces SUPER_ADMIN/ADMIN itself, so
+  // this doesn't weaken write protection, only read access to non-secret,
+  // largely customer-facing data (e.g. the bank details already printed on
+  // every invoice/quotation PDF footer).
+  if (pathname === '/api/settings' && req.method === 'GET') {
+    return res
+  }
+
   // Module-level role-based access control
   for (const [prefix, allowed] of ROLE_GUARDS) {
     if (pathname.startsWith(prefix)) {

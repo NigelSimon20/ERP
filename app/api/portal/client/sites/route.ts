@@ -8,7 +8,7 @@ export async function GET() {
   if (!session.customerId) return NextResponse.json({ sites: [] })
 
   const sites = await prisma.site.findMany({
-    where: { customer_id: session.customerId },
+    where: { customer_id: session.customerId, companyId: session.companyId },
     select: {
       id: true,
       site_name: true,

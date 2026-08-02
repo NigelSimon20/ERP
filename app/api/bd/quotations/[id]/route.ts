@@ -24,9 +24,15 @@ export async function GET(_req: NextRequest, { params }: { params: { id: string 
 
   const items = await prisma.quotationItem.findMany({ where: { quotationId: quotation.id } })
 
+  // Same manual attach as GET / -- Quotation.customerId has no Prisma relation.
+  const customer = quotation.customerId
+    ? await prisma.customer.findUnique({ where: { id: quotation.customerId }, select: { id: true, company_name: true } })
+    : null
+
   return NextResponse.json({
     quotation: {
       ...mapQuotation(quotation),
+      customer: customer ? { id: customer.id, name: customer.company_name } : null,
       items: items.map((i) => ({ id: i.id, description: i.description, quantity: Number(i.quantity), unitPrice: Number(i.unitPrice), taxRate: Number(i.taxRate ?? 0), lineTotal: Number(i.total) })),
     },
   })
