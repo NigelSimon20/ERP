@@ -293,9 +293,24 @@ export function drawTable(ctx: BrandedDoc, opts: DrawTableOptions): number {
   }
 
   currentY = drawHeaderRow(currentY)
+  const lineHeight = 4.2
 
   rows.forEach((row) => {
-    if (currentY + 10 > pageHeight - 24) {
+    doc.setFont('Helvetica', 'normal')
+    doc.setFontSize(9)
+    // Wrap each cell to its own column width so long values (e.g. transfer
+    // references) break onto extra lines instead of overflowing, unclipped,
+    // into the next column -- previously this rendered as visually
+    // overlapping text in the generated PDF.
+    const cellLines = row.map((cell, idx) => {
+      const w = colWidths[idx]
+      const text = String(cell ?? '')
+      return text ? (doc.splitTextToSize(text, Math.max(w - 4, 4)) as string[]) : ['']
+    })
+    const lineCount = Math.max(1, ...cellLines.map((lines) => lines.length))
+    const rowHeight = lineCount * lineHeight + 3.8
+
+    if (currentY + rowHeight > pageHeight - 24) {
       doc.addPage()
       currentY = 20
       if (pageTitle) {
@@ -312,21 +327,23 @@ export function drawTable(ctx: BrandedDoc, opts: DrawTableOptions): number {
     doc.setFont('Helvetica', isTotal ? 'bold' : 'normal')
     if (isTotal) {
       doc.setFillColor(headerFill.r, headerFill.g, headerFill.b)
-      doc.rect(margin, currentY, pageWidth - margin * 2, 8, 'F')
+      doc.rect(margin, currentY, pageWidth - margin * 2, rowHeight, 'F')
     }
     doc.setFontSize(9)
     doc.setTextColor(15, 23, 42)
     let x = margin
-    row.forEach((cell, idx) => {
+    cellLines.forEach((lines, idx) => {
       const w = colWidths[idx]
-      const text = String(cell ?? '')
-      if (aligns[idx] === 'right') doc.text(text, x + w, currentY + 6, { align: 'right' })
-      else doc.text(text, x + 2, currentY + 6)
+      lines.forEach((line, lineIdx) => {
+        const y = currentY + 6 + lineIdx * lineHeight
+        if (aligns[idx] === 'right') doc.text(line, x + w, y, { align: 'right' })
+        else doc.text(line, x + 2, y)
+      })
       x += w
     })
     doc.setDrawColor(226, 232, 240)
-    doc.line(margin, currentY + 8, pageWidth - margin, currentY + 8)
-    currentY += 8
+    doc.line(margin, currentY + rowHeight, pageWidth - margin, currentY + rowHeight)
+    currentY += rowHeight
   })
 
   return currentY
