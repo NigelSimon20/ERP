@@ -15,16 +15,24 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
   }).format(amount)
 }
 
-export function formatDate(date: Date | string): string {
-  return format(new Date(date), 'dd MMM yyyy')
+// date-fns `format` throws RangeError on an invalid date, which takes down
+// the whole page for one bad row -- render a placeholder instead.
+function safeFormat(date: Date | string | null | undefined, pattern: string): string {
+  if (date == null || date === '') return '—'
+  const d = new Date(date)
+  return isNaN(d.getTime()) ? '—' : format(d, pattern)
 }
 
-export function formatDateTime(date: Date | string): string {
-  return format(new Date(date), 'dd MMM yyyy HH:mm')
+export function formatDate(date: Date | string | null | undefined): string {
+  return safeFormat(date, 'dd MMM yyyy')
 }
 
-export function formatTime(date: Date | string): string {
-  return format(new Date(date), 'HH:mm')
+export function formatDateTime(date: Date | string | null | undefined): string {
+  return safeFormat(date, 'dd MMM yyyy HH:mm')
+}
+
+export function formatTime(date: Date | string | null | undefined): string {
+  return safeFormat(date, 'HH:mm')
 }
 
 export function timeAgo(date: Date | string): string {

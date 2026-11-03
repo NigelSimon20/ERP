@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -206,10 +207,13 @@ export default function PurchaseInvoicesPage() {
               <div className="space-y-1.5">
                 <Label>Supplier *</Label>
                 <Controller control={invCtrl} name="supplierId" render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
-                    <SelectContent>{suppliers.map((s) => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}</SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={suppliers.map((s) => ({ value: s.id, label: s.name }))}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select supplier"
+                    searchPlaceholder="Search suppliers…"
+                  />
                 )} />
               </div>
               <div className="space-y-1.5"><Label>Reference</Label><Input placeholder="Supplier reference #" {...invReg('reference')} /></div>

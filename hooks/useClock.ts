@@ -23,7 +23,11 @@ interface ClockResult {
  * // dateShort: "Sat, 27 Jun"
  */
 export function useClock(): ClockResult {
-  const [now, setNow] = useState<Date>(() => new Date(0))
+  // null until mounted: any Date formatted during SSR renders in the server's
+  // timezone (even new Date(0) -- "00:00:00" in UTC vs "02:00:00" in CAT), so
+  // the TopBar clock caused a hydration mismatch (React #418/#423/#425) on
+  // every page, forcing a full client re-render that swallowed early clicks.
+  const [now, setNow] = useState<Date | null>(null)
 
   useEffect(() => {
     const updateClock = () => setNow(new Date())
@@ -34,10 +38,10 @@ export function useClock(): ClockResult {
   }, [])
 
   return {
-    timeString: format(now, 'HH:mm:ss'),
-    dateString: format(now, 'EEEE, d MMMM yyyy'),
-    dateShort: format(now, 'EEE, d MMM'),
-    now,
+    timeString: now ? format(now, 'HH:mm:ss') : '',
+    dateString: now ? format(now, 'EEEE, d MMMM yyyy') : '',
+    dateShort: now ? format(now, 'EEE, d MMM') : '',
+    now: now ?? new Date(0),
   }
 }
 

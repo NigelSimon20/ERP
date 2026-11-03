@@ -62,13 +62,12 @@ export default function IncidentsPage() {
   }
 
   useEffect(() => { fetchIncidents() }, [sevTab, filterStatus])
+  // Loaded independently so one failing endpoint can't blank both dropdowns.
   useEffect(() => {
-    Promise.all([fetch('/api/operations/sites').then(r => r.json()), fetch('/api/guards').then(r => r.json())]).then(([s, g]) => {
-      setSites(s.sites ?? []); setGuards(g.guards ?? [])
-    }).catch((err) => {
-      console.error(err)
-      toast.error('Failed to load sites/guards')
-    })
+    fetch('/api/operations/sites').then(r => r.json()).then((s) => setSites(s.sites ?? []))
+      .catch((err) => { console.error(err); toast.error('Failed to load sites') })
+    fetch('/api/guards').then(r => r.json()).then((g) => setGuards(g.guards ?? []))
+      .catch((err) => { console.error(err); toast.error('Failed to load guards') })
   }, [])
 
   async function onCreate(data: FormValues) {

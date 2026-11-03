@@ -49,9 +49,12 @@ function getPhase(hour: number): TimePhase {
  * // phase: "morning"
  */
 export function useGreeting(): GreetingResult {
-  const [phase, setPhase] = useState<TimePhase>(getPhase(new Date().getHours()))
+  // Fixed initial value so SSR and first client render agree (server hour is
+  // UTC, client hour is local); the real phase is applied after mount.
+  const [phase, setPhase] = useState<TimePhase>('morning')
 
   useEffect(() => {
+    setPhase(getPhase(new Date().getHours()))
     // Check every minute if the time phase has changed
     const interval = setInterval(() => {
       const newPhase = getPhase(new Date().getHours())

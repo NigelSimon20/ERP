@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { SearchableSelect } from '@/components/ui/searchable-select'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatCurrency, formatDate } from '@/lib/utils'
@@ -93,6 +94,7 @@ export default function SalesInvoicesPage() {
 
   async function fetchInvoices() {
     setLoading(true)
+    fetchSummary()
     try {
       const params = new URLSearchParams()
       if (statusTab !== 'ALL') params.set('status', statusTab)
@@ -157,11 +159,13 @@ export default function SalesInvoicesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCreateDialog, defaultRevenueAccountId])
 
-  // Summary stats from ALL invoices (fetch once separately)
+  // Summary stats come from ALL invoices (unfiltered by status tab), so they
+  // need their own fetch -- refreshed alongside the table in fetchInvoices()
+  // so create/void/receipt update the cards without a page reload.
   const [allInvoices, setAllInvoices] = useState<Invoice[]>([])
-  useEffect(() => {
+  function fetchSummary() {
     fetch('/api/finance/sales-invoices').then(r => r.json()).then(j => setAllInvoices(j.invoices ?? [])).catch((err) => console.error(err))
-  }, [])
+  }
 
   const stats = useMemo(() => ({
     totalInvoiced: allInvoices.filter(i => i.status !== 'VOID').reduce((s, i) => s + Number(i.totalAmount), 0),
@@ -334,12 +338,13 @@ export default function SalesInvoicesPage() {
               <div className="space-y-1.5">
                 <Label>Customer *</Label>
                 <Controller control={invCtrl} name="customerId" render={({ field }) => (
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <SelectTrigger><SelectValue placeholder="Select customer" /></SelectTrigger>
-                    <SelectContent>
-                      {customers.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <SearchableSelect
+                    options={customers.map((c) => ({ value: c.id, label: c.name }))}
+                    value={field.value}
+                    onValueChange={field.onChange}
+                    placeholder="Select customer"
+                    searchPlaceholder="Search customers…"
+                  />
                 )} />
               </div>
               <div className="space-y-1.5">

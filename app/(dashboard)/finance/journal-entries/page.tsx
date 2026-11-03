@@ -230,7 +230,7 @@ export default function JournalEntriesPage() {
               {entries.map((entry) => (
                 <tr key={entry.id} className="hover:bg-muted/50">
                   <td className="px-4 py-3 font-mono text-xs text-primary font-medium">{entry.reference}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{formatDate(new Date(entry.date))}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{formatDate(entry.date)}</td>
                   <td className="px-4 py-3 text-foreground max-w-xs truncate">{entry.description}</td>
                   <td className="px-4 py-3 text-right font-medium text-foreground">{formatCurrency(entry.totalDebit)}</td>
                   <td className="px-4 py-3 text-right font-medium text-foreground">{formatCurrency(entry.totalCredit)}</td>

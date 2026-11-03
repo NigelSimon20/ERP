@@ -44,3 +44,6 @@ next-env.d.ts
 
 # local file storage (uploads, staged import files)
 /storage/
+
+# holds the first admin password hash
+supabase/first-admin.sql

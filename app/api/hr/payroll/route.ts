@@ -7,6 +7,7 @@ import { logAudit } from '@/lib/audit'
 import { nextJournalReference, nextPaymentReference } from '@/lib/auto-numbers'
 import { calculateBasicSalary, calculateOvertimePay, calculatePayslipItem } from '@/lib/calculations'
 import { checkLockDate } from '@/lib/lock-dates'
+import { hoursForStatus } from '@/lib/attendance-hours'
 
 function r2(n: number) { return Math.round(n * 100) / 100 }
 
@@ -31,12 +32,17 @@ async function computePayrollPreviews(companyId: string, start: Date, end: Date)
   // getting dropped mid-batch) and could 500 the whole preview/confirm.
   const attendanceRows = await prisma.attendance.findMany({
     where: { guardId: { in: guards.map((g) => g.id) }, date: { gte: start, lte: end } },
-    select: { guardId: true, hoursWorked: true, overtimeHours: true },
+    select: { guardId: true, hoursWorked: true, overtimeHours: true, status: true },
   })
-  const attendanceByGuard = new Map<string, { hoursWorked: unknown; overtimeHours: unknown }[]>()
+  const attendanceByGuard = new Map<string, { hoursWorked: number; overtimeHours: unknown }[]>()
   for (const row of attendanceRows) {
     const list = attendanceByGuard.get(row.guardId) ?? []
-    list.push(row)
+    // Rows written outside POST /api/operations/attendance (legacy data load,
+    // direct SQL) never had hoursWorked stamped and sit at the column default
+    // of 0, which zeroed every guard's pay. Apply the same status->hours rule
+    // the attendance API uses when stamping.
+    const stored = Number(row.hoursWorked)
+    list.push({ hoursWorked: stored > 0 ? stored : hoursForStatus(row.status), overtimeHours: row.overtimeHours })
     attendanceByGuard.set(row.guardId, list)
   }
 

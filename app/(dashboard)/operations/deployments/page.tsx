@@ -54,12 +54,11 @@ export default function DeploymentsPage() {
   }
 
   useEffect(() => { fetchDeployments() }, [filterSite, filterGuard, filterStatus])
+  // Loaded independently so one failing endpoint can't blank both dropdowns
+  // (a 404 on guards used to reject the Promise.all and drop the sites too).
   useEffect(() => {
-    Promise.all([
-      fetch('/api/guards').then(r => r.json()),
-      fetch('/api/operations/sites').then(r => r.json()),
-    ]).then(([g, s]) => { setGuards(g.guards ?? []); setSites(s.sites ?? []) })
-      .catch((err) => console.error(err))
+    fetch('/api/guards').then(r => r.json()).then((g) => setGuards(g.guards ?? [])).catch((err) => console.error(err))
+    fetch('/api/operations/sites').then(r => r.json()).then((s) => setSites(s.sites ?? [])).catch((err) => console.error(err))
   }, [])
 
   async function onSubmit(data: FormValues) {

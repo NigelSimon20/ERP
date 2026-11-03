@@ -58,6 +58,9 @@ export async function GET(req: NextRequest) {
 
   const enriched = entries.map((e) => ({
     ...e,
+    // The page reads `date`; the column is `entry_date`. Without this every
+    // row passed `undefined` to date-fns and crashed the whole page.
+    date: e.entry_date,
     totalDebit: Number(lineSumMap[e.id]?._sum.debit ?? 0),
     totalCredit: Number(lineSumMap[e.id]?._sum.credit ?? 0),
   }))

@@ -15,7 +15,7 @@ import {
   AddRegular, BookOpenRegular, ShieldCheckmarkRegular, ShieldErrorRegular,
 } from '@fluentui/react-icons'
 
-interface Site { id: string; site_name: string | null }
+interface Site { id: string; name: string | null }
 interface OccurrenceEntry {
   id: string
   sequenceNumber: number
@@ -124,7 +124,7 @@ export default function OccurrenceBookPage() {
           <Select value={siteId} onValueChange={setSiteId}>
             <SelectTrigger><SelectValue placeholder="Select a site…" /></SelectTrigger>
             <SelectContent>
-              {sites.map((s) => <SelectItem key={s.id} value={s.id}>{s.site_name ?? 'Unnamed site'}</SelectItem>)}
+              {sites.map((s) => <SelectItem key={s.id} value={s.id}>{s.name ?? 'Unnamed site'}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
