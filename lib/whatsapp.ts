@@ -1,6 +1,12 @@
 import { BirdClient } from '@messagebird/sdk'
 
-const bird = new BirdClient({ apiKey: process.env.BIRD_API_KEY! })
+// Created on first send: BirdClient throws when constructed without a key,
+// which would crash `next build` on any route that imports this module.
+let bird: BirdClient | undefined
+function getBird(): BirdClient | undefined {
+  if (!bird && process.env.BIRD_API_KEY) bird = new BirdClient({ apiKey: process.env.BIRD_API_KEY })
+  return bird
+}
 
 const LANGUAGE = process.env.BIRD_WHATSAPP_LOCALE || 'en'
 
@@ -24,8 +30,11 @@ async function sendWhatsAppTemplate(params: {
   template: string
   parameters: string[]
 }): Promise<{ success: boolean; error?: string }> {
+  const client = getBird()
+  if (!client) return { success: false, error: 'WhatsApp is not configured (BIRD_API_KEY missing)' }
+
   try {
-    const { error } = await bird.whatsapp.send({
+    const { error } = await client.whatsapp.send({
       to: normalizeNumber(params.to),
       template: {
         name: params.template,

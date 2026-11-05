@@ -1,12 +1,20 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
 // Server-only client using the service-role key -- bypasses RLS, same
 // trust level Prisma already operates at for this app. Never import this
 // file from client components.
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ''
-)
+// Created on first use: createClient throws without a URL, which would crash
+// `next build` on every route that imports this module.
+let client: SupabaseClient | undefined
+function supabase(): SupabaseClient {
+  if (!client) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+    if (!url || !key) throw new Error('Storage is not configured (NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY missing)')
+    client = createClient(url, key)
+  }
+  return client
+}
 
 export const UPLOADS_BUCKET = 'uploads'
 
@@ -14,7 +22,7 @@ export const UPLOADS_BUCKET = 'uploads'
 // (see FileRecord.fileUrl) so no data migration is needed -- only the storage
 // backend changes, not the key shape.
 export async function uploadObject(key: string, buffer: Buffer, contentType: string): Promise<void> {
-  const { error } = await supabase.storage.from(UPLOADS_BUCKET).upload(key, buffer, {
+  const { error } = await supabase().storage.from(UPLOADS_BUCKET).upload(key, buffer, {
     contentType,
     upsert: false,
   })
@@ -22,14 +30,14 @@ export async function uploadObject(key: string, buffer: Buffer, contentType: str
 }
 
 export async function downloadObject(key: string): Promise<Buffer> {
-  const { data, error } = await supabase.storage.from(UPLOADS_BUCKET).download(key)
+  const { data, error } = await supabase().storage.from(UPLOADS_BUCKET).download(key)
   if (error || !data) throw new Error(`Storage download failed: ${error?.message ?? 'not found'}`)
   const arrayBuffer = await data.arrayBuffer()
   return Buffer.from(arrayBuffer)
 }
 
 export async function deleteObject(key: string): Promise<void> {
-  const { error } = await supabase.storage.from(UPLOADS_BUCKET).remove([key])
+  const { error } = await supabase().storage.from(UPLOADS_BUCKET).remove([key])
   if (error) throw new Error(`Storage delete failed: ${error.message}`)
 }
 
@@ -46,10 +54,10 @@ export const BRANDING_BUCKET = 'branding'
 // replaces the previous file in place instead of erroring or accumulating
 // old copies under new names.
 export async function uploadBrandingObject(key: string, buffer: Buffer, contentType: string): Promise<string> {
-  const { error } = await supabase.storage.from(BRANDING_BUCKET).upload(key, buffer, {
+  const { error } = await supabase().storage.from(BRANDING_BUCKET).upload(key, buffer, {
     contentType,
     upsert: true,
   })
   if (error) throw new Error(`Storage upload failed: ${error.message}`)
-  return supabase.storage.from(BRANDING_BUCKET).getPublicUrl(key).data.publicUrl
+  return supabase().storage.from(BRANDING_BUCKET).getPublicUrl(key).data.publicUrl
 }

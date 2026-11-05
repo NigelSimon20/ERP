@@ -1,13 +1,20 @@
 import { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/supabase-js'
 // Re-export Supabase RealtimeChannel type for consumers
 export type { RealtimeChannel }
-import { createClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey =
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+// Created on first use: createClient throws without a URL, which would crash
+// `next build` and every page importing this module when the env is missing.
+let client: SupabaseClient | undefined
+function supabase(): SupabaseClient {
+  if (!client) {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    if (!url || !key) throw new Error('Realtime is not configured (NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY missing)')
+    client = createClient(url, key)
+  }
+  return client
+}
 
 export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE'
 
@@ -72,7 +79,7 @@ export async function subscribeToTable(
   companyId: string,
   callback: ChangeCallback
 ) {
-  const channel = supabase
+  const channel = supabase()
     .channel(`${tableName}-${companyId}`)
     .on(
       'postgres_changes',
@@ -180,7 +187,7 @@ export async function subscribeToOperationsUpdates(
  * Unsubscribe from a channel
  */
 export async function unsubscribeFromTable(channel: RealtimeChannel) {
-  await supabase.removeChannel(channel)
+  await supabase().removeChannel(channel)
 }
 
 /**
@@ -192,7 +199,7 @@ export async function broadcastEvent(
   eventType: string,
   data: any
 ) {
-  const channel = supabase.channel(channelName)
+  const channel = supabase().channel(channelName)
   await channel.send({
     type: 'broadcast',
     event: eventType,
@@ -208,7 +215,7 @@ export function listenForBroadcast(
   eventType: string,
   callback: (data: any) => void
 ) {
-  const channel = supabase
+  const channel = supabase()
     .channel(channelName)
     .on('broadcast', { event: eventType }, (payload) => {
       callback(payload.payload)
@@ -226,7 +233,7 @@ export async function trackPresence(
   userId: string,
   userInfo: { name: string; email: string; avatar?: string }
 ) {
-  const channel = supabase.channel(`presence-${companyId}`, {
+  const channel = supabase().channel(`presence-${companyId}`, {
     config: {
       presence: {
         key: userId,
@@ -262,7 +269,7 @@ export async function trackPresence(
  * Get current online users in a company
  */
 export function getOnlineUsers(companyId: string) {
-  const channel = supabase.channel(`presence-${companyId}`, {
+  const channel = supabase().channel(`presence-${companyId}`, {
     config: {
       presence: {
         key: 'user',
