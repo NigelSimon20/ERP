@@ -3,7 +3,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { paginate } from '@/lib/utils'
+import { paginate, pageLimit } from '@/lib/utils'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals, determineInvoiceStatus } from '@/lib/calculations'
 import { recalculateSupplierOutstandingBalance } from '@/lib/finance-recalculation'
 import { nextPurchaseInvoiceNumber } from '@/lib/auto-numbers'
@@ -44,8 +44,8 @@ export async function GET(req: NextRequest) {
     prisma.purchaseInvoice.findMany({
       where: where as any,
       include: { supplier: { select: { id: true, company_name: true } } },
-      orderBy: { issueDate: 'desc' },
-      ...paginate(page),
+      orderBy: [{ issueDate: 'desc' }, { id: 'asc' }],
+      ...paginate(page, pageLimit(searchParams)),
     }),
     prisma.purchaseInvoice.count({ where: where as any }),
     prisma.purchaseInvoice.aggregate({

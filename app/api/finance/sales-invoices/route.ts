@@ -3,12 +3,12 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { paginate } from '@/lib/utils'
+import { paginate, pageLimit } from '@/lib/utils'
 import { nextInvoiceNumber } from '@/lib/auto-numbers'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals, determineInvoiceStatus, overdueQueryCutoff } from '@/lib/calculations'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
 import { salesInvoiceSchema } from '@/lib/validators'
-import { fromDbInvoiceStatus, toDbInvoiceStatus } from '@/lib/invoice-status'
+import { deriveInvoiceStatus, toDbInvoiceStatus, DB_STATUS_VOID } from '@/lib/invoice-status'
 import { postSalesInvoiceToGL } from '@/lib/gl-posting'
 import { apiError } from '@/lib/api-error'
 
@@ -53,8 +53,8 @@ export async function GET(req: NextRequest) {
   const [rows, total] = await Promise.all([
     prisma.salesInvoice.findMany({
       where: where as any,
-      orderBy: { invoice_date: 'desc' },
-      ...paginate(page),
+      orderBy: [{ invoice_date: 'desc' }, { id: 'asc' }],
+      ...paginate(page, pageLimit(searchParams)),
     }),
     prisma.salesInvoice.count({ where: where as any }),
   ])
@@ -74,12 +74,36 @@ export async function GET(req: NextRequest) {
     totalAmount: Number(r.total_amount ?? 0),
     paidAmount: Number(r.amount_paid ?? 0),
     balanceDue: Number(r.balance_due ?? 0),
-    status: fromDbInvoiceStatus(r.status, r.due_date, Number(r.balance_due ?? 0)),
+    status: deriveInvoiceStatus({ total: r.total_amount, paid: r.amount_paid, dueDate: r.due_date, voided: r.status === DB_STATUS_VOID }),
     notes: r.overall_description,
     customer: { id: r.customer_id ?? '', name: (r.customer_id && customerMap[r.customer_id]) || r.customer_name || '' },
   }))
 
-  return NextResponse.json({ invoices, total, page })
+  // P1-7 (BUG-012/014): summary cards come from SQL over every matching
+  // invoice, not from whichever page the browser happens to hold. Same
+  // customer/date filters as the list; the status tab doesn't apply.
+  const fromIso = from ? new Date(from).toISOString() : null
+  const toIso = to ? new Date(to).toISOString() : null
+  const [agg] = await prisma.$queryRaw<{ count: number; invoiced: unknown; paid: unknown; outstanding: unknown; overdue: unknown }[]>`
+    SELECT count(*)::int AS count,
+           COALESCE(sum(total_amount), 0) AS invoiced,
+           COALESCE(sum(amount_paid), 0) AS paid,
+           COALESCE(sum(GREATEST(COALESCE(total_amount, 0) - COALESCE(amount_paid, 0), 0)), 0) AS outstanding,
+           COALESCE(sum(CASE WHEN due_date < ${overdueCutoff} THEN GREATEST(COALESCE(total_amount, 0) - COALESCE(amount_paid, 0), 0) END), 0) AS overdue
+    FROM sales_invoices
+    WHERE "companyId" = ${session.companyId} AND status IS DISTINCT FROM ${DB_STATUS_VOID}
+      AND (${customerId ?? null}::text IS NULL OR customer_id = ${customerId ?? null}::text)
+      AND (${fromIso}::text IS NULL OR invoice_date >= ${fromIso}::text)
+      AND (${toIso}::text IS NULL OR invoice_date <= ${toIso}::text)`
+  const summary = {
+    count: agg.count,
+    totalInvoiced: Number(agg.invoiced),
+    totalPaid: Number(agg.paid),
+    outstanding: Number(agg.outstanding),
+    overdue: Number(agg.overdue),
+  }
+
+  return NextResponse.json({ invoices, total, page, summary })
 }
 
 export async function POST(req: NextRequest) {
@@ -222,7 +246,7 @@ export async function POST(req: NextRequest) {
         totalAmount: Number(invoice.total_amount ?? 0),
         paidAmount: Number(invoice.amount_paid ?? 0),
         balanceDue: Number(invoice.balance_due ?? 0),
-        status: fromDbInvoiceStatus(invoice.status, invoice.due_date, Number(invoice.balance_due ?? 0)),
+        status: deriveInvoiceStatus({ total: invoice.total_amount, paid: invoice.amount_paid, dueDate: invoice.due_date, voided: invoice.status === DB_STATUS_VOID }),
         customer: { id: customer.id, name: customer.company_name ?? '' },
       },
     }, { status: 201 })

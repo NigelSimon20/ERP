@@ -41,7 +41,7 @@ async function controlBalance(db: Db, companyId: string, accountId: string | nul
 
 export async function getReceivables(db: Db, companyId: string): Promise<Subledger> {
   const company = await db.company.findUnique({ where: { id: companyId }, select: { currency: true, receivablesAccountId: true } })
-  const convert = await buildCurrencyConverter(company?.currency || 'USD')
+  const convert = await buildCurrencyConverter(company?.currency || 'USD', new Date(), db)
   const [invoices, creditNotes] = await Promise.all([
     db.salesInvoice.findMany({
       where: { companyId, status: { not: DB_STATUS_VOID } },

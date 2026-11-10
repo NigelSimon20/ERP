@@ -3,7 +3,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { paginate } from '@/lib/utils'
+import { paginate, pageLimit } from '@/lib/utils'
 import { nextDebitNoteNumber } from '@/lib/auto-numbers'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals } from '@/lib/calculations'
 import { apiError } from '@/lib/api-error'
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
   const where: any = { companyId: session.companyId, ...(status && { status }), ...(supplierId && { supplierId }) }
 
   const [rows, total] = await Promise.all([
-    prisma.debitNote.findMany({ where, orderBy: { issueDate: 'desc' }, ...paginate(page) }),
+    prisma.debitNote.findMany({ where, orderBy: [{ issueDate: 'desc' }, { id: 'asc' }], ...paginate(page, pageLimit(searchParams)) }),
     prisma.debitNote.count({ where }),
   ])
 

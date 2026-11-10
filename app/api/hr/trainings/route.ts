@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     prisma.training.findMany({
       where,
       include: { participants: { select: { id: true, guardId: true, attendance: true, score: true, passed: true } } },
-      orderBy: { startDate: 'desc' },
+      orderBy: [{ startDate: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * limit,
       take: limit,
     }),

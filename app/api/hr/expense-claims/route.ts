@@ -3,7 +3,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { paginate } from '@/lib/utils'
+import { paginate, pageLimit } from '@/lib/utils'
 import { nextExpenseClaimNumber } from '@/lib/auto-numbers'
 
 async function getSession(req: NextRequest) {
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
   const where: any = { companyId: session.companyId, ...(status && { status }), ...(userId && { userId }) }
 
   const [rows, total] = await Promise.all([
-    prisma.expenseClaim.findMany({ where, orderBy: { expenseDate: 'desc' }, ...paginate(page) }),
+    prisma.expenseClaim.findMany({ where, orderBy: [{ expenseDate: 'desc' }, { id: 'asc' }], ...paginate(page, pageLimit(searchParams)) }),
     prisma.expenseClaim.count({ where }),
   ])
 

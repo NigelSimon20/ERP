@@ -3,7 +3,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { paginate } from '@/lib/utils'
+import { paginate, pageLimit } from '@/lib/utils'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const where: any = { companyId: session.companyId, ...(status && { status }), ...(guardId && { guardId }) }
 
   const [rows, total] = await Promise.all([
-    prisma.overtimeRequest.findMany({ where, orderBy: { date: 'desc' }, ...paginate(page) }),
+    prisma.overtimeRequest.findMany({ where, orderBy: [{ date: 'desc' }, { id: 'asc' }], ...paginate(page, pageLimit(searchParams)) }),
     prisma.overtimeRequest.count({ where }),
   ])
 

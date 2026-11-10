@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   const [logs, total] = await Promise.all([
     prisma.auditTrail.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }),

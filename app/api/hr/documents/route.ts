@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
   const [rows, total] = await Promise.all([
     prisma.hRDocument.findMany({
       where,
-      orderBy: { createdAt: 'desc' },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
       skip: (page - 1) * limit,
       take: limit,
     }),

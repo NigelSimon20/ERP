@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 /**
@@ -47,8 +48,11 @@ export async function convertToReportingCurrency(
  * treat unconverted amounts as excluded from a consolidated total rather
  * than silently adding raw foreign-currency figures into it.
  */
-export async function buildCurrencyConverter(reportingCurrency: string, asOf: Date = new Date()) {
-  const rates = await prisma.exchangeRate.findMany({
+// Pass `db` when calling inside a transaction: using the global client there
+// needs a second pooled connection per transaction, and concurrent
+// transactions waiting on a row lock then exhaust the pool and stall.
+export async function buildCurrencyConverter(reportingCurrency: string, asOf: Date = new Date(), db: Pick<Prisma.TransactionClient, 'exchangeRate'> = prisma) {
+  const rates = await db.exchangeRate.findMany({
     where: { effectiveDate: { lte: asOf } },
     orderBy: { effectiveDate: 'desc' },
     select: { baseCurrency: true, targetCurrency: true, rate: true },

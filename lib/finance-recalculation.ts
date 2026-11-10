@@ -30,7 +30,7 @@ export async function recalculateCustomerOutstandingBalance(
   // which was blowing past Prisma's default 5s transaction timeout on
   // customers with more than a handful of invoices. Load every rate once
   // instead.
-  const convert = await buildCurrencyConverter(reportingCurrency)
+  const convert = await buildCurrencyConverter(reportingCurrency, new Date(), tx)
   // Same rule as getReceivables (lib/reports/subledger.ts), so the customer
   // list ties out to the dashboards: overpayments and issued credit notes
   // are credits against what the customer owes, not clamped to zero.

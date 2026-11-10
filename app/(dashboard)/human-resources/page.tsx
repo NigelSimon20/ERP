@@ -32,14 +32,14 @@ export default function HRDashboardPage() {
       fetch('/api/hr/payroll').then(r => r.json()),
       fetch('/api/hr/leave?status=PENDING').then(r => r.json()),
     ]).then(([emp, payroll, leave]) => {
-      const guards: { status: string; dailyRate: number | null }[] = emp.guards ?? []
-      const activeGuards = guards.filter(g => g.status === 'Active')
+      // Company-wide counts from the server, not from the first page.
+      const summary: { totalActive: number; totalHeadcount: number; avgDailyRate: number } = emp.summary ?? { totalActive: 0, totalHeadcount: 0, avgDailyRate: 0 }
       const runs: { runDate: string; totalNet: number }[] = payroll.runs ?? []
       const lastRun = runs[0]
-      const avgRate = activeGuards.length ? activeGuards.reduce((s, g) => s + Number(g.dailyRate ?? 0), 0) / activeGuards.length : 0
+      const avgRate = summary.avgDailyRate
       setKpi({
-        totalActive: activeGuards.length,
-        totalHeadcount: guards.length,
+        totalActive: summary.totalActive,
+        totalHeadcount: summary.totalHeadcount,
         lastPayrollNet: lastRun ? Number(lastRun.totalNet) : 0,
         lastPayrollDate: lastRun?.runDate ?? null,
         pendingLeave: (leave.leave ?? []).length,

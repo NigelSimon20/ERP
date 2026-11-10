@@ -38,3 +38,21 @@ export function fromDbInvoiceStatus(dbStatus: string | null | undefined, dueDate
 // explicit due_date/balance_due condition, not a status match).
 export const DB_STATUS_OUTSTANDING = ['Sent', 'Partial']
 export const DB_STATUS_VOID = 'Void'
+
+export type InvoiceStatusUi = 'VOID' | 'PAID' | 'PARTIAL' | 'OVERDUE' | 'UNPAID'
+
+// BUG-009 / BUG-033: status is derived from the amounts, never trusted from
+// the stored column (7 invoices were stored as Paid with money owing), and
+// always returned in one UPPERCASE vocabulary.
+export function deriveInvoiceStatus(inv: {
+  total: unknown
+  paid: unknown
+  dueDate?: string | Date | null
+  voided: boolean
+}): InvoiceStatusUi {
+  if (inv.voided) return 'VOID'
+  const owed = Math.round((Number(inv.total ?? 0) - Number(inv.paid ?? 0)) * 100)
+  if (owed <= 0) return 'PAID'
+  if (inv.dueDate && isPastDue(inv.dueDate)) return 'OVERDUE'
+  return Number(inv.paid ?? 0) > 0 ? 'PARTIAL' : 'UNPAID'
+}

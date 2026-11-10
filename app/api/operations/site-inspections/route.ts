@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { paginate } from '@/lib/utils'
+import { paginate, pageLimit } from '@/lib/utils'
 import type { Severity, ReportStatus } from '@prisma/client'
 
 export async function GET(req: NextRequest) {
@@ -16,12 +16,12 @@ export async function GET(req: NextRequest) {
   const siteId = searchParams.get('siteId')
   const status = searchParams.get('status') as ReportStatus | null
   const page = Number(searchParams.get('page') ?? 1)
-  const { skip, take } = paginate(page)
+  const { skip, take } = paginate(page, pageLimit(searchParams))
 
   const where = { companyId, ...(siteId ? { siteId } : {}), ...(status ? { status } : {}) }
 
   const [rows, total] = await Promise.all([
-    prisma.siteInspection.findMany({ where, orderBy: { inspectedAt: 'desc' }, skip, take }),
+    prisma.siteInspection.findMany({ where, orderBy: [{ inspectedAt: 'desc' }, { id: 'asc' }], skip, take }),
     prisma.siteInspection.count({ where }),
   ])
 

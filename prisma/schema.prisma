@@ -2276,3 +2276,18 @@ model GoogleDriveConnection {
 
   @@map("google_drive_connections")
 }
+
+// P1-5: replays of a create request carrying the same Idempotency-Key
+// return the first response instead of creating a second record.
+model IdempotencyKey {
+  id         String   @id @default(cuid())
+  companyId  String
+  key        String
+  route      String
+  status     Int
+  response   Json
+  createdAt  DateTime @default(now())
+
+  @@unique([companyId, route, key])
+  @@map("idempotency_keys")
+}

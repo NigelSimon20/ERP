@@ -4,16 +4,16 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { nextReceiptReference } from '@/lib/auto-numbers'
-import {
-  determineInvoiceStatus,
-  calculateBalanceDue,
-  round2dp,
-} from '@/lib/calculations'
+import { determineInvoiceStatus } from '@/lib/calculations'
+import { Prisma } from '@prisma/client'
+import { money } from '@/lib/money'
+import { postJournal } from '@/lib/gl-posting'
+import { withIdempotency } from '@/lib/idempotency'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
 import { toDbInvoiceStatus } from '@/lib/invoice-status'
 import { checkLockDate } from '@/lib/lock-dates'
 import { z } from 'zod'
-import { apiError } from '@/lib/api-error'
+import { apiError, ApiError } from '@/lib/api-error'
 
 // Payment.status in the live DB uses Title Case ("Posted"), not the
 // SCREAMING_CASE the rest of the finance code assumes elsewhere — keep new
@@ -92,6 +92,7 @@ export async function POST(req: NextRequest) {
   const session = await getSession(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  return withIdempotency(req, session.companyId, 'POST /api/finance/receipts', async () => {
   try {
     const data = receiptSchema.parse(await req.json())
 
@@ -113,23 +114,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'The configured Accounts Receivable account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
     }
 
-    // If invoice provided, validate it belongs to company and does not exceed balance
-    let invoice: any = null
+    // A receipt must reach the ledger: a bank account with no GL account used
+    // to move the bank balance while silently skipping the journal.
+    if (!bankAccount.chart_account_id) {
+      return NextResponse.json({ error: 'The selected bank account has no linked GL account', code: 'BANK_NOT_LINKED' }, { status: 400 })
+    }
+
+    const amount = money(data.amount)
+    if (!amount.isPositive()) return NextResponse.json({ error: 'Amount must be greater than zero', code: 'VALIDATION_ERROR' }, { status: 400 })
+
+    // BUG-028: when an invoice is given, it decides the customer.
+    let customerId: string | null = data.customerId ?? null
     if (data.invoiceId) {
-      invoice = await prisma.salesInvoice.findFirst({ where: { id: data.invoiceId, companyId: session.companyId } })
-      if (!invoice) return NextResponse.json({ error: 'Invoice not found' }, { status: 404 })
-      if (invoice.status === 'Paid') return NextResponse.json({ error: 'Invoice is already fully paid' }, { status: 400 })
-      if (Number(data.amount) > Number(invoice.balance_due ?? 0)) {
-        return NextResponse.json({ error: `Receipt amount (${round2dp(data.amount)}) exceeds invoice balance due (${round2dp(Number(invoice.balance_due ?? 0))})` }, { status: 400 })
+      const inv = await prisma.salesInvoice.findFirst({ where: { id: data.invoiceId, companyId: session.companyId }, select: { customer_id: true, status: true } })
+      if (!inv) return NextResponse.json({ error: 'Invoice not found', code: 'NOT_FOUND' }, { status: 404 })
+      if (inv.status === 'Void') return NextResponse.json({ error: 'Invoice is void', code: 'INVALID_STATE' }, { status: 409 })
+      if (customerId && inv.customer_id && customerId !== inv.customer_id) {
+        return NextResponse.json({ error: 'The receipt customer does not match the invoice customer', code: 'CUSTOMER_MISMATCH' }, { status: 400 })
       }
+      customerId = inv.customer_id
     }
 
     const reference = await nextReceiptReference(session.companyId)
     const methodLabel = METHOD_LABELS[data.method ?? 'OTHER'] ?? data.method ?? 'Other'
+    const bankGLId = bankAccount.chart_account_id
 
     const receipt = await prisma.$transaction(async (tx) => {
-      // STEP a: create the receipt as a Payment record (payment_type =
-      // 'Customer Receipt') — this is where the real, reported data lives.
+      let updatedInvoice: unknown = null
+      let newInvoiceStatus: string | undefined = undefined
+      let newInvoiceBalance: number | undefined = undefined
+      let invoiceNumber = ''
+
+      if (data.invoiceId) {
+        // BUG-027: lock the invoice row so concurrent receipts queue up and
+        // each sees the previous one's amount_paid (two $10 receipts used to
+        // raise it by $10 between them).
+        const [locked] = await tx.$queryRaw<{ total_amount: Prisma.Decimal | null; amount_paid: Prisma.Decimal | null; due_date: string | null; invoice_number: string | null }[]>`
+          SELECT total_amount, amount_paid, due_date, invoice_number FROM sales_invoices WHERE id = ${data.invoiceId} FOR UPDATE`
+        const total = money(locked.total_amount)
+        const paid = money(locked.amount_paid)
+        const owed = total.sub(paid)
+        if (amount.gt(owed)) {
+          throw new ApiError(`Receipt amount (${amount.toFixed(2)}) exceeds invoice balance due (${owed.toFixed(2)})`, 400, 'OVERPAYMENT')
+        }
+        const newPaid = paid.add(amount)
+        newInvoiceBalance = Number(total.sub(newPaid))
+        newInvoiceStatus = toDbInvoiceStatus(determineInvoiceStatus(Number(total), Number(newPaid), new Date(locked.due_date ?? Date.now())))
+        invoiceNumber = locked.invoice_number ?? ''
+        updatedInvoice = await tx.salesInvoice.update({ where: { id: data.invoiceId }, data: { amount_paid: newPaid, balance_due: total.sub(newPaid), status: newInvoiceStatus } })
+      }
+
       const r = await tx.payment.create({
         data: {
           id: crypto.randomUUID(),
@@ -139,14 +173,14 @@ export async function POST(req: NextRequest) {
           payment_number: reference,
           payment_type: 'Customer Receipt',
           party_name: data.payer ?? '',
-          amount: data.amount,
+          amount,
           payment_date: data.receiptDate,
           payment_method: methodLabel,
-          customer_id: data.customerId ?? null,
+          customer_id: customerId,
           currency: bankAccount.currency ?? 'USD',
           description: data.notes ?? '',
           allocations: data.invoiceId
-            ? JSON.stringify([{ invoice_id: data.invoiceId, invoice_number: invoice?.invoice_number ?? '', amount: data.amount }])
+            ? JSON.stringify([{ invoice_id: data.invoiceId, invoice_number: invoiceNumber, amount: Number(amount) }])
             : '[]',
           status: 'Posted',
           created_by_id: session.userId,
@@ -156,78 +190,27 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      // STEP b: update bank account currentBalance via an atomic increment —
-      // safe under concurrent receipts against the same account, unlike a
-      // read-then-write of an absolute value.
-      await tx.bankAccount.update({ where: { id: data.bankAccountId }, data: { current_balance: { increment: data.amount } } })
+      // Atomic increment: safe under concurrent receipts to the same bank.
+      await tx.bankAccount.update({ where: { id: data.bankAccountId }, data: { current_balance: { increment: amount } } })
       const refreshedBank = await tx.bankAccount.findUnique({ where: { id: data.bankAccountId }, select: { current_balance: true } })
       const newBankBalance = Number(refreshedBank?.current_balance ?? 0)
 
-      let updatedInvoice: any = null
-      let newInvoiceStatus: string | undefined = undefined
-      let newInvoiceBalance: number | undefined = undefined
+      if (customerId) await recalculateCustomerOutstandingBalance(tx, customerId)
 
-      // STEP c: if linked invoice, update paidAmount, balanceDue, status
-      if (data.invoiceId && invoice) {
-        const newPaidAmount = round2dp(Number(invoice.amount_paid ?? 0) + Number(data.amount))
-        newInvoiceBalance = calculateBalanceDue(Number(invoice.total_amount ?? 0), newPaidAmount)
-        const rawStatus = determineInvoiceStatus(Number(invoice.total_amount ?? 0), newPaidAmount, new Date(invoice.due_date ?? Date.now()))
-        newInvoiceStatus = toDbInvoiceStatus(rawStatus)
-        updatedInvoice = await tx.salesInvoice.update({ where: { id: data.invoiceId }, data: { amount_paid: newPaidAmount, balance_due: newInvoiceBalance, status: newInvoiceStatus } })
-      }
-
-      // STEP d: recalculate customer outstanding balance from all non-VOID invoices
-      if (data.customerId || (invoice && invoice.customer_id)) {
-        const customerId = data.customerId ?? invoice.customer_id
-        await recalculateCustomerOutstandingBalance(tx, customerId)
-      }
-
-      // STEP e: Create Journal Entry (auto-POSTED) and update GL balances.
-      // arAccountRecord was resolved from the explicit Company mapping
-      // before the transaction opened -- no fuzzy name matching here.
-      const bankLedger = await tx.bankAccount.findUnique({ where: { id: data.bankAccountId }, select: { chart_account_id: true } }).catch(() => null)
-
-      if (bankLedger?.chart_account_id) {
-        const bankGLId = bankLedger.chart_account_id
-        const je = await tx.journalEntry.create({
-          data: {
-            id: crypto.randomUUID(),
-            companyId: session.companyId,
-            reference: `JE-auto-${reference}`,
-            entry_date: new Date(data.receiptDate).toISOString(),
-            description: `Receipt ${reference}`,
-            total_debit: data.amount,
-            total_credit: data.amount,
-            status: 'POSTED',
-            created_by_id: session.userId,
-          },
-        })
-
-        await tx.journalLine.createMany({
-          data: [
-            {
-              id: crypto.randomUUID(),
-              journalEntryId: je.id,
-              accountId: bankGLId,
-              description: 'Cash received',
-              debit: data.amount,
-              credit: 0,
-            },
-            {
-              id: crypto.randomUUID(),
-              journalEntryId: je.id,
-              accountId: arAccountRecord.id,
-              description: 'Invoice settled',
-              debit: 0,
-              credit: data.amount,
-            },
-          ],
-        })
-
-        // Update account balances
-        await tx.chartOfAccount.update({ where: { id: bankGLId }, data: { current_balance: { increment: data.amount } } })
-        await tx.chartOfAccount.update({ where: { id: arAccountRecord.id }, data: { current_balance: { decrement: data.amount } } })
-      }
+      const journalId = await postJournal(tx, {
+        companyId: session.companyId,
+        reference: `JE-auto-${reference}`,
+        entryDate: new Date(data.receiptDate).toISOString(),
+        description: `Receipt ${reference}`,
+        lines: [
+          { accountId: bankGLId, debit: amount, description: 'Cash received' },
+          { accountId: arAccountRecord.id, credit: amount, description: 'Invoice settled' },
+        ],
+        userId: session.userId,
+        sourceType: 'receipt',
+        sourceId: r.id,
+      })
+      await tx.payment.update({ where: { id: r.id }, data: { journal_entry_id: journalId } })
 
       return { receipt: r, newBankBalance, updatedInvoice, newInvoiceStatus, newInvoiceBalance }
     }, { timeout: 60000 })
@@ -258,4 +241,5 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     return apiError(err, 'Failed', 400)
   }
+  })
 }

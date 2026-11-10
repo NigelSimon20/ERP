@@ -3,7 +3,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { paginate } from '@/lib/utils'
+import { paginate, pageLimit } from '@/lib/utils'
 import { nextJournalReference } from '@/lib/auto-numbers'
 import { toJournalEntryDto } from '@/lib/journal-entries'
 import { normaliseJournalLines, assertAccountsUsable, journalEntryCreateSchema } from '@/lib/journal-rules'
@@ -43,8 +43,8 @@ export async function GET(req: NextRequest) {
 
   const entries = await prisma.journalEntry.findMany({
     where,
-    orderBy: { entry_date: 'desc' },
-    ...paginate(page),
+    orderBy: [{ entry_date: 'desc' }, { id: 'asc' }],
+    ...paginate(page, pageLimit(searchParams)),
   })
   const total = await prisma.journalEntry.count({ where })
   const entryIds = entries.map((entry) => entry.id)

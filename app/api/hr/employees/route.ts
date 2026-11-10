@@ -5,7 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { nextEmployeeNumber, nextForceNumber } from '@/lib/auto-numbers'
-import { paginate } from '@/lib/utils'
+import { paginate, pageLimit } from '@/lib/utils'
 import { toGuardDto, splitName } from '@/lib/guards'
 
 export async function GET(req: NextRequest) {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   const department = searchParams.get('department')
   const search = searchParams.get('search')
   const page = Number(searchParams.get('page') ?? 1)
-  const { skip, take } = paginate(page)
+  const { skip, take } = paginate(page, pageLimit(searchParams))
 
   const where: any = {
     companyId,
@@ -33,12 +33,22 @@ export async function GET(req: NextRequest) {
     } : {}),
   }
 
-  const [guards, total] = await Promise.all([
-    prisma.guard.findMany({ where: where as any, orderBy: { employee_code: 'asc' }, skip, take }),
+  const [guards, total, headcount, active] = await Promise.all([
+    prisma.guard.findMany({ where: where as any, orderBy: [{ employee_code: 'asc' }, { id: 'asc' }], skip, take }),
     prisma.guard.count({ where: where as any }),
+    prisma.guard.count({ where: { companyId } }),
+    prisma.guard.aggregate({ where: { companyId, status: 'Active' }, _count: { _all: true }, _avg: { daily_rate: true } }),
   ])
 
-  return NextResponse.json({ guards: guards.map(toGuardDto), total, page, pages: Math.ceil(total / take) })
+  // P1-7 (BUG-015): the HR overview read these off page 1 ("10 active of 25"
+  // when the company had 198 of 312); they are company-wide counts.
+  const summary = {
+    totalHeadcount: headcount,
+    totalActive: active._count._all,
+    avgDailyRate: Number(active._avg.daily_rate ?? 0),
+  }
+
+  return NextResponse.json({ guards: guards.map(toGuardDto), total, page, pages: Math.ceil(total / take), summary })
 }
 
 export async function POST(req: NextRequest) {

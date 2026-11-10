@@ -7,7 +7,7 @@ import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculati
 import { checkLockDate } from '@/lib/lock-dates'
 import { reverseJournalEntry } from '@/lib/gl-posting'
 import { z } from 'zod'
-import { apiError } from '@/lib/api-error'
+import { apiError, ApiError } from '@/lib/api-error'
 
 const updateSchema = z.object({
   dueDate: z.string().optional(),
@@ -99,28 +99,39 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
     const customerId = invoice.customer_id
 
-    await prisma.$transaction(async (tx) => {
-      await tx.salesInvoice.update({
-        where: { id: params.id },
-        data: { status: 'Void', updated_date: new Date().toISOString() },
-      })
-      if (invoice.journal_entry_id) {
-        await reverseJournalEntry(tx, invoice.journal_entry_id)
-      }
-      if (customerId) {
-        await recalculateCustomerOutstandingBalance(tx, customerId)
-      }
-    }, { timeout: 60000 })
+    try {
+      await prisma.$transaction(async (tx) => {
+        // BUG-026: voiding while receipts are allocated left them posted
+        // against nothing (an orphan AR credit). Lock the row so a receipt
+        // can't land mid-void, then refuse while any money is allocated.
+        const [locked] = await tx.$queryRaw<{ amount_paid: unknown }[]>`SELECT amount_paid FROM sales_invoices WHERE id = ${params.id} FOR UPDATE`
+        if (Number(locked?.amount_paid ?? 0) !== 0) {
+          throw new ApiError('This invoice has receipts allocated to it. Reverse those receipts before voiding it.', 409, 'HAS_ALLOCATIONS')
+        }
+        await tx.salesInvoice.update({
+          where: { id: params.id },
+          data: { status: 'Void', updated_date: new Date().toISOString() },
+        })
+        if (invoice.journal_entry_id) {
+          await reverseJournalEntry(tx, invoice.journal_entry_id)
+        }
+        if (customerId) {
+          await recalculateCustomerOutstandingBalance(tx, customerId)
+        }
+      }, { timeout: 60000 })
 
-    await logAudit({
-      companyId: session.companyId,
-      userId: session.userId,
-      userName: session.name,
-      action: 'UPDATE',
-      module: 'SalesInvoices',
-      recordId: params.id,
-      newValues: { status: 'VOID' },
-    })
+      await logAudit({
+        companyId: session.companyId,
+        userId: session.userId,
+        userName: session.name,
+        action: 'UPDATE',
+        module: 'SalesInvoices',
+        recordId: params.id,
+        newValues: { status: 'VOID' },
+      })
+    } catch (err) {
+      return apiError(err, 'Failed to void invoice', 400)
+    }
 
     return NextResponse.json({ success: true })
   }

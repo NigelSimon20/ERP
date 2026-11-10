@@ -6,7 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import crypto from 'crypto'
 import type { Severity, IncidentStatus } from '@prisma/client'
-import { paginate } from '@/lib/utils'
+import { paginate, pageLimit } from '@/lib/utils'
 
 export async function GET(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const to = searchParams.get('to')
   const page = Number(searchParams.get('page') ?? 1)
 
-  const { skip, take } = paginate(page)
+  const { skip, take } = paginate(page, pageLimit(searchParams))
 
   const where = {
     companyId,
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
   }
 
   const [incidents, total] = await Promise.all([
-    prisma.incident.findMany({ where, orderBy: { reportedAt: 'desc' }, skip, take }),
+    prisma.incident.findMany({ where, orderBy: [{ reportedAt: 'desc' }, { id: 'asc' }], skip, take }),
     prisma.incident.count({ where }),
   ])
 

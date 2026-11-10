@@ -159,20 +159,13 @@ export default function SalesInvoicesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showCreateDialog, defaultRevenueAccountId])
 
-  // Summary stats come from ALL invoices (unfiltered by status tab), so they
-  // need their own fetch -- refreshed alongside the table in fetchInvoices()
-  // so create/void/receipt update the cards without a page reload.
-  const [allInvoices, setAllInvoices] = useState<Invoice[]>([])
+  // Summary cards come from the server's SQL totals over every invoice
+  // (unfiltered by status tab). Summing the first page in the browser
+  // undercounted as soon as there were more than 25 invoices (BUG-012).
+  const [stats, setStats] = useState({ totalInvoiced: 0, totalPaid: 0, outstanding: 0, overdue: 0 })
   function fetchSummary() {
-    fetch('/api/finance/sales-invoices').then(r => r.json()).then(j => setAllInvoices(j.invoices ?? [])).catch((err) => console.error(err))
+    fetch('/api/finance/sales-invoices?limit=1').then(r => r.json()).then(j => { if (j.summary) setStats(j.summary) }).catch((err) => console.error(err))
   }
-
-  const stats = useMemo(() => ({
-    totalInvoiced: allInvoices.filter(i => i.status !== 'VOID').reduce((s, i) => s + Number(i.totalAmount), 0),
-    totalPaid: allInvoices.filter(i => i.status !== 'VOID').reduce((s, i) => s + Number(i.paidAmount), 0),
-    outstanding: allInvoices.filter(i => i.status !== 'VOID').reduce((s, i) => s + Number(i.balanceDue), 0),
-    overdue: allInvoices.filter(i => i.status === 'OVERDUE').reduce((s, i) => s + Number(i.balanceDue), 0),
-  }), [allInvoices])
 
   async function onCreateInvoice(data: InvoiceForm) {
     const payload = {

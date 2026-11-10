@@ -47,13 +47,22 @@ export function getIpAddress(req: Request): string {
   return req.headers.get('x-real-ip') ?? 'unknown'
 }
 
+export const MAX_PAGE_SIZE = 100
+
 export function paginate(
   page: number,
   limit = 25
 ): { skip: number; take: number } {
-  const safePage = Math.max(1, page)
+  const safePage = Math.max(1, Math.floor(Number(page) || 1))
+  const safeLimit = Math.min(MAX_PAGE_SIZE, Math.max(1, Math.floor(Number(limit) || 25)))
   return {
-    skip: (safePage - 1) * limit,
-    take: limit,
+    skip: (safePage - 1) * safeLimit,
+    take: safeLimit,
   }
+}
+
+// `?limit=` for list endpoints, capped at MAX_PAGE_SIZE (P1-7).
+export function pageLimit(searchParams: URLSearchParams, fallback = 25): number {
+  const n = Number(searchParams.get('limit'))
+  return Number.isFinite(n) && n > 0 ? Math.min(MAX_PAGE_SIZE, Math.floor(n)) : fallback
 }
