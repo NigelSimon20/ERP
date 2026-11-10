@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
 
   if (action === 'post') {
     if (entry.status !== 'DRAFT') {
-      return NextResponse.json({ error: 'Only DRAFT entries can be posted', code: 'INVALID_STATE' }, { status: 400 })
+      return NextResponse.json({ error: 'Only DRAFT entries can be posted', code: 'INVALID_STATE' }, { status: 409 })
     }
     if (entry.entry_date) {
       const lockError = await checkLockDate(session.companyId, new Date(entry.entry_date))
