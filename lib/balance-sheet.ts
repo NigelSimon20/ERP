@@ -1,13 +1,8 @@
 import { Prisma, PrismaClient } from '@prisma/client'
 import { round2dp } from './calculations'
+import { ledgerBalanceSheet, ledgerTrialBalance } from './reports/ledger'
 
 type Db = PrismaClient | Prisma.TransactionClient
-
-const NORMAL_DEBIT = ['ASSET', 'EXPENSE']
-
-function computeBalance(type: string, debit: number, credit: number) {
-  return NORMAL_DEBIT.includes(type) ? debit - credit : credit - debit
-}
 
 // Real seeded account_subtype values are free text ('Current Asset', 'Fixed
 // Asset', 'Current Liability', 'Long Term Liability', etc.) - classify by
@@ -40,6 +35,9 @@ export interface BalanceSheetResult {
   assets: number
   liabilities: number
   equity: number
+  currentYearEarnings: number
+  priorYearsEarnings: number
+  difference: number
   balanced: boolean
   currentAssets: number
   nonCurrentAssets: number
@@ -51,49 +49,21 @@ export interface BalanceSheetResult {
 }
 
 export async function computeBalanceSheet(db: Db, companyId: string, asAt: Date): Promise<BalanceSheetResult> {
-  // Include REVENUE/EXPENSE too, purely to roll their net into a synthetic
-  // "Current Year Earnings" equity line below - without it, the sheet only
-  // balances right after a formal period-close journal moves P&L into
-  // Retained Earnings, which this system never does, so Assets would
-  // permanently sit off from Liabilities+Equity by the un-closed net income.
-  const accounts = await db.chartOfAccount.findMany({
-    where: { account_type: { in: ['ASSET', 'LIABILITY', 'EQUITY', 'REVENUE', 'EXPENSE'] }, companyId },
-    select: { id: true, account_name: true, account_code: true, account_type: true, account_subtype: true },
-    orderBy: { account_code: 'asc' },
+  // P1-2: from the ledger service. Current Year Earnings is the fiscal-year-
+  // to-date net profit (= the Income Statement), earlier unclosed P&L is its
+  // own line, and an imbalance is reported as `difference` -- never plugged.
+  const bs = await ledgerBalanceSheet(db, companyId, asAt)
+  const toRow = (r: { id: string; name: string | null; code: string | null; type: string | null; subtype?: string | null; balance: Prisma.Decimal }): BalanceSheetRow => ({
+    id: r.id, account_name: r.name, account_code: r.code, account_type: r.type, account_subtype: r.subtype ?? null,
+    name: r.name, accountCode: r.code, type: r.type, balance: Number(r.balance),
   })
-
-  const postedEntries = await db.journalEntry.findMany({
-    where: { companyId, status: 'POSTED', entry_date: { lte: asAt.toISOString() } },
-    select: { id: true },
-  })
-
-  const lineAggs = await db.journalLine.groupBy({
-    by: ['accountId'],
-    where: { accountId: { in: accounts.map((a) => a.id) }, journalEntryId: { in: postedEntries.map((e) => e.id) } },
-    _sum: { debit: true, credit: true },
-  })
-
-  const lineMap = Object.fromEntries(lineAggs.map((l) => [l.accountId, l._sum]))
-  const allRows: BalanceSheetRow[] = accounts.map((a) => ({
-    ...a,
-    name: a.account_name,
-    accountCode: a.account_code,
-    type: a.account_type,
-    balance: computeBalance(a.account_type ?? 'ASSET', Number(lineMap[a.id]?.debit ?? 0), Number(lineMap[a.id]?.credit ?? 0)),
-  }))
-
-  const revenue = allRows.filter((r) => r.account_type === 'REVENUE').reduce((s, r) => s + r.balance, 0)
-  const expenses = allRows.filter((r) => r.account_type === 'EXPENSE').reduce((s, r) => s + r.balance, 0)
-  const currentYearEarnings = revenue - expenses
-
   const rows: BalanceSheetRow[] = [
-    ...allRows.filter((r) => r.account_type !== 'REVENUE' && r.account_type !== 'EXPENSE'),
-    { id: 'current-year-earnings', account_name: 'Current Year Earnings', account_code: '3900', account_type: 'EQUITY', name: 'Current Year Earnings', accountCode: '3900', type: 'EQUITY', balance: currentYearEarnings },
+    ...bs.rows.map(toRow),
+    toRow({ id: 'current-year-earnings', name: 'Current Year Earnings', code: '3900', type: 'EQUITY', balance: bs.currentYearEarnings }),
   ]
-
-  const assets = round2dp(rows.filter((r) => r.account_type === 'ASSET').reduce((s, r) => s + r.balance, 0))
-  const liabilities = round2dp(rows.filter((r) => r.account_type === 'LIABILITY').reduce((s, r) => s + r.balance, 0))
-  const equity = round2dp(rows.filter((r) => r.account_type === 'EQUITY').reduce((s, r) => s + r.balance, 0))
+  if (!bs.priorYearsEarnings.isZero()) {
+    rows.push(toRow({ id: 'prior-years-earnings', name: "Prior Years' Earnings (not yet closed)", code: '3950', type: 'EQUITY', balance: bs.priorYearsEarnings }))
+  }
 
   let currentAssets = 0, nonCurrentAssets = 0, unclassifiedAssets = 0
   let currentLiabilities = 0, nonCurrentLiabilities = 0, unclassifiedLiabilities = 0
@@ -116,14 +86,14 @@ export async function computeBalanceSheet(db: Db, companyId: string, asAt: Date)
   return {
     asAt,
     rows,
-    assets,
-    liabilities,
-    equity,
-    // Tolerance wider than a single cent: hundreds of historical journal
-    // entries each carrying their own sub-cent rounding (multi-currency
-    // conversions especially) accumulate to a few cents of immaterial drift
-    // that isn't a real imbalance.
-    balanced: Math.abs(assets - (liabilities + equity)) < 1,
+    assets: Number(bs.assets),
+    liabilities: Number(bs.liabilities),
+    equity: Number(bs.equity),
+    currentYearEarnings: Number(bs.currentYearEarnings),
+    priorYearsEarnings: Number(bs.priorYearsEarnings),
+    difference: Number(bs.difference),
+    // Exact: amounts are Decimal(18,2), so any difference is a real imbalance.
+    balanced: bs.balanced,
     currentAssets: round2dp(currentAssets),
     nonCurrentAssets: round2dp(nonCurrentAssets),
     unclassifiedAssets: round2dp(unclassifiedAssets),
@@ -150,41 +120,17 @@ export interface TrialBalanceResult {
   rows: TrialBalanceRow[]
   grandDebit: number
   grandCredit: number
+  difference: number
   balanced: boolean
 }
 
 export async function computeTrialBalance(db: Db, companyId: string, from: Date, to: Date): Promise<TrialBalanceResult> {
-  const accounts = await db.chartOfAccount.findMany({
-    where: { companyId },
-    select: { id: true, account_name: true, account_code: true, account_type: true },
-    orderBy: { account_code: 'asc' },
-  })
-
-  const postedEntries = await db.journalEntry.findMany({
-    where: { companyId, status: 'POSTED', entry_date: { gte: from.toISOString(), lte: to.toISOString() } },
-    select: { id: true },
-  })
-
-  const lineAggs = await db.journalLine.groupBy({
-    by: ['accountId'],
-    where: { accountId: { in: accounts.map((a) => a.id) }, journalEntryId: { in: postedEntries.map((e) => e.id) } },
-    _sum: { debit: true, credit: true },
-  })
-
-  const lineMap = Object.fromEntries(lineAggs.map((l) => [l.accountId, l._sum]))
-  const rows: TrialBalanceRow[] = accounts
-    .map((a) => ({
-      ...a,
-      name: a.account_name,
-      accountCode: a.account_code,
-      type: a.account_type,
-      totalDebit: Number(lineMap[a.id]?.debit ?? 0),
-      totalCredit: Number(lineMap[a.id]?.credit ?? 0),
-    }))
-    .filter((r) => r.totalDebit > 0 || r.totalCredit > 0)
-
-  const grandDebit = rows.reduce((s, r) => s + r.totalDebit, 0)
-  const grandCredit = rows.reduce((s, r) => s + r.totalCredit, 0)
-
-  return { rows, grandDebit, grandCredit, balanced: Math.abs(grandDebit - grandCredit) < 1 }
+  const tb = await ledgerTrialBalance(db, companyId, from, to)
+  const rows: TrialBalanceRow[] = tb.rows.map((r) => ({
+    id: r.id, account_name: r.name, account_code: r.code, account_type: r.type,
+    name: r.name, accountCode: r.code, type: r.type,
+    totalDebit: Number(r.debit), totalCredit: Number(r.credit),
+  }))
+  // BUG-011: was `< 1`, which reported 592,132.7628 vs .7328 as balanced.
+  return { rows, grandDebit: Number(tb.grandDebit), grandCredit: Number(tb.grandCredit), difference: Number(tb.difference), balanced: tb.balanced }
 }

@@ -7,6 +7,8 @@ import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
 import { overdueQueryCutoff, calculateWorkingCapital, calculateCurrentRatio, calculateQuickRatio, calculateDebtToEquity } from '@/lib/calculations'
 import { buildCurrencyConverter, listAvailableCurrencies } from '@/lib/currency'
 import { computeBalanceSheet, computeTrialBalance } from '@/lib/balance-sheet'
+import { incomeStatement, companyFiscalYearStart } from '@/lib/reports/ledger'
+import { getReceivables } from '@/lib/reports/subledger'
 
 function monthKey(d: Date | string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
@@ -33,7 +35,8 @@ export async function GET(req: NextRequest) {
 
   const { companyId } = session
   const now = new Date()
-  const fiscalStart = new Date(now.getFullYear(), 0, 1)
+  // The company's own fiscal year (was hard-coded to 1 January).
+  const fiscalStart = await companyFiscalYearStart(prisma, companyId, now)
   const sevenDaysOut = new Date(now.getTime() + 7 * 86_400_000)
   const overdueCutoff = overdueQueryCutoff(now)
 
@@ -92,8 +95,11 @@ export async function GET(req: NextRequest) {
     computeBalanceSheet(prisma, companyId, now),
     computeTrialBalance(prisma, companyId, fiscalStart, now),
   ])
+  // P1-2 (BUG-003/006): revenue, expenses and profit come from the ledger for
+  // the fiscal year to date -- the same figures as the Income Statement.
+  // Cash collected is a different measure and is reported separately.
+  const ledgerIS = await incomeStatement(prisma, companyId, fiscalStart, now)
 
-  let totalRevenue = 0
   let outstandingReceivables = 0
   let overdueAmount = 0
   let overdueCount = 0
@@ -101,9 +107,6 @@ export async function GET(req: NextRequest) {
   const dueSoonList: { invoiceNumber: string; customerId: string | null; dueDate: string; balanceDue: number }[] = []
 
   for (const inv of allInvoices) {
-    const total = amt(inv.total_amount, inv.currency)
-    if (total !== null) totalRevenue += total
-
     if (!DB_STATUS_OUTSTANDING.includes(inv.status as string)) continue
     const bal = amt(inv.balance_due, inv.currency)
     if (bal === null) continue
@@ -124,6 +127,9 @@ export async function GET(req: NextRequest) {
       overdueCount++
     }
   }
+
+  // P1-4: consolidated view uses the one shared receivables figure.
+  if (!isNative) outstandingReceivables = Number((await getReceivables(prisma, companyId)).total)
 
   const topDebtorRows = Array.from(debtorMap.entries())
     .filter(([, d]) => d.sum > 0)
@@ -201,11 +207,16 @@ export async function GET(req: NextRequest) {
     viewCurrency,
     availableCurrencies,
     excludedCount: isNative ? 0 : excludedCount,
-    totalRevenue,
+    // Ledger basis, reporting currency, fiscal year to date.
+    totalRevenue: Number(ledgerIS.totalRevenue),
+    totalExpenses: Number(ledgerIS.totalExpenses),
+    netProfit: Number(ledgerIS.netProfit),
+    fiscalYearStart: fiscalStart.toISOString(),
+    // Cash basis: customer receipts this fiscal year.
+    cashCollected: totalCollected,
     totalCollected,
+    cashPaidOut: totalExpenses,
     outstandingReceivables,
-    totalExpenses,
-    netProfit: totalCollected - totalExpenses,
     cashInBank,
     pettyCash,
     totalBankAccounts,

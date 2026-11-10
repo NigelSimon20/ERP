@@ -60,7 +60,7 @@ export const incidentSchema = z.object({
 })
 
 export const journalEntrySchema = z.object({
-  entryDate: z.string().min(1, 'Entry date is required'),
+  entryDate: z.string().min(1, 'Entry date is required').refine((v) => !isNaN(new Date(v).getTime()), 'Entry date is not a valid date'),
   description: z.string().min(3, 'Description is required'),
   lines: z
     .array(

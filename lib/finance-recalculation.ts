@@ -1,6 +1,7 @@
 import { Prisma } from '@prisma/client'
 import { DB_STATUS_VOID } from '@/lib/invoice-status'
 import { buildCurrencyConverter } from '@/lib/currency'
+import { round2dp } from '@/lib/calculations'
 
 function toNumber(value: unknown): number {
   const n = Number(value)
@@ -30,13 +31,17 @@ export async function recalculateCustomerOutstandingBalance(
   // customers with more than a handful of invoices. Load every rate once
   // instead.
   const convert = await buildCurrencyConverter(reportingCurrency)
+  // Same rule as getReceivables (lib/reports/subledger.ts), so the customer
+  // list ties out to the dashboards: overpayments and issued credit notes
+  // are credits against what the customer owes, not clamped to zero.
   let outstanding = 0
   for (const invoice of invoices) {
     const total = toNumber(invoice.total_amount)
     const paid = toNumber(invoice.amount_paid)
-    const balance = Math.max(0, total - paid)
-    outstanding += convert(balance, invoice.currency).amount
+    outstanding += round2dp(convert(total - paid, invoice.currency).amount)
   }
+  const credited = await tx.creditNote.aggregate({ where: { customerId, status: 'ISSUED' }, _sum: { totalAmount: true } })
+  outstanding = round2dp(outstanding - toNumber(credited._sum.totalAmount))
 
   await tx.customer.update({
     where: { id: customerId },
@@ -56,11 +61,9 @@ export async function recalculateSupplierOutstandingBalance(
     select: { totalAmount: true, paidAmount: true },
   })
 
-  const outstanding = bills.reduce((sum, bill) => {
-    const total = toNumber(bill.totalAmount)
-    const paid = toNumber(bill.paidAmount)
-    return sum + Math.max(0, total - paid)
-  }, 0)
+  // Same rule as getPayables (lib/reports/subledger.ts).
+  const debited = await tx.debitNote.aggregate({ where: { supplierId, companyId, status: 'ISSUED' }, _sum: { totalAmount: true } })
+  const outstanding = round2dp(bills.reduce((sum, bill) => sum + toNumber(bill.totalAmount) - toNumber(bill.paidAmount), 0) - toNumber(debited._sum.totalAmount))
 
   await tx.supplier.update({
     where: { id: supplierId },

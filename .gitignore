@@ -47,3 +47,6 @@ next-env.d.ts
 
 # holds the first admin password hash
 supabase/first-admin.sql
+
+# local notes holding credentials
+me.txt

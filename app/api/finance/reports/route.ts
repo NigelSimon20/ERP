@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { DB_STATUS_OUTSTANDING } from '@/lib/invoice-status'
 import { convertToReportingCurrency } from '@/lib/currency'
 import { computeBalanceSheet, computeTrialBalance } from '@/lib/balance-sheet'
+import { incomeStatement, endOfDay, type LedgerAccountBalance } from '@/lib/reports/ledger'
 import { computeCashFlow } from '@/lib/cash-flow'
 import { computeGeneralLedger } from '@/lib/general-ledger'
 import { computeCustomerStatement, computeSupplierStatement } from '@/lib/statement-of-account'
@@ -28,48 +29,23 @@ export async function GET(req: NextRequest) {
 
   if (type === 'income-statement') {
     if (!from || !to) return NextResponse.json({ error: 'from and to required' }, { status: 400 })
-    const fromDate = new Date(from)
-    const toDate = new Date(to)
-
-    const postedEntries = await prisma.journalEntry.findMany({
-      where: { companyId, status: 'POSTED', entry_date: { gte: fromDate.toISOString(), lte: toDate.toISOString() } },
-      select: { id: true },
+    const is = await incomeStatement(prisma, companyId, new Date(from), endOfDay(new Date(to)))
+    const toRow = (r: LedgerAccountBalance) => ({ id: r.id, account_name: r.name, account_code: r.code, name: r.name, accountCode: r.code, amount: Number(r.balance) })
+    return NextResponse.json({
+      type, from, to,
+      revenueRows: is.revenueRows.map(toRow), expenseRows: is.expenseRows.map(toRow),
+      totalRevenue: Number(is.totalRevenue), totalExpenses: Number(is.totalExpenses), netProfit: Number(is.netProfit),
     })
-    const entryIds = postedEntries.map((e) => e.id)
-
-    const [revAccts, expAccts] = await Promise.all([
-      prisma.chartOfAccount.findMany({ where: { account_type: 'REVENUE', companyId }, select: { id: true, account_name: true, account_code: true } }),
-      prisma.chartOfAccount.findMany({ where: { account_type: 'EXPENSE', companyId }, select: { id: true, account_name: true, account_code: true } }),
-    ])
-
-    const [revLines, expLines] = await Promise.all([
-      prisma.journalLine.groupBy({
-        by: ['accountId'],
-        where: { accountId: { in: revAccts.map((a) => a.id) }, journalEntryId: { in: entryIds } },
-        _sum: { debit: true, credit: true },
-      }),
-      prisma.journalLine.groupBy({
-        by: ['accountId'],
-        where: { accountId: { in: expAccts.map((a) => a.id) }, journalEntryId: { in: entryIds } },
-        _sum: { debit: true, credit: true },
-      }),
-    ])
-
-    const revMap = Object.fromEntries(revLines.map((l) => [l.accountId, l._sum]))
-    const expMap = Object.fromEntries(expLines.map((l) => [l.accountId, l._sum]))
-
-    const revenueRows = revAccts.map((a) => ({ ...a, name: a.account_name, accountCode: a.account_code, amount: Number(revMap[a.id]?.credit ?? 0) - Number(revMap[a.id]?.debit ?? 0) }))
-    const expenseRows = expAccts.map((a) => ({ ...a, name: a.account_name, accountCode: a.account_code, amount: Number(expMap[a.id]?.debit ?? 0) - Number(expMap[a.id]?.credit ?? 0) }))
-    const totalRevenue = revenueRows.reduce((s, r) => s + r.amount, 0)
-    const totalExpenses = expenseRows.reduce((s, r) => s + r.amount, 0)
-
-    return NextResponse.json({ type, from, to, revenueRows, expenseRows, totalRevenue, totalExpenses, netProfit: totalRevenue - totalExpenses })
   }
 
   if (type === 'balance-sheet') {
-    const asAtDate = asAt ? new Date(asAt) : new Date()
+    const asAtDate = asAt ? endOfDay(new Date(asAt)) : new Date()
     const bs = await computeBalanceSheet(prisma, companyId, asAtDate)
-    return NextResponse.json({ type, asAt: bs.asAt, rows: bs.rows, assets: bs.assets, liabilities: bs.liabilities, equity: bs.equity, balanced: bs.balanced })
+    return NextResponse.json({
+      type, asAt: bs.asAt, rows: bs.rows, assets: bs.assets, liabilities: bs.liabilities, equity: bs.equity,
+      currentYearEarnings: bs.currentYearEarnings, priorYearsEarnings: bs.priorYearsEarnings,
+      difference: bs.difference, balanced: bs.balanced,
+    })
   }
 
   if (type === 'cash-flow') {
@@ -87,7 +63,7 @@ export async function GET(req: NextRequest) {
 
   if (type === 'trial-balance') {
     if (!from || !to) return NextResponse.json({ error: 'from and to required' }, { status: 400 })
-    const tb = await computeTrialBalance(prisma, companyId, new Date(from), new Date(to))
+    const tb = await computeTrialBalance(prisma, companyId, new Date(from), endOfDay(new Date(to)))
     return NextResponse.json({ type, from, to, rows: tb.rows, grandDebit: tb.grandDebit, grandCredit: tb.grandCredit })
   }
 

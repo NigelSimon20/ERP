@@ -3,6 +3,14 @@ import { NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { ZodError } from 'zod'
 
+// Throw from business logic for an error the user should see as-is.
+export class ApiError extends Error {
+  constructor(message: string, public status = 400, public code = 'REQUEST_FAILED', public fields?: Record<string, string>) {
+    super(message)
+    this.name = 'ApiError'
+  }
+}
+
 export interface ApiErrorBody {
   error: string
   code: string
@@ -15,6 +23,9 @@ export interface ApiErrorBody {
 const INTERNAL_TEXT = /prisma|invocation|constraint|relation "|column "|\bP[0-9]{4}\b|ECONNREFUSED|\bSQL\b/i
 
 function classify(err: unknown, fallback: string, status: number): { status: number; body: Omit<ApiErrorBody, 'requestId'> } {
+  if (err instanceof ApiError) {
+    return { status: err.status, body: { error: err.message, code: err.code, ...(err.fields && { fields: err.fields }) } }
+  }
   if (err instanceof ZodError) {
     const fields: Record<string, string> = {}
     for (const issue of err.issues) {

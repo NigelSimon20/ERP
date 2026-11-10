@@ -4,7 +4,8 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { formatCurrency } from '@/lib/utils'
-import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
+import { getReceivables } from '@/lib/reports/subledger'
+import { incomeStatement, companyFiscalYearStart } from '@/lib/reports/ledger'
 
 export async function POST(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -27,22 +28,21 @@ export async function POST(req: NextRequest) {
     activeGuards,
     activeSites,
     openIncidents,
-    receivableAgg,
-    revenueAgg,
     pendingTasks,
     todayAttendance,
   ] = await Promise.all([
     prisma.guard.count({ where: { companyId, status: 'Active' } }),
     prisma.site.count({ where: { companyId, status: 'Active' } }),
     prisma.incident.count({ where: { companyId, status: { in: ['OPEN', 'INVESTIGATING'] } } }),
-    prisma.salesInvoice.aggregate({ where: { companyId, status: { in: DB_STATUS_OUTSTANDING } }, _sum: { balance_due: true } }),
-    prisma.salesInvoice.aggregate({ where: { companyId, status: { not: DB_STATUS_VOID } }, _sum: { total_amount: true } }),
     prisma.task.count({ where: { companyId, status: 'PENDING' } }),
     prisma.attendance.count({ where: { guardId: { in: companyGuardIds }, date: { gte: today } } }),
   ])
 
-  const totalReceivables = Number(receivableAgg._sum.balance_due ?? 0)
-  const totalRevenue = Number(revenueAgg._sum.total_amount ?? 0)
+  // Same figures as the dashboards (P1-4): ledger revenue for the fiscal
+  // year to date and the shared receivables subledger.
+  const [receivables, fyStart] = await Promise.all([getReceivables(prisma, companyId), companyFiscalYearStart(prisma, companyId, new Date())])
+  const totalReceivables = Number(receivables.total)
+  const totalRevenue = Number((await incomeStatement(prisma, companyId, fyStart, new Date())).totalRevenue)
 
   const systemPrompt = `You are the Ravenshield AI Assistant, an intelligent assistant for Ravenshield Security ERP. You help users understand their company data and answer questions. Here is the current live data for this company:
 

@@ -51,7 +51,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const updated = await prisma.$transaction(async (tx) => {
       await postDebitNoteToGL(tx, {
         companyId, debitNoteId: existing.id, debitNoteNumber: existing.debitNoteNumber,
-        entryDate: existing.issueDate.toISOString(), totalAmount: existing.totalAmount,
+        entryDate: existing.issueDate.toISOString(), totalAmount: Number(existing.totalAmount),
         payableAccountId: company.payablesAccountId!, expenseAccountId: expenseAccount.id, userId,
       })
       await recalculateSupplierOutstandingBalance(tx, existing.supplierId, companyId)

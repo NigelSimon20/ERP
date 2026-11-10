@@ -23,7 +23,7 @@ export async function computeCustomerStatement(db: Db, companyId: string, custom
   const events = [
     ...invoices.map((i) => ({ date: i.invoice_date ?? '', type: 'Invoice', reference: i.invoice_number ?? '', description: `Sales invoice ${i.invoice_number ?? ''}`, charge: Number(i.total_amount ?? 0), payment: 0 })),
     ...receipts.map((r) => ({ date: r.receiptDate.toISOString(), type: 'Receipt', reference: r.reference, description: `Receipt ${r.reference}`, charge: 0, payment: Number(r.amount) })),
-    ...creditNotes.map((c) => ({ date: c.issueDate.toISOString(), type: 'Credit Note', reference: c.creditNoteNumber, description: `Credit note ${c.creditNoteNumber} — ${c.reason}`, charge: 0, payment: c.totalAmount })),
+    ...creditNotes.map((c) => ({ date: c.issueDate.toISOString(), type: 'Credit Note', reference: c.creditNoteNumber, description: `Credit note ${c.creditNoteNumber} — ${c.reason}`, charge: 0, payment: Number(c.totalAmount) })),
   ].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
 
   let openingBalance = 0
@@ -61,7 +61,7 @@ export async function computeSupplierStatement(db: Db, companyId: string, suppli
   const events = [
     ...bills.map((b) => ({ date: b.issueDate.toISOString(), type: 'Bill', reference: b.invoiceNumber, description: `Purchase invoice ${b.invoiceNumber}`, charge: Number(b.totalAmount), payment: 0 })),
     ...payments.map((p) => ({ date: p.payment_date ?? '', type: 'Payment', reference: p.payment_number ?? '', description: `Payment ${p.payment_number ?? ''}`, charge: 0, payment: Number(p.amount ?? 0) })),
-    ...debitNotes.map((d) => ({ date: d.issueDate.toISOString(), type: 'Debit Note', reference: d.debitNoteNumber, description: `Debit note ${d.debitNoteNumber} — ${d.reason}`, charge: 0, payment: d.totalAmount })),
+    ...debitNotes.map((d) => ({ date: d.issueDate.toISOString(), type: 'Debit Note', reference: d.debitNoteNumber, description: `Debit note ${d.debitNoteNumber} — ${d.reason}`, charge: 0, payment: Number(d.totalAmount) })),
   ].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0))
 
   let openingBalance = 0

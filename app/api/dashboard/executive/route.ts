@@ -7,6 +7,8 @@ import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
 import { overdueQueryCutoff, calculateWorkingCapital, calculateCurrentRatio } from '@/lib/calculations'
 import { buildCurrencyConverter, listAvailableCurrencies } from '@/lib/currency'
 import { computeBalanceSheet } from '@/lib/balance-sheet'
+import { getReceivables } from '@/lib/reports/subledger'
+import { incomeStatement, companyFiscalYearStart } from '@/lib/reports/ledger'
 
 function monthKey(d: Date | string) {
   return new Date(d).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
@@ -37,7 +39,7 @@ export async function GET(req: NextRequest) {
 
   const { companyId } = session
   const now = new Date()
-  const fiscalStart = new Date(now.getFullYear(), 0, 1)
+  const fiscalStart = await companyFiscalYearStart(prisma, session.companyId, now)
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
   const todayEnd = new Date(today.getTime() + 86_400_000)
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
@@ -151,6 +153,11 @@ export async function GET(req: NextRequest) {
   }))
   const topSites = sitesWithValue.sort((a, b) => b.monthlyValue - a.monthlyValue).slice(0, 5)
 
+  const [ledgerIS, receivables] = await Promise.all([
+    incomeStatement(prisma, companyId, fiscalStart, now),
+    getReceivables(prisma, companyId),
+  ])
+
   // Guard counts per site
   const siteGuardCounts = await prisma.deployment.groupBy({
     by: ['siteId'],
@@ -164,9 +171,11 @@ export async function GET(req: NextRequest) {
     viewCurrency,
     availableCurrencies,
     excludedCount: isNative ? 0 : excludedCount,
-    totalRevenue,
-    outstandingReceivables,
-    totalExpenses,
+    // Same sources as the finance dashboard and the Income Statement (P1-2/P1-4).
+    totalRevenue: isNative ? totalRevenue : Number(ledgerIS.totalRevenue),
+    outstandingReceivables: isNative ? outstandingReceivables : Number(receivables.total),
+    totalExpenses: isNative ? totalExpenses : Number(ledgerIS.totalExpenses),
+    netProfit: Number(ledgerIS.netProfit),
     cashIn,
     cashInBank,
     pettyCash,

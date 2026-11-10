@@ -1,17 +1,22 @@
 import { Prisma } from '@prisma/client'
 import crypto from 'crypto'
+import { normaliseJournalLines, assertAccountsUsable, autoJournalReference, type JournalLineInput } from './journal-rules'
+import { sumMoney, type MoneyInput } from './money'
 
 const NORMAL_DEBIT = ['ASSET', 'EXPENSE']
 
 export async function applyBalanceDeltas(
   tx: Prisma.TransactionClient,
-  lines: { accountId: string; debit: number; credit: number }[],
+  lines: { accountId: string; debit: MoneyInput; credit: MoneyInput }[],
 ) {
   const accounts = await tx.chartOfAccount.findMany({
     where: { id: { in: lines.map((l) => l.accountId) } },
     select: { id: true, account_type: true },
   })
   const typeById = new Map(accounts.map((a) => [a.id, a.account_type]))
+  // In SQL NULL + x is NULL, so an account created without a balance never
+  // moved no matter what was posted to it.
+  await tx.chartOfAccount.updateMany({ where: { id: { in: lines.map((l) => l.accountId) }, current_balance: null }, data: { current_balance: 0 } })
 
   // Each line is an atomic `increment` at the DB level, so it's safe to fire
   // these concurrently instead of one round trip at a time — this loop was
@@ -20,9 +25,53 @@ export async function applyBalanceDeltas(
   // exceeding Prisma's default 5s timeout against the Supabase pooler.
   await Promise.all(lines.map((l) => {
     const normalDebit = NORMAL_DEBIT.includes(typeById.get(l.accountId) ?? 'ASSET')
-    const delta = normalDebit ? l.debit - l.credit : l.credit - l.debit
-    return tx.chartOfAccount.update({ where: { id: l.accountId }, data: { current_balance: { increment: delta } } }).catch(() => {})
+    const d = new Prisma.Decimal(l.debit ?? 0)
+    const c = new Prisma.Decimal(l.credit ?? 0)
+    const delta = normalDebit ? d.sub(c) : c.sub(d)
+    // No .catch: a swallowed failure inside a transaction leaves Postgres in
+    // an aborted state and the real error surfaces somewhere unrelated.
+    return tx.chartOfAccount.update({ where: { id: l.accountId }, data: { current_balance: { increment: delta } } })
   }))
+}
+
+/**
+ * The single way a journal reaches the ledger (P1-6): lines are rounded to
+ * 2 dp and must balance exactly, have at least 2 non-zero lines, and use
+ * active accounts of this company. Throws ApiError(400) otherwise, which
+ * rolls back the caller's transaction.
+ */
+export async function postJournal(
+  tx: Prisma.TransactionClient,
+  params: {
+    companyId: string
+    reference: string
+    entryDate: string
+    description: string
+    lines: JournalLineInput[]
+    userId: string
+    sourceType?: string
+    sourceId?: string
+  },
+): Promise<string> {
+  const lines = normaliseJournalLines(params.lines)
+  await assertAccountsUsable(tx, params.companyId, lines.map((l) => l.accountId))
+  const total = sumMoney(lines.map((l) => l.debit))
+  const journalId = crypto.randomUUID()
+  await tx.journalEntry.create({
+    data: {
+      id: journalId, companyId: params.companyId, reference: params.reference,
+      entry_date: params.entryDate, description: params.description,
+      total_debit: total, total_credit: total, is_balanced: true,
+      status: 'POSTED', created_by_id: params.userId,
+      source_type: params.sourceType ?? null, source_id: params.sourceId ?? null,
+      created_date: new Date().toISOString(),
+    },
+  })
+  await tx.journalLine.createMany({
+    data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: journalId, ...l })),
+  })
+  await applyBalanceDeltas(tx, lines)
+  return journalId
 }
 
 /**
@@ -67,7 +116,6 @@ export async function postSalesInvoiceToGL(
   const { companyId, invoiceId, invoiceNumber, entryDate, subtotal, taxAmount, totalAmount, receivablesAccountId, revenueAccountId, vatAccountId, userId } = params
   if (totalAmount <= 0) return null
 
-  const journalId = crypto.randomUUID()
   const lines: { accountId: string; debit: number; credit: number; description: string }[] = [
     { accountId: receivablesAccountId, debit: totalAmount, credit: 0, description: `Invoice ${invoiceNumber}` },
     { accountId: revenueAccountId, debit: 0, credit: subtotal, description: `Invoice ${invoiceNumber}` },
@@ -80,23 +128,11 @@ export async function postSalesInvoiceToGL(
     lines[1].credit += taxAmount
   }
 
-  await tx.journalEntry.create({
-    data: {
-      id: journalId, companyId,
-      reference: `JE-auto-INV-${invoiceNumber}`,
-      entry_date: entryDate,
-      description: `Sales invoice ${invoiceNumber}`,
-      total_debit: totalAmount,
-      total_credit: totalAmount,
-      status: 'POSTED',
-      created_by_id: userId,
-    },
+  const journalId = await postJournal(tx, {
+    companyId, reference: autoJournalReference('INV', invoiceNumber), entryDate,
+    description: `Sales invoice ${invoiceNumber}`, lines, userId, sourceType: 'invoice', sourceId: invoiceId,
   })
-  await tx.journalLine.createMany({
-    data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: journalId, ...l })),
-  })
-  await applyBalanceDeltas(tx, lines)
-  await tx.salesInvoice.update({ where: { id: invoiceId }, data: { journal_entry_id: journalId, revenue_account_id: revenueAccountId, receivables_account_id: receivablesAccountId } }).catch(() => {})
+  await tx.salesInvoice.update({ where: { id: invoiceId }, data: { journal_entry_id: journalId, revenue_account_id: revenueAccountId, receivables_account_id: receivablesAccountId } })
 
   return journalId
 }
@@ -122,29 +158,16 @@ export async function postPurchaseInvoiceToGL(
   const { companyId, invoiceId, invoiceNumber, entryDate, totalAmount, payableAccountId, expenseAccountId, userId } = params
   if (totalAmount <= 0) return null
 
-  const journalId = crypto.randomUUID()
   const lines = [
     { accountId: expenseAccountId, description: `Bill ${invoiceNumber}`, debit: totalAmount, credit: 0 },
     { accountId: payableAccountId, description: `Bill ${invoiceNumber}`, debit: 0, credit: totalAmount },
   ]
 
-  await tx.journalEntry.create({
-    data: {
-      id: journalId, companyId,
-      reference: `JE-auto-BILL-${invoiceNumber}`,
-      entry_date: entryDate,
-      description: `Purchase invoice ${invoiceNumber}`,
-      total_debit: totalAmount,
-      total_credit: totalAmount,
-      status: 'POSTED',
-      created_by_id: userId,
-    },
+  const journalId = await postJournal(tx, {
+    companyId, reference: autoJournalReference('BILL', invoiceNumber), entryDate,
+    description: `Purchase invoice ${invoiceNumber}`, lines, userId, sourceType: 'purchaseInvoice', sourceId: invoiceId,
   })
-  await tx.journalLine.createMany({
-    data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: journalId, ...l })),
-  })
-  await applyBalanceDeltas(tx, lines)
-  await tx.purchaseInvoice.update({ where: { id: invoiceId }, data: { journalEntryId: journalId } }).catch(() => {})
+  await tx.purchaseInvoice.update({ where: { id: invoiceId }, data: { journalEntryId: journalId } })
 
   return journalId
 }
@@ -174,7 +197,6 @@ export async function postCreditNoteToGL(
   const { companyId, creditNoteId, creditNoteNumber, entryDate, subtotal, taxAmount, totalAmount, receivablesAccountId, revenueAccountId, vatAccountId, userId } = params
   if (totalAmount <= 0) return null
 
-  const journalId = crypto.randomUUID()
   const lines: { accountId: string; debit: number; credit: number; description: string }[] = [
     { accountId: revenueAccountId, debit: subtotal, credit: 0, description: `Credit Note ${creditNoteNumber}` },
     { accountId: receivablesAccountId, debit: 0, credit: totalAmount, description: `Credit Note ${creditNoteNumber}` },
@@ -185,23 +207,11 @@ export async function postCreditNoteToGL(
     lines[0].debit += taxAmount
   }
 
-  await tx.journalEntry.create({
-    data: {
-      id: journalId, companyId,
-      reference: `JE-auto-CRN-${creditNoteNumber}`,
-      entry_date: entryDate,
-      description: `Credit note ${creditNoteNumber}`,
-      total_debit: totalAmount,
-      total_credit: totalAmount,
-      status: 'POSTED',
-      created_by_id: userId,
-    },
+  const journalId = await postJournal(tx, {
+    companyId, reference: autoJournalReference('CRN', creditNoteNumber), entryDate,
+    description: `Credit note ${creditNoteNumber}`, lines, userId, sourceType: 'creditNote', sourceId: creditNoteId,
   })
-  await tx.journalLine.createMany({
-    data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: journalId, ...l })),
-  })
-  await applyBalanceDeltas(tx, lines)
-  await tx.creditNote.update({ where: { id: creditNoteId }, data: { journalEntryId: journalId } }).catch(() => {})
+  await tx.creditNote.update({ where: { id: creditNoteId }, data: { journalEntryId: journalId } })
 
   return journalId
 }
@@ -227,29 +237,16 @@ export async function postDebitNoteToGL(
   const { companyId, debitNoteId, debitNoteNumber, entryDate, totalAmount, payableAccountId, expenseAccountId, userId } = params
   if (totalAmount <= 0) return null
 
-  const journalId = crypto.randomUUID()
   const lines = [
     { accountId: payableAccountId, description: `Debit Note ${debitNoteNumber}`, debit: totalAmount, credit: 0 },
     { accountId: expenseAccountId, description: `Debit Note ${debitNoteNumber}`, debit: 0, credit: totalAmount },
   ]
 
-  await tx.journalEntry.create({
-    data: {
-      id: journalId, companyId,
-      reference: `JE-auto-DBN-${debitNoteNumber}`,
-      entry_date: entryDate,
-      description: `Debit note ${debitNoteNumber}`,
-      total_debit: totalAmount,
-      total_credit: totalAmount,
-      status: 'POSTED',
-      created_by_id: userId,
-    },
+  const journalId = await postJournal(tx, {
+    companyId, reference: autoJournalReference('DBN', debitNoteNumber), entryDate,
+    description: `Debit note ${debitNoteNumber}`, lines, userId, sourceType: 'debitNote', sourceId: debitNoteId,
   })
-  await tx.journalLine.createMany({
-    data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: journalId, ...l })),
-  })
-  await applyBalanceDeltas(tx, lines)
-  await tx.debitNote.update({ where: { id: debitNoteId }, data: { journalEntryId: journalId } }).catch(() => {})
+  await tx.debitNote.update({ where: { id: debitNoteId }, data: { journalEntryId: journalId } })
 
   return journalId
 }
@@ -275,29 +272,16 @@ export async function postExpenseClaimToGL(
   const { companyId, expenseClaimId, claimNumber, entryDate, amount, expenseAccountId, bankAccountId, userId } = params
   if (amount <= 0) return null
 
-  const journalId = crypto.randomUUID()
   const lines = [
     { accountId: expenseAccountId, description: `Expense Claim ${claimNumber}`, debit: amount, credit: 0 },
     { accountId: bankAccountId, description: `Expense Claim ${claimNumber}`, debit: 0, credit: amount },
   ]
 
-  await tx.journalEntry.create({
-    data: {
-      id: journalId, companyId,
-      reference: `JE-auto-EXP-${claimNumber}`,
-      entry_date: entryDate,
-      description: `Expense claim ${claimNumber}`,
-      total_debit: amount,
-      total_credit: amount,
-      status: 'POSTED',
-      created_by_id: userId,
-    },
+  const journalId = await postJournal(tx, {
+    companyId, reference: autoJournalReference('EXP', claimNumber), entryDate,
+    description: `Expense claim ${claimNumber}`, lines, userId, sourceType: 'expenseClaim', sourceId: expenseClaimId,
   })
-  await tx.journalLine.createMany({
-    data: lines.map((l) => ({ id: crypto.randomUUID(), journalEntryId: journalId, ...l })),
-  })
-  await applyBalanceDeltas(tx, lines)
-  await tx.expenseClaim.update({ where: { id: expenseClaimId }, data: { journalEntryId: journalId } }).catch(() => {})
+  await tx.expenseClaim.update({ where: { id: expenseClaimId }, data: { journalEntryId: journalId } })
 
   return journalId
 }

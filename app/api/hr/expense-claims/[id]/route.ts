@@ -61,7 +61,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const updated = await prisma.$transaction(async (tx) => {
       await postExpenseClaimToGL(tx, {
         companyId, expenseClaimId: existing.id, claimNumber: existing.claimNumber,
-        entryDate: new Date().toISOString(), amount: existing.amount,
+        entryDate: new Date().toISOString(), amount: Number(existing.amount),
         expenseAccountId: expenseAccount.id, bankAccountId: bankGlAccountId, userId,
       })
       return tx.expenseClaim.findUniqueOrThrow({ where: { id: params.id } })

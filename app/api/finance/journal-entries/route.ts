@@ -5,8 +5,9 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { paginate } from '@/lib/utils'
 import { nextJournalReference } from '@/lib/auto-numbers'
-import { journalEntrySchema } from '@/lib/validators'
 import { toJournalEntryDto } from '@/lib/journal-entries'
+import { normaliseJournalLines, assertAccountsUsable, journalEntryCreateSchema } from '@/lib/journal-rules'
+import { sumMoney } from '@/lib/money'
 import { apiError } from '@/lib/api-error'
 
 async function getSession(req: NextRequest) {
@@ -71,13 +72,13 @@ export async function POST(req: NextRequest) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const data = journalEntrySchema.parse(await req.json())
+    const data = journalEntryCreateSchema.parse(await req.json())
 
-    const totalDebit = data.lines.reduce((s, l) => s + Number(l.debit ?? 0), 0)
-    const totalCredit = data.lines.reduce((s, l) => s + Number(l.credit ?? 0), 0)
-    if (Math.abs(totalDebit - totalCredit) > 0.005) {
-      return NextResponse.json({ error: 'Total debits must equal total credits' }, { status: 400 })
-    }
+    // Balance, line shape and totals were checked by the schema; amounts are
+    // rounded to 2 dp here and every account must be usable by this company.
+    const lines = normaliseJournalLines(data.lines)
+    await assertAccountsUsable(prisma, session.companyId, lines.map((l) => l.accountId))
+    const totalDebit = sumMoney(lines.map((l) => l.debit))
 
     const entryDate = new Date(data.entryDate as string)
     const lockDate = await prisma.lockDate.findFirst({
@@ -105,14 +106,7 @@ export async function POST(req: NextRequest) {
       })
 
       await tx.journalLine.createMany({
-        data: data.lines.map((line) => ({
-          id: crypto.randomUUID(),
-          journalEntryId: je.id,
-          accountId: line.accountId,
-          description: line.description ?? '',
-          debit: Number(line.debit ?? 0),
-          credit: Number(line.credit ?? 0),
-        })),
+        data: lines.map((line) => ({ id: crypto.randomUUID(), journalEntryId: je.id, ...line })),
       })
 
       return je

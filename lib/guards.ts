@@ -34,7 +34,7 @@ export function toGuardDto(guard: Guard): GuardDto {
     rank: guard.employee_type,
     status: guard.status,
     dailyRate: guard.daily_rate,
-    basicSalary: guard.basic_salary,
+    basicSalary: guard.basic_salary == null ? null : Number(guard.basic_salary),
     dateOfBirth: guard.date_of_birth,
     dateHired: guard.hire_date,
   }

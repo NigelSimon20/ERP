@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { z } from 'zod'
 import { apiError } from '@/lib/api-error'
+import { accountCodeProblem } from '@/lib/journal-rules'
 
 const accountSchema = z.object({
   accountCode: z.string().min(1, 'Code required'),
@@ -43,6 +44,8 @@ export async function POST(req: NextRequest) {
       where: { account_code: data.accountCode, companyId: session.companyId },
     })
     if (duplicate) return NextResponse.json({ error: 'Account code already in use' }, { status: 400 })
+    const rangeProblem = accountCodeProblem(data.accountCode, data.type)
+    if (rangeProblem) return NextResponse.json({ error: rangeProblem, code: 'ACCOUNT_CODE_RANGE' }, { status: 400 })
 
     const account = await prisma.chartOfAccount.create({
       data: {

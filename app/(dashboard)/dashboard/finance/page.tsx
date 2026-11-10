@@ -26,6 +26,8 @@ interface FinanceData {
   outstandingReceivables: number
   totalExpenses: number
   netProfit: number
+  cashCollected: number
+  cashPaidOut: number
   cashInBank: number
   pettyCash: number
   totalBankAccounts: number
@@ -170,9 +172,9 @@ export default function FinanceDashboardPage() {
         {/* Row 1 — Revenue */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {loading ? [1,2,3].map(i => <div key={i} className="erp-card !p-5 animate-pulse h-28" />) : <>
-            <KPICard title="Total Revenue" subtitle="Fiscal year" value={formatCurrency(data!.totalRevenue, vc)} icon={ArrowTrendingRegular} color="red" />
-            <KPICard title="Total Collected" value={formatCurrency(data!.totalCollected, vc)} icon={MoneyHandRegular} color="navy" />
-            <KPICard title="Net Profit" value={formatCurrency(data!.netProfit, vc)} icon={ArrowTrendingRegular} color={data!.netProfit >= 0 ? 'green' : 'red'} />
+            <KPICard title="Revenue" subtitle="Ledger, fiscal year to date" value={formatCurrency(data!.totalRevenue, vc)} icon={ArrowTrendingRegular} color="red" />
+            <KPICard title="Cash Collected" subtitle="Customer receipts, fiscal year to date" value={formatCurrency(data!.cashCollected, vc)} icon={MoneyHandRegular} color="navy" />
+            <KPICard title="Net Profit" subtitle="Revenue − expenses (ledger)" value={formatCurrency(data!.netProfit, vc)} icon={ArrowTrendingRegular} color={data!.netProfit >= 0 ? 'green' : 'red'} />
           </>}
         </div>
 
@@ -190,8 +192,8 @@ export default function FinanceDashboardPage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {loading ? [1,2,3,4].map(i => <div key={i} className="erp-card !p-5 animate-pulse h-28" />) : <>
             <KPICard title="Total Bank Accounts" value={data!.totalBankAccounts} icon={BuildingBankRegular} color="navy" />
-            <KPICard title="Cash In" subtitle="Fiscal year to date" value={formatCurrency(data!.totalCollected, vc)} icon={ArrowDownloadRegular} color="green" />
-            <KPICard title="Cash Out" subtitle="Fiscal year to date" value={formatCurrency(data!.totalExpenses, vc)} icon={ArrowUploadRegular} color="amber" />
+            <KPICard title="Cash In" subtitle="Fiscal year to date" value={formatCurrency(data!.cashCollected, vc)} icon={ArrowDownloadRegular} color="green" />
+            <KPICard title="Cash Out" subtitle="Fiscal year to date" value={formatCurrency(data!.cashPaidOut, vc)} icon={ArrowUploadRegular} color="amber" />
             <KPICard title="Petty Cash" subtitle="Included in Cash in Bank" value={formatCurrency(data!.pettyCash, vc)} icon={MoneyHandRegular} color="white" />
           </>}
         </div>

@@ -27,7 +27,7 @@ export function toEquipmentDto(item: Equipment): EquipmentDto {
     quantityIssued: item.quantity_issued,
     quantityDamaged: item.quantity_damaged,
     quantityLost: item.quantity_lost,
-    unitCost: item.unit_cost,
+    unitCost: item.unit_cost == null ? null : Number(item.unit_cost),
     location: item.location,
     isActive: item.is_active,
     notes: item.notes,

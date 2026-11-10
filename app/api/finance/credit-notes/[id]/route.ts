@@ -52,8 +52,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const updated = await prisma.$transaction(async (tx) => {
       await postCreditNoteToGL(tx, {
         companyId, creditNoteId: existing.id, creditNoteNumber: existing.creditNoteNumber,
-        entryDate: existing.issueDate.toISOString(), subtotal: existing.subtotal, taxAmount: existing.taxAmount,
-        totalAmount: existing.totalAmount, receivablesAccountId: company.receivablesAccountId!,
+        entryDate: existing.issueDate.toISOString(), subtotal: Number(existing.subtotal), taxAmount: Number(existing.taxAmount),
+        totalAmount: Number(existing.totalAmount), receivablesAccountId: company.receivablesAccountId!,
         revenueAccountId: revenueAccount.id, vatAccountId: vatAccount?.id ?? null, userId,
       })
       await recalculateCustomerOutstandingBalance(tx, existing.customerId)

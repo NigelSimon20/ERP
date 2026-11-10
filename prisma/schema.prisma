@@ -176,7 +176,7 @@ model LongServiceTier {
   minYears      Int
   maxYears      Int?
   allowanceType String   @default("FIXED")
-  amount        Decimal  @db.Decimal(10,2)
+  amount        Decimal @db.Decimal(18, 2)
   region        String?
   isDefault     Boolean  @default(true)
   createdAt     DateTime @default(now())
@@ -220,11 +220,11 @@ model Customer {
   account_id            String?
   phone                 String?
   company_name          String?
-  credit_limit          Float?
-  current_balance       Float?
+  credit_limit          Decimal? @db.Decimal(18, 2)
+  current_balance       Decimal? @db.Decimal(18, 2)
   currency              String?
   shipping_address      String?  @db.Text
-  opening_balance       Float?
+  opening_balance       Decimal? @db.Decimal(18, 2)
   customer_code         String?
   email                 String?
   created_date          String?
@@ -263,9 +263,9 @@ model Supplier {
   phone                String?
   company_name         String?
   bank_name            String?
-  current_balance      Float?
+  current_balance      Decimal? @db.Decimal(18, 2)
   currency             String?
-  opening_balance      Float?
+  opening_balance      Decimal? @db.Decimal(18, 2)
   supplier_code        String?
   withholding_tax_rate Float?
   email                String?
@@ -297,7 +297,7 @@ model Guard {
   notes                 String?  @db.Text
   gender                String?
   leave_days_taken      Float?
-  leave_daily_value     Float?
+  leave_daily_value     Decimal? @db.Decimal(18, 2)
   city                  String?
   assigned_payslip_items String? @db.Text
   date_of_birth         String?
@@ -315,7 +315,7 @@ model Guard {
   email                 String?
   equipment_assigned    String?  @db.Text
   force_number          String?
-  leave_balance         Float?
+  leave_balance         Decimal? @db.Decimal(18, 2)
   leave_accrual_rate    Float?
   address               String?  @db.Text
   is_active             Boolean?
@@ -330,7 +330,7 @@ model Guard {
   phone                 String?
   whatsapp              String?
   next_of_kin_name      String?
-  basic_salary          Float?
+  basic_salary          Decimal? @db.Decimal(18, 2)
   next_of_kin_relationship String?
   position              String?
   region                String?
@@ -717,12 +717,12 @@ model Equipment {
   quantity_lost    Float?
   quantity_issued  Float?
   equipment_class  String?
-  unit_cost        Float?
+  unit_cost        Decimal? @db.Decimal(18, 2)
   location         String?
   category         String?
   supplier_id      String?
   quantity_damaged Float?
-  charge_amount    Float?
+  charge_amount    Decimal? @db.Decimal(18, 2)
   serial_numbers   String?  @db.Text
   created_date     String?
   updated_date     String?
@@ -844,9 +844,9 @@ model ProformaInvoice {
   proformaNumber     String          @unique
   issueDate          DateTime
   validUntil         DateTime
-  subtotal           Float
-  taxAmount          Float           @default(0)
-  totalAmount        Float
+  subtotal           Decimal @db.Decimal(18, 2)
+  taxAmount          Decimal @db.Decimal(18, 2) @default(0)
+  totalAmount        Decimal @db.Decimal(18, 2)
   status             ProformaStatus  @default(DRAFT)
   notes              String?         @db.Text
   convertedInvoiceId String?
@@ -865,9 +865,9 @@ model ProformaInvoiceLine {
   proformaInvoice   ProformaInvoice @relation(fields: [proformaInvoiceId], references: [id])
   description       String          @db.Text
   quantity          Float
-  unitPrice         Float
+  unitPrice         Decimal @db.Decimal(18, 2)
   taxRate           Float?          @default(0)
-  lineTotal         Float
+  lineTotal         Decimal @db.Decimal(18, 2)
 
   @@map("proforma_invoice_lines")
 }
@@ -888,9 +888,9 @@ model CreditNote {
   creditNoteNumber String           @unique
   issueDate        DateTime
   reason           String           @db.Text
-  subtotal         Float
-  taxAmount        Float            @default(0)
-  totalAmount      Float
+  subtotal         Decimal @db.Decimal(18, 2)
+  taxAmount        Decimal @db.Decimal(18, 2) @default(0)
+  totalAmount      Decimal @db.Decimal(18, 2)
   status           CreditNoteStatus @default(DRAFT)
   journalEntryId   String?
   createdAt        DateTime         @default(now())
@@ -908,9 +908,9 @@ model CreditNoteLine {
   creditNote   CreditNote @relation(fields: [creditNoteId], references: [id])
   description  String     @db.Text
   quantity     Float
-  unitPrice    Float
+  unitPrice    Decimal @db.Decimal(18, 2)
   taxRate      Float?     @default(0)
-  lineTotal    Float
+  lineTotal    Decimal @db.Decimal(18, 2)
 
   @@map("credit_note_lines")
 }
@@ -931,9 +931,9 @@ model DebitNote {
   debitNoteNumber   String          @unique
   issueDate         DateTime
   reason            String          @db.Text
-  subtotal          Float
-  taxAmount         Float           @default(0)
-  totalAmount       Float
+  subtotal          Decimal @db.Decimal(18, 2)
+  taxAmount         Decimal @db.Decimal(18, 2) @default(0)
+  totalAmount       Decimal @db.Decimal(18, 2)
   status            DebitNoteStatus @default(DRAFT)
   journalEntryId    String?
   createdAt         DateTime        @default(now())
@@ -951,9 +951,9 @@ model DebitNoteLine {
   debitNote   DebitNote @relation(fields: [debitNoteId], references: [id])
   description String    @db.Text
   quantity    Float
-  unitPrice   Float
+  unitPrice   Decimal @db.Decimal(18, 2)
   taxRate     Float?    @default(0)
-  lineTotal   Float
+  lineTotal   Decimal @db.Decimal(18, 2)
 
   @@map("debit_note_lines")
 }
@@ -981,9 +981,9 @@ model PurchaseOrder {
   poNumber     String                @unique
   issueDate    DateTime
   expectedDate DateTime?
-  subtotal     Float
-  taxAmount    Float                 @default(0)
-  totalAmount  Float
+  subtotal     Decimal @db.Decimal(18, 2)
+  taxAmount    Decimal @db.Decimal(18, 2) @default(0)
+  totalAmount  Decimal @db.Decimal(18, 2)
   status       PurchaseOrderStatus   @default(DRAFT)
   notes        String?               @db.Text
   createdAt    DateTime              @default(now())
@@ -1002,9 +1002,9 @@ model PurchaseOrderLine {
   purchaseOrder    PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
   description      String        @db.Text
   quantity         Float
-  unitPrice        Float
+  unitPrice        Decimal @db.Decimal(18, 2)
   taxRate          Float?        @default(0)
-  lineTotal        Float
+  lineTotal        Decimal @db.Decimal(18, 2)
   quantityReceived Float         @default(0)
 
   @@map("purchase_order_lines")
@@ -1080,7 +1080,7 @@ model ExpenseClaim {
   userId        String
   claimNumber   String              @unique
   category      String
-  amount        Float
+  amount        Decimal @db.Decimal(18, 2)
   currency      String              @default("USD")
   expenseDate   DateTime
   description   String              @db.Text
@@ -1170,9 +1170,9 @@ model ChartOfAccount {
   parent_account_id  String?
   account_name       String?
   account_code       String?
-  current_balance    Float?
+  current_balance    Decimal? @db.Decimal(18, 2)
   currency           String?
-  opening_balance    Float?
+  opening_balance    Decimal? @db.Decimal(18, 2)
   department         String?
   created_date       String?
   updated_date       String?
@@ -1201,11 +1201,11 @@ model BankAccount {
   branch              String?
   last_reconciled_date String?
   account_name        String?
-  reconciled_balance  Float?
+  reconciled_balance  Decimal? @db.Decimal(18, 2)
   bank_name           String?
-  current_balance     Float?
+  current_balance     Decimal? @db.Decimal(18, 2)
   currency            String?
-  opening_balance     Float?
+  opening_balance     Decimal? @db.Decimal(18, 2)
   created_date        String?
   updated_date        String?
   created_by_id       String?
@@ -1226,11 +1226,11 @@ model JournalEntry {
   period        String?
   attachments   String?  @db.Text
   entry_number  String?
-  total_credit  Float?
+  total_credit  Decimal? @db.Decimal(18, 2)
   is_balanced   Boolean?
   description   String?  @db.Text
   source_type   String?
-  total_debit   Float?
+  total_debit   Decimal? @db.Decimal(18, 2)
   entry_date    String?
   reference     String?
   source_id     String?
@@ -1259,7 +1259,7 @@ model Payment {
   company           Company  @relation(fields: [companyId], references: [id])
   bank_account_id   String?
   journal_entry_id  String?
-  amount            Float?
+  amount            Decimal? @db.Decimal(18, 2)
   attachments       String?  @db.Text
   exchange_rate     Float?
   description       String?  @db.Text
@@ -1305,25 +1305,25 @@ model Payslip {
   notes                         String?  @db.Text
   deductions                    String?  @db.Text
   is_admin_employee             Boolean?
-  net_pay                       Float?
+  net_pay                       Decimal? @db.Decimal(18, 2)
   contributions                 String?  @db.Text
   currency                      String?
-  total_deductions              Float?
+  total_deductions              Decimal? @db.Decimal(18, 2)
   payment_method                String?
   force_number                  String?
   period                        String?
   days_worked                   Float?
   hours_worked                  Float?
   overtime_hours                Float?
-  overtime_pay                  Float?
-  total_contributions_employee  Float?
+  overtime_pay                  Decimal? @db.Decimal(18, 2)
+  total_contributions_employee  Decimal? @db.Decimal(18, 2)
   employee_name                 String?
   earnings                      String?  @db.Text
-  total_earnings                Float?
+  total_earnings                Decimal? @db.Decimal(18, 2)
   employee_id                   String?
-  basic_salary                  Float?
+  basic_salary                  Decimal? @db.Decimal(18, 2)
   payslip_number                String?
-  total_contributions_employer  Float?
+  total_contributions_employer  Decimal? @db.Decimal(18, 2)
   status                        String?
   created_date                  String?
   updated_date                  String?
@@ -1351,13 +1351,13 @@ enum InvoiceStatus {
 model SalesInvoice {
   id                     String   @id @map("id")
   companyId              String
-  tax_amount             Float?
+  tax_amount             Decimal? @db.Decimal(18, 2)
   bank_account_id        String?
   journal_entry_id       String?
-  amount_paid            Float?
+  amount_paid            Decimal? @db.Decimal(18, 2)
   notes                  String?  @db.Text
   attachments            String?  @db.Text
-  discount_amount        Float?
+  discount_amount        Decimal? @db.Decimal(18, 2)
   invoice_date           String?
   reference              String?
   terms                  String?  @db.Text
@@ -1372,11 +1372,11 @@ model SalesInvoice {
   due_date               String?
   bank_account_name      String?
   receivables_account_id String?
-  total_amount           Float?
-  subtotal               Float?
+  total_amount           Decimal? @db.Decimal(18, 2)
+  subtotal               Decimal? @db.Decimal(18, 2)
   revenue_account_id     String?
   customer_name          String?
-  balance_due            Float?
+  balance_due            Decimal? @db.Decimal(18, 2)
   customer_id            String?
   supplier_id            String?
   overall_description    String?  @db.Text
@@ -1400,9 +1400,9 @@ model SalesInvoiceLine {
   salesInvoiceId String      @map("invoiceId")
   description    String      @db.Text
   quantity       Float
-  unitPrice      Float
+  unitPrice      Decimal @db.Decimal(18, 2)
   taxRate        Float?      @default(0)
-  lineTotal      Float
+  lineTotal      Decimal @db.Decimal(18, 2)
 
   salesInvoice   SalesInvoice @relation(fields: [salesInvoiceId], references: [id])
 
@@ -1421,11 +1421,11 @@ model PurchaseInvoice {
   reference    String?
   issueDate    DateTime
   dueDate      DateTime
-  subtotal     Float
-  taxAmount    Float?   @default(0)
-  totalAmount  Float
-  paidAmount   Float?   @default(0)
-  balanceDue   Float
+  subtotal     Decimal @db.Decimal(18, 2)
+  taxAmount    Decimal? @db.Decimal(18, 2) @default(0)
+  totalAmount  Decimal @db.Decimal(18, 2)
+  paidAmount   Decimal? @db.Decimal(18, 2) @default(0)
+  balanceDue   Decimal @db.Decimal(18, 2)
   status       InvoiceStatus @default(UNPAID)
   notes        String?  @db.Text
   journalEntryId String?
@@ -1446,11 +1446,11 @@ model PurchaseInvoiceLineItem {
   purchaseInvoiceId String  @map("purchaseInvoiceId")
   description      String   @db.Text
   quantity         Float
-  unitPrice        Float
+  unitPrice        Decimal @db.Decimal(18, 2)
   taxRate          Float?   @default(0)
-  subtotal         Float
-  taxAmount        Float?   @default(0)
-  lineTotal        Float
+  subtotal         Decimal @db.Decimal(18, 2)
+  taxAmount        Decimal? @db.Decimal(18, 2) @default(0)
+  lineTotal        Decimal @db.Decimal(18, 2)
 
   purchaseInvoice  PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id])
 
@@ -1690,8 +1690,8 @@ model JournalLine {
   journalEntryId String
   accountId String
   description String?
-  debit Decimal
-  credit Decimal
+  debit Decimal @db.Decimal(18, 2)
+  credit Decimal @db.Decimal(18, 2)
 
   @@map("journal_lines")
 }
@@ -1700,7 +1700,7 @@ model BankTransfer {
   id String @id
   fromAccountId String
   toAccountId String
-  amount Decimal
+  amount Decimal @db.Decimal(18, 2)
   transferDate DateTime
   reference String @unique
   notes String?
@@ -1717,7 +1717,7 @@ model Receipt {
   companyId String
   receiptDate DateTime
   reference String @unique
-  amount Decimal
+  amount Decimal @db.Decimal(18, 2)
   bankAccountId String
   customerId String
   invoiceId String?
@@ -1733,11 +1733,11 @@ model FixedAsset {
   name String
   category String
   purchaseDate DateTime
-  purchasePrice Decimal
+  purchasePrice Decimal @db.Decimal(18, 2)
   usefulLifeYears Int
   depreciationMethod String @default("STRAIGHT_LINE")
-  accumulatedDepreciation Decimal
-  currentValue Decimal
+  accumulatedDepreciation Decimal @db.Decimal(18, 2)
+  currentValue Decimal @db.Decimal(18, 2)
   status AssetStatus @default(ACTIVE)
   createdAt DateTime @default(now())
   updatedAt DateTime
@@ -1753,8 +1753,8 @@ model InventoryItem {
   unit String
   quantityOnHand Decimal
   reorderLevel Decimal
-  unitCost Decimal
-  totalValue Decimal
+  unitCost Decimal @db.Decimal(18, 2)
+  totalValue Decimal @db.Decimal(18, 2)
   createdAt DateTime @default(now())
   updatedAt DateTime
 
@@ -1765,8 +1765,8 @@ model BankReconciliation {
   id String @id
   bankAccountId String
   reconcileDate DateTime
-  statementBalance Decimal
-  bookBalance Decimal
+  statementBalance Decimal @db.Decimal(18, 2)
+  bookBalance Decimal @db.Decimal(18, 2)
   difference Decimal
   status String @default("OPEN")
   createdAt DateTime @default(now())
@@ -1803,7 +1803,7 @@ model Department {
   companyId String
   name String
   managerId String?
-  budget Decimal?
+  budget Decimal? @db.Decimal(18, 2)
   createdAt DateTime @default(now())
 
   @@map("departments")
@@ -1815,7 +1815,7 @@ model Budget {
   department     String
   month          Int
   year           Int
-  budgetedAmount Decimal
+  budgetedAmount Decimal @db.Decimal(18, 2)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -1845,7 +1845,7 @@ model PayslipItem {
   name String
   itemType PayItemType
   calculationMethod String
-  fixedAmount Decimal?
+  fixedAmount Decimal? @db.Decimal(18, 2)
   percentage Decimal?
   taxable Boolean @default(true)
   active Boolean @default(true)
@@ -1862,9 +1862,9 @@ model PayrollRun {
   periodEnd DateTime
   runDate DateTime @default(now())
   status PayrollStatus @default(DRAFT)
-  totalGross Decimal
-  totalDeductions Decimal
-  totalNet Decimal
+  totalGross Decimal @db.Decimal(18, 2)
+  totalDeductions Decimal @db.Decimal(18, 2)
+  totalNet Decimal @db.Decimal(18, 2)
   processedBy String
   bankAccountId String?
   createdAt DateTime @default(now())
@@ -1877,7 +1877,7 @@ model PayslipLine {
   payslipId String
   itemName String
   itemType PayItemType
-  amount Decimal
+  amount Decimal @db.Decimal(18, 2)
 
   @@map("payslip_lines")
 }
@@ -1891,7 +1891,7 @@ model Lead {
   contactEmail String?
   source String?
   industry String?
-  estimatedValue Decimal
+  estimatedValue Decimal @db.Decimal(18, 2)
   probability Int
   status LeadStatus @default(NEW)
   assignedTo String?
@@ -1914,9 +1914,9 @@ model Quotation {
   quoteNumber String @unique
   issueDate DateTime
   validUntil DateTime
-  subtotal Decimal
-  tax Decimal
-  total Decimal
+  subtotal Decimal @db.Decimal(18, 2)
+  tax Decimal @db.Decimal(18, 2)
+  total Decimal @db.Decimal(18, 2)
   status QuoteStatus @default(DRAFT)
   notes String?
   convertedInvoiceId String?
@@ -1931,9 +1931,9 @@ model QuotationItem {
   quotationId String
   description String
   quantity Decimal
-  unitPrice Decimal
+  unitPrice Decimal @db.Decimal(18, 2)
   taxRate Decimal?
-  total Decimal
+  total Decimal @db.Decimal(18, 2)
 
   @@map("quotation_items")
 }
@@ -1953,7 +1953,7 @@ model Contract {
   siteId           String?
   quotationId      String?
   title            String
-  contractValue    Decimal
+  contractValue    Decimal @db.Decimal(18, 2)
   billingFrequency String?
   startDate        DateTime
   endDate          DateTime?

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { z } from 'zod'
 import { apiError } from '@/lib/api-error'
+import { accountCodeProblem } from '@/lib/journal-rules'
 
 const updateSchema = z.object({
   name: z.string().min(1).optional(),
@@ -44,6 +45,11 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
     if (!account) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const data = updateSchema.parse(await req.json())
+
+    if (data.type && data.type !== account.account_type) {
+      const rangeProblem = accountCodeProblem(account.account_code, data.type)
+      if (rangeProblem) return NextResponse.json({ error: rangeProblem, code: 'ACCOUNT_CODE_RANGE' }, { status: 400 })
+    }
 
     if (data.type && data.type !== account.account_type) {
       const posted = await prisma.journalLine.count({
