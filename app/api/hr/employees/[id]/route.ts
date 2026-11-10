@@ -5,6 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { toGuardDto, splitName } from '@/lib/guards'
+import { employeeProblems, nationalIdTaken } from '@/lib/employee-rules'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -28,6 +29,19 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
   const body = await req.json()
   const { name, idNumber, phone, whatsapp, email, address, department, position, rank, dailyRate, basicSalary, status, dateOfBirth, dateHired } = body
+  // Validate the record as it will be after this update (dates relate).
+  const problems = employeeProblems({
+    ...(name !== undefined && { name }),
+    dateOfBirth: dateOfBirth !== undefined ? dateOfBirth : existing.date_of_birth,
+    hireDate: dateHired !== undefined ? dateHired : existing.hire_date,
+    dailyRate, basicSalary,
+  })
+  if (problems.length) {
+    return NextResponse.json({ error: problems[0].message, code: 'VALIDATION_ERROR', fields: Object.fromEntries(problems.map((p) => [p.field, p.message])) }, { status: 400 })
+  }
+  if (idNumber && await nationalIdTaken(prisma, companyId, idNumber, existing.id)) {
+    return NextResponse.json({ error: 'Another employee already has this national ID', code: 'DUPLICATE_NATIONAL_ID' }, { status: 409 })
+  }
   const { first_name, last_name } = name ? splitName(name) : { first_name: undefined, last_name: undefined }
 
   const guard = await prisma.guard.update({

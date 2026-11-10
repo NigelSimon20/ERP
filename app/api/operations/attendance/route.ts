@@ -4,7 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { hoursForStatus } from '@/lib/attendance-hours'
+import { hoursForStatus, attendanceRate, NOT_ROSTERED_STATUSES } from '@/lib/attendance-hours'
 
 export async function GET(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -80,10 +80,11 @@ export async function GET(req: NextRequest) {
   const total = records.length
   const present = records.filter((r) => r.status === 'PRESENT').length
   const absent = records.filter((r) => r.status === 'ABSENT').length
+  const notRostered = records.filter((r) => (NOT_ROSTERED_STATUSES as readonly string[]).includes(r.status)).length
 
   return NextResponse.json({
     records,
-    summary: { total, present, absent, attendanceRate: total > 0 ? Math.round((present / total) * 100) : 0 },
+    summary: { total, present, absent, attendanceRate: attendanceRate(present, total, notRostered) },
   })
 }
 

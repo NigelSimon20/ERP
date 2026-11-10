@@ -7,6 +7,8 @@ import { logAudit } from '@/lib/audit'
 import crypto from 'crypto'
 import type { Severity, IncidentStatus } from '@prisma/client'
 import { paginate, pageLimit } from '@/lib/utils'
+import { incidentCreateSchema } from '@/lib/incident-rules'
+import { apiError } from '@/lib/api-error'
 
 export async function GET(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -59,25 +61,29 @@ export async function POST(req: NextRequest) {
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { companyId, userId, name: userName } = session
-  const body = await req.json()
-  const { title, description, siteId, guardId, severity, reportedAt } = body
-
-  if (!title || !siteId) return NextResponse.json({ error: 'title and siteId are required' }, { status: 400 })
+  // P1-11 (BUG-017): an unknown severity ("APOCALYPTIC") used to reach
+  // Prisma and 500; a missing description did the same.
+  const parsed = incidentCreateSchema.safeParse(await req.json().catch(() => null))
+  if (!parsed.success) return apiError(parsed.error)
+  const { title, description, siteId, guardId, severity, reportedAt } = parsed.data
 
   const site = await prisma.site.findFirst({ where: { id: siteId, companyId } })
-  if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+  if (!site) return NextResponse.json({ error: 'Site not found', code: 'NOT_FOUND' }, { status: 404 })
+  if (guardId && !(await prisma.guard.findFirst({ where: { id: guardId, companyId }, select: { id: true } }))) {
+    return NextResponse.json({ error: 'Guard not found', code: 'NOT_FOUND' }, { status: 404 })
+  }
 
   const incident = await prisma.incident.create({
     data: {
       id: crypto.randomUUID(),
       companyId,
       title,
-      description: description || null,
+      description,
       siteId,
       guardId: guardId || null,
-      severity: (severity as Severity) || 'MEDIUM',
+      severity,
       status: 'OPEN',
-      reportedAt: reportedAt ? new Date(reportedAt) : new Date(),
+      reportedAt: reportedAt ?? new Date(),
       reportedBy: userId,
     },
   })

@@ -153,25 +153,25 @@ export default function BankAccountsPage() {
               <div className="mb-4">
                 <p className="text-xs text-brand-muted-light mb-0.5">Current Balance</p>
                 <p className={`text-2xl font-bold ${account.currentBalance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(account.currentBalance)} <span className="text-sm font-normal text-brand-muted-light">{account.currency}</span>
+                  {formatCurrency(account.currentBalance, account.currency)} <span className="text-sm font-normal text-brand-muted-light">{account.currency}</span>
                 </p>
               </div>
 
               <div className="flex items-center gap-3 text-xs text-muted-foreground">
                 <span className="rounded-full bg-muted px-2 py-0.5">{account.accountType}</span>
                 {Math.abs(account.currentBalance - account.calculatedBalance) > 0.01 && (
-                  <span className="text-amber-600">Variance: {formatCurrency(Math.abs(account.currentBalance - account.calculatedBalance))}</span>
+                  <span className="text-amber-600">Variance: {formatCurrency(Math.abs(account.currentBalance - account.calculatedBalance), account.currency)}</span>
                 )}
               </div>
 
               <div className="mt-3 pt-3 border-t border-border grid grid-cols-2 gap-2 text-xs text-muted-foreground">
                 <div>
                   <p className="text-brand-muted-light">Opening</p>
-                  <p className="font-medium text-foreground">{formatCurrency(account.openingBalance)}</p>
+                  <p className="font-medium text-foreground">{formatCurrency(account.openingBalance, account.currency)}</p>
                 </div>
                 <div>
                   <p className="text-brand-muted-light">Calculated</p>
-                  <p className="font-medium text-foreground">{formatCurrency(account.calculatedBalance)}</p>
+                  <p className="font-medium text-foreground">{formatCurrency(account.calculatedBalance, account.currency)}</p>
                 </div>
               </div>
             </div>

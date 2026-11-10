@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { nextForceNumber, nextCustomerNumber, nextSupplierNumber, nextSiteNumber, parseNum } from '@/lib/auto-numbers'
 import { splitName } from '@/lib/guards'
 import type { ImportRecord, ModuleImportConfig } from './types'
+import { employeeProblems } from '@/lib/employee-rules'
 
 function normalizeKey(value: unknown): string {
   return String(value).trim().toLowerCase()
@@ -53,6 +54,16 @@ const employeesConfig: ModuleImportConfig = {
     { key: 'daily_rate', label: 'Daily Rate' },
     { key: 'hire_date', label: 'Date Hired' },
   ],
+  // P1-11: the same rules as the employees API.
+  customValidate(mapped) {
+    return employeeProblems({
+      name: (mapped.full_name as string) ?? '',
+      dateOfBirth: mapped.date_of_birth as string | Date | null,
+      hireDate: mapped.hire_date as string | Date | null,
+      dailyRate: mapped.daily_rate,
+      basicSalary: mapped.basic_salary,
+    }).map((p) => p.message)
+  },
   naturalKeyOf(mapped) {
     if (mapped.national_id) return `nid:${normalizeKey(mapped.national_id)}`
     if (mapped.employee_code) return `code:${normalizeKey(mapped.employee_code)}`

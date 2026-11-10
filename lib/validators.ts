@@ -79,6 +79,8 @@ export const salesInvoiceSchema = z.object({
   issueDate: z.string().min(1, 'Issue date is required'),
   dueDate: z.string().min(1, 'Due date is required'),
   description: z.string().optional(),
+  // API clients send `notes`; the page sends `description`. Both are kept.
+  notes: z.string().optional(),
   revenueAccountId: z.string().min(1, 'Revenue account is required'),
   lineItems: z
     .array(

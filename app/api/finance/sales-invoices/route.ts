@@ -182,7 +182,7 @@ export async function POST(req: NextRequest) {
           invoice_number: invoiceNumber,
           invoice_date: issueDate.toISOString(),
           due_date: dueDate.toISOString(),
-          overall_description: data.description ?? '',
+          overall_description: data.description || data.notes || '',
           subtotal: subTotal,
           tax_amount: taxTotal,
           total_amount: totalAmount,

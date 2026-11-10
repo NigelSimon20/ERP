@@ -7,6 +7,7 @@ import { logAudit } from '@/lib/audit'
 import { nextEmployeeNumber, nextForceNumber } from '@/lib/auto-numbers'
 import { paginate, pageLimit } from '@/lib/utils'
 import { toGuardDto, splitName } from '@/lib/guards'
+import { employeeProblems, nationalIdTaken } from '@/lib/employee-rules'
 
 export async function GET(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -59,7 +60,13 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const { name, idNumber, phone, whatsapp, email, address, department, position, rank, dailyRate, basicSalary, status, dateOfBirth, dateHired } = body
 
-  if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+  const problems = employeeProblems({ name: name ?? '', dateOfBirth, hireDate: dateHired, dailyRate, basicSalary })
+  if (problems.length) {
+    return NextResponse.json({ error: problems[0].message, code: 'VALIDATION_ERROR', fields: Object.fromEntries(problems.map((p) => [p.field, p.message])) }, { status: 400 })
+  }
+  if (idNumber && await nationalIdTaken(prisma, companyId, idNumber)) {
+    return NextResponse.json({ error: 'Another employee already has this national ID', code: 'DUPLICATE_NATIONAL_ID' }, { status: 409 })
+  }
 
   const [employeeNumber, forceNumber] = await Promise.all([
     nextEmployeeNumber(companyId),
@@ -74,7 +81,7 @@ export async function POST(req: NextRequest) {
       companyId,
       employee_code: employeeNumber,
       force_number: forceNumber,
-      full_name: name,
+      full_name: String(name).trim(),
       first_name,
       last_name,
       national_id: idNumber || null,

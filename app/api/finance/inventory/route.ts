@@ -26,7 +26,9 @@ export async function GET(req: NextRequest) {
     name: i.itemName,
     unitCost: Number(i.unitCost),
     totalValue: Number(i.totalValue),
-    lowStock: i.quantityOnHand <= i.reorderLevel,
+    // Numeric compare: Decimal vs Decimal compared as strings, so 10 <= 5 was
+    // true ("10" < "5") and full stock showed as Low (BUG-022).
+    lowStock: Number(i.quantityOnHand) <= Number(i.reorderLevel),
   }))
 
   const totalValue = mapped.reduce((s, i) => s + i.totalValue, 0)

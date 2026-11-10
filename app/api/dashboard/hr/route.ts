@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { attendanceRate as calcAttendanceRate, NOT_ROSTERED_STATUSES } from '@/lib/attendance-hours'
 
 export async function GET() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -49,7 +50,8 @@ export async function GET() {
     prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: today, lt: todayEnd }, status: 'LEAVE' } }),
     prisma.payrollRun.findFirst({ where: { companyId }, orderBy: { createdAt: 'desc' }, select: { totalGross: true, totalNet: true, periodStart: true, periodEnd: true, status: true } }),
     prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: monthStart }, status: 'PRESENT' } }),
-    prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: monthStart } } }),
+    // Rostered days only: OFF and LEAVE aren't missed shifts (BUG-020).
+    prisma.attendance.count({ where: { guardId: { in: guardIds }, date: { gte: monthStart }, status: { notIn: [...NOT_ROSTERED_STATUSES] } } }),
     prisma.attendance.aggregate({ where: { guardId: { in: guardIds }, date: { gte: monthStart } }, _sum: { overtimeHours: true } }),
     prisma.guard.groupBy({ by: ['department'], where: { companyId, status: 'Active', department: { not: null } }, _count: { _all: true } }),
     prisma.leaveRequest.groupBy({ by: ['leaveType'], where: { companyId }, _count: { _all: true } }),
@@ -83,7 +85,7 @@ export async function GET() {
     return md >= todayMD && md <= endMD
   })
 
-  const attendanceRate = totalAttendanceMonth > 0 ? Math.round((presentMonth / totalAttendanceMonth) * 100) : 0
+  const attendanceRate = calcAttendanceRate(presentMonth, totalAttendanceMonth, 0)
 
   const newHiresThisMonth = guardsWithHireDate.filter(g => {
     if (!g.hire_date) return false

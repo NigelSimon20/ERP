@@ -19,6 +19,7 @@ interface Account {
   account_name: string
   account_type: string
   current_balance: number | null
+  currency: string | null
   is_active: boolean | null
   parent_account_id: string | null
 }
@@ -185,7 +186,7 @@ export default function ChartOfAccountsPage() {
                         <td className="px-4 py-3 font-medium text-foreground">{account.account_name}</td>
                         <td className="px-4 py-3 text-muted-foreground capitalize">{account.account_type.toLowerCase()}</td>
                         <td className="px-4 py-3 text-right font-medium text-foreground">
-                          {formatCurrency(Number(account.current_balance ?? 0))}
+                          {formatCurrency(Number(account.current_balance ?? 0), account.currency)}
                         </td>
                         <td className="px-4 py-3"><StatusBadge active={!!account.is_active} /></td>
                         <td className="px-4 py-3">

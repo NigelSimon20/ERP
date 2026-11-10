@@ -6,13 +6,16 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number, currency = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(amount)
+// BUG-021: callers must pass the record's currency -- ZWG balances were
+// rendered with "$" because the USD default was used everywhere.
+export function formatCurrency(amount: number, currency: string | null | undefined = 'USD'): string {
+  const code = (currency || 'USD').toUpperCase()
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: code, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)
+  } catch {
+    // Not an ISO 4217 code Intl accepts: show the code rather than throw.
+    return `${code} ${new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(amount)}`
+  }
 }
 
 // date-fns `format` throws RangeError on an invalid date, which takes down

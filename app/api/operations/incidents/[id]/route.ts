@@ -4,6 +4,8 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { incidentUpdateSchema } from '@/lib/incident-rules'
+import { apiError } from '@/lib/api-error'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -36,8 +38,9 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   const existing = await prisma.incident.findFirst({ where: { id: params.id, companyId } })
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const body = await req.json()
-  const { status, notes, severity, title, description } = body
+  const parsed = incidentUpdateSchema.safeParse(await req.json().catch(() => null))
+  if (!parsed.success) return apiError(parsed.error)
+  const { status, notes, severity, title, description } = parsed.data
 
   const wasResolved = existing.status !== 'RESOLVED' && status === 'RESOLVED'
 
