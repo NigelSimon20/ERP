@@ -23,7 +23,7 @@ export interface ReconcileDifference {
 export async function reconcileCompany(db: Db, companyId: string): Promise<{ companyId: string; differences: ReconcileDifference[]; clean: boolean }> {
   const differences: ReconcileDifference[] = []
   const [ledger, stored, banks] = await Promise.all([
-    ledgerBalances(db, companyId, { to: new Date() }),
+    ledgerBalances(db, companyId, {}),
     db.chartOfAccount.findMany({ where: { companyId }, select: { id: true, current_balance: true } }),
     db.bankAccount.findMany({ where: { companyId, is_active: true }, select: { id: true, account_name: true, bank_name: true, current_balance: true, chart_account_id: true } }),
   ])

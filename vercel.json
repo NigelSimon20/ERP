@@ -19,6 +19,10 @@
     {
       "path": "/api/cron/reconcile",
       "schedule": "30 1 * * *"
+    },
+    {
+      "path": "/api/cron/depreciation",
+      "schedule": "0 2 1 * *"
     }
   ]
 }

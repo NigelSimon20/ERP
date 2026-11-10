@@ -30,9 +30,11 @@ export function endOfDay(d: Date): Date {
   return e
 }
 
-export async function ledgerBalances(db: Db, companyId: string, range: { from?: Date; to: Date }): Promise<LedgerAccountBalance[]> {
+// `to` omitted = every posted line, including future-dated ones (what stored
+// balances reflect; used by the reconcile job).
+export async function ledgerBalances(db: Db, companyId: string, range: { from?: Date; to?: Date }): Promise<LedgerAccountBalance[]> {
   const from = range.from ? range.from.toISOString() : null
-  const to = range.to.toISOString()
+  const to = range.to ? range.to.toISOString() : null
   const rows = await db.$queryRaw<{ id: string; account_code: string | null; account_name: string | null; account_type: string | null; account_subtype: string | null; debit: Prisma.Decimal; credit: Prisma.Decimal }[]>`
     SELECT a.id, a.account_code, a.account_name, a.account_type, a.account_subtype,
            COALESCE(SUM(l.debit), 0)::numeric AS debit, COALESCE(SUM(l.credit), 0)::numeric AS credit
@@ -40,7 +42,7 @@ export async function ledgerBalances(db: Db, companyId: string, range: { from?: 
     LEFT JOIN journal_lines l ON l."accountId" = a.id AND EXISTS (
       SELECT 1 FROM journal_entries e
       WHERE e.id = l."journalEntryId" AND e."companyId" = a."companyId" AND e.status = 'POSTED'
-        AND e.entry_date <= ${to} AND (${from}::text IS NULL OR e.entry_date >= ${from}::text)
+        AND (${to}::text IS NULL OR e.entry_date <= ${to}::text) AND (${from}::text IS NULL OR e.entry_date >= ${from}::text)
     )
     WHERE a."companyId" = ${companyId}
     GROUP BY a.id

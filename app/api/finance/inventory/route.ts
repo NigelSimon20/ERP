@@ -5,6 +5,8 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { calculateInventoryValue } from '@/lib/calculations'
+import { postJournal } from '@/lib/gl-posting'
+import { ensureOpeningBalanceEquity } from '@/lib/opening-balances'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -50,8 +52,15 @@ export async function POST(req: NextRequest) {
   const cost = Number(unitCost) || 0
   const totalValue = calculateInventoryValue(qty, cost)
 
+  // P1-11: stock carried at a value posts to the GL (Dr Inventory / Cr
+  // Opening Balance Equity for stock already on hand).
+  const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { inventoryAccountId: true } })
+  if (totalValue > 0 && !company?.inventoryAccountId) {
+    return NextResponse.json({ error: 'Set the Inventory account in Settings → Company → GL accounts before adding valued stock.', code: 'ACCOUNT_NOT_CONFIGURED' }, { status: 400 })
+  }
+
   const item = await prisma.$transaction(async (tx) => {
-    return tx.inventoryItem.create({
+    const created = await tx.inventoryItem.create({
       data: {
         id: crypto.randomUUID(),
         companyId: session.companyId,
@@ -65,6 +74,18 @@ export async function POST(req: NextRequest) {
         updatedAt: new Date(),
       },
     })
+    if (totalValue > 0) {
+      await postJournal(tx, {
+        companyId: session.companyId, reference: `JE-INV-${created.id.slice(0, 8)}`, entryDate: new Date().toISOString(),
+        description: `Stock on hand: ${name}`,
+        lines: [
+          { accountId: company!.inventoryAccountId!, debit: totalValue, description: name },
+          { accountId: await ensureOpeningBalanceEquity(tx, session.companyId), credit: totalValue, description: 'Stock brought onto the books' },
+        ],
+        userId: session.userId, sourceType: 'inventory', sourceId: created.id,
+      })
+    }
+    return created
   })
 
   await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'CREATE', module: 'Inventory', recordId: item.id })

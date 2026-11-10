@@ -269,6 +269,10 @@ const GL_MAPPING_FIELDS: { key: string; label: string; type: string; help: strin
   { key: 'vatAccountId', label: 'VAT Payable', type: 'LIABILITY', help: 'Credited for tax collected on invoices with tax enabled.' },
   { key: 'salariesExpenseAccountId', label: 'Salaries Expense', type: 'EXPENSE', help: 'Debited for gross pay on every payroll run.' },
   { key: 'payrollLiabilitiesAccountId', label: 'Payroll Liabilities', type: 'LIABILITY', help: 'Credited for total deductions on every payroll run.' },
+  { key: 'fixedAssetsAccountId', label: 'Fixed Assets', type: 'ASSET', help: 'Debited when an asset is registered.' },
+  { key: 'accumulatedDepreciationAccountId', label: 'Accumulated Depreciation', type: 'ASSET', help: 'Credited by the month-end depreciation run (contra-asset).' },
+  { key: 'depreciationExpenseAccountId', label: 'Depreciation Expense', type: 'EXPENSE', help: 'Debited by the month-end depreciation run.' },
+  { key: 'inventoryAccountId', label: 'Inventory', type: 'ASSET', help: 'Debited when stock is added.' },
 ]
 
 function GLAccountMappingSection({ company, setCompany }: { company: any; setCompany: (c: any) => void }) {
@@ -353,6 +357,10 @@ function TaxTab() {
           payablesAccountId: company.payablesAccountId,
           salariesExpenseAccountId: company.salariesExpenseAccountId,
           payrollLiabilitiesAccountId: company.payrollLiabilitiesAccountId,
+          fixedAssetsAccountId: company.fixedAssetsAccountId,
+          accumulatedDepreciationAccountId: company.accumulatedDepreciationAccountId,
+          depreciationExpenseAccountId: company.depreciationExpenseAccountId,
+          inventoryAccountId: company.inventoryAccountId,
         }),
       })
       const json = await res.json()

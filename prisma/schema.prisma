@@ -104,6 +104,11 @@ model Company {
   payablesAccountId        String?  @map("payables_account_id")
   salariesExpenseAccountId String?  @map("salaries_expense_account_id")
   payrollLiabilitiesAccountId String? @map("payroll_liabilities_account_id")
+  // P1-11: fixed assets, depreciation and inventory post to the GL.
+  fixedAssetsAccountId        String? @map("fixed_assets_account_id")
+  accumulatedDepreciationAccountId String? @map("accumulated_depreciation_account_id")
+  depreciationExpenseAccountId String? @map("depreciation_expense_account_id")
+  inventoryAccountId          String? @map("inventory_account_id")
   // Notifications / integrations
   whatsappEnabled          Boolean? @default(false) @map("whatsapp_enabled")
   whatsappNumber           String?  @map("whatsapp_number")
@@ -1769,6 +1774,8 @@ model FixedAsset {
   depreciationMethod String @default("STRAIGHT_LINE")
   accumulatedDepreciation Decimal @db.Decimal(18, 2)
   currentValue Decimal @db.Decimal(18, 2)
+  // YYYY-MM of the last depreciation run: each month is charged once.
+  lastDepreciatedPeriod String?
   status AssetStatus @default(ACTIVE)
   createdAt DateTime @default(now())
   updatedAt DateTime

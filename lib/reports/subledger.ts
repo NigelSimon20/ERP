@@ -35,7 +35,7 @@ function add(map: Map<string, Prisma.Decimal>, key: string | null, v: Prisma.Dec
 
 async function controlBalance(db: Db, companyId: string, accountId: string | null) {
   if (!accountId) return null
-  const rows = await ledgerBalances(db, companyId, { to: new Date() })
+  const rows = await ledgerBalances(db, companyId, {})
   return rows.find((r) => r.id === accountId)?.balance ?? ZERO
 }
 
