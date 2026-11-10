@@ -4,13 +4,19 @@ import React from 'react'
 import { ShieldRegular as Shield } from '@fluentui/react-icons';
 interface LoginCardProps {
   children: React.ReactNode
+  title?: string
+  subtitle?: string
 }
 
 /**
  * LoginCard - Premium login card container
  * Provides a bright, white form panel with soft shadows for clear legibility
  */
-export function LoginCard({ children }: LoginCardProps) {
+export function LoginCard({
+  children,
+  title = 'Welcome Back',
+  subtitle = 'Sign in to access your Security ERP dashboard',
+}: LoginCardProps) {
   return (
     <div className="w-full flex flex-col justify-center items-center px-4 sm:px-8 py-8 md:py-10 bg-transparent">
       {/* Container with animation */}
@@ -20,10 +26,10 @@ export function LoginCard({ children }: LoginCardProps) {
           {/* Header Section */}
           <div className="space-y-2 text-center">
             <h2 className="text-3xl font-bold text-foreground">
-              Welcome Back
+              {title}
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Sign in to access your Security ERP dashboard
+              {subtitle}
             </p>
           </div>
 

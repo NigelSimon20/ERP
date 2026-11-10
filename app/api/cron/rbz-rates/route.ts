@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { syncRbzExchangeRates } from '@/lib/rbz-rates'
 import { isValidCronRequest } from '@/lib/cron-auth'
+import { apiError } from '@/lib/api-error'
 
 export async function GET(req: NextRequest) {
   if (!isValidCronRequest(req)) {
@@ -11,6 +12,6 @@ export async function GET(req: NextRequest) {
     const result = await syncRbzExchangeRates()
     return NextResponse.json(result)
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to sync RBZ rates' }, { status: 502 })
+    return apiError(err, 'Failed to sync RBZ rates', 502)
   }
 }

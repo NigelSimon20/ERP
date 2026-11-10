@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { rollbackImportJob } from '@/lib/import-export/rollback'
+import { apiError } from '@/lib/api-error'
 
 export const maxDuration = 300
 
@@ -23,6 +24,6 @@ export async function POST(_req: NextRequest, { params }: { params: { jobId: str
     const result = await rollbackImportJob(params.jobId, { userId: session.userId, userName: session.name })
     return NextResponse.json(result)
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Rollback failed' }, { status: 400 })
+    return apiError(err, 'Rollback failed', 400)
   }
 }

@@ -33,6 +33,8 @@ export async function GET(req: NextRequest) {
       s.role = 'ADMIN'
     }
     s.isLoggedIn = true
+    s.issuedAt = Date.now()
+    s.checkedAt = Date.now()
 
     await s.save()
     return res

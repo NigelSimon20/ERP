@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { apiError } from '@/lib/api-error'
 
 const VALID_CONDITIONS = ['GOOD', 'DAMAGED', 'LOST']
 
@@ -53,6 +54,6 @@ export async function POST(req: NextRequest, { params }: { params: { issueId: st
 
     return NextResponse.json({ issue: updated })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to process return' }, { status: 400 })
+    return apiError(err, 'Failed to process return', 400)
   }
 }

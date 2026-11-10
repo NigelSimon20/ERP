@@ -3,6 +3,7 @@ import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { apiError } from '@/lib/api-error'
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN']
 
@@ -27,6 +28,6 @@ export async function PATCH(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to reorder portals' }, { status: 400 })
+    return apiError(err, 'Failed to reorder portals', 400)
   }
 }

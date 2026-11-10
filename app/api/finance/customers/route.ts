@@ -5,6 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { z } from 'zod'
+import { apiError } from '@/lib/api-error'
 
 const customerSchema = z.object({
   name: z.string().min(1),
@@ -105,6 +106,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ customer }, { status: 201 })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

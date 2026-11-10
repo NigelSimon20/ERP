@@ -5,6 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, verifyPassword } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
+import { apiError } from '@/lib/api-error'
 
 export async function POST(req: NextRequest) {
   const cookieStore = await cookies()
@@ -32,10 +33,14 @@ export async function POST(req: NextRequest) {
     const hashed = await hashPassword(password)
     await prisma.user.update({
       where: { id: session.userId },
-      data: { password: hashed, mustChangePassword: false },
+      data: { password: hashed, mustChangePassword: false, passwordChangedAt: new Date() },
     })
 
+    // Re-issue this session after passwordChangedAt so only other devices
+    // are signed out.
     session.mustChangePassword = false
+    session.issuedAt = Date.now()
+    session.checkedAt = Date.now()
     await session.save()
 
     await logAudit({
@@ -48,6 +53,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

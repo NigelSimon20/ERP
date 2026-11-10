@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { apiError } from '@/lib/api-error'
 
 const VALID_ROLES = [
   'SUPER_ADMIN', 'ADMIN', 'FINANCE_MANAGER', 'OPERATIONS_MANAGER',
@@ -92,7 +93,7 @@ export async function PATCH(
 
     return NextResponse.json({ user: updated })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }
 
@@ -139,6 +140,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to delete user' }, { status: 400 })
+    return apiError(err, 'Failed to delete user', 400)
   }
 }

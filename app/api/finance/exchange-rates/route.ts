@@ -5,6 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { syncRbzExchangeRates } from '@/lib/rbz-rates'
+import { apiError } from '@/lib/api-error'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -77,7 +78,7 @@ export async function POST(req: NextRequest) {
       })
       return NextResponse.json(result, { status: 201 })
     } catch (err: unknown) {
-      return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to sync RBZ rates' }, { status: 502 })
+      return apiError(err, 'Failed to sync RBZ rates', 502)
     }
   }
 

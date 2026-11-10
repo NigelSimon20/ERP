@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { CATEGORY_OPTIONS } from '@/lib/portals'
 import crypto from 'crypto'
+import { apiError } from '@/lib/api-error'
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN']
 
@@ -56,7 +57,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     return NextResponse.json({ portal })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to update portal' }, { status: 400 })
+    return apiError(err, 'Failed to update portal', 400)
   }
 }
 

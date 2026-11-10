@@ -132,6 +132,8 @@ export async function POST(req: NextRequest) {
     session.name = user.name
     session.email = user.email
     session.isLoggedIn = true
+    session.issuedAt = Date.now()
+    session.checkedAt = Date.now()
     session.mustChangePassword = user.mustChangePassword
     session.guardId = guardId
 

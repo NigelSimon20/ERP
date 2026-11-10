@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { apiError } from '@/lib/api-error'
 
 export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     if (!doc) return NextResponse.json({ error: 'Document not found' }, { status: 404 })
     return NextResponse.json(doc)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return apiError(err, 'Request failed', 500)
   }
 }
 
@@ -58,7 +59,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json(updated)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 })
+    return apiError(err, 'Request failed', 400)
   }
 }
 
@@ -84,6 +85,6 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     })
     return NextResponse.json({ success: true })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return apiError(err, 'Request failed', 500)
   }
 }

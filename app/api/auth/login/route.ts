@@ -7,6 +7,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { loginSchema } from '@/lib/validators'
 import { logAudit } from '@/lib/audit'
 import { getIpAddress } from '@/lib/utils'
+import { apiError } from '@/lib/api-error'
 
 const FAIL_WINDOW_MS = 15 * 60 * 1000
 const MAX_ATTEMPTS = 5
@@ -185,6 +186,8 @@ export async function POST(req: NextRequest) {
     session.name = user.name
     session.email = user.email
     session.isLoggedIn = true
+    session.issuedAt = Date.now()
+    session.checkedAt = Date.now()
     session.mustChangePassword = user.mustChangePassword
     session.guardId = guardId
     session.customerId = customerId
@@ -201,8 +204,7 @@ export async function POST(req: NextRequest) {
 
     return res
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Login failed'
-    return NextResponse.json({ error: message }, { status: 400 })
+    return apiError(err, 'Login failed', 400)
   }
 }
 

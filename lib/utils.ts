@@ -35,8 +35,10 @@ export function formatTime(date: Date | string | null | undefined): string {
   return safeFormat(date, 'HH:mm')
 }
 
-export function timeAgo(date: Date | string): string {
-  return formatDistanceToNow(new Date(date), { addSuffix: true })
+export function timeAgo(date: Date | string | null | undefined): string {
+  if (date == null || date === '') return '—'
+  const d = new Date(date)
+  return isNaN(d.getTime()) ? '—' : formatDistanceToNow(d, { addSuffix: true })
 }
 
 export function getIpAddress(req: Request): string {

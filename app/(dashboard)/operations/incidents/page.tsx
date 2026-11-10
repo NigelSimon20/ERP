@@ -12,6 +12,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { fetchList } from '@/lib/fetch-list'
 import { AddRegular, ChevronDownRegular, ChevronRightRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface Incident {
@@ -64,10 +65,8 @@ export default function IncidentsPage() {
   useEffect(() => { fetchIncidents() }, [sevTab, filterStatus])
   // Loaded independently so one failing endpoint can't blank both dropdowns.
   useEffect(() => {
-    fetch('/api/operations/sites').then(r => r.json()).then((s) => setSites(s.sites ?? []))
-      .catch((err) => { console.error(err); toast.error('Failed to load sites') })
-    fetch('/api/guards').then(r => r.json()).then((g) => setGuards(g.guards ?? []))
-      .catch((err) => { console.error(err); toast.error('Failed to load guards') })
+    fetchList<Site>('/api/operations/sites', 'sites', 'sites').then(setSites)
+    fetchList<Guard>('/api/guards', 'guards', 'guards').then(setGuards)
   }, [])
 
   async function onCreate(data: FormValues) {

@@ -10,6 +10,7 @@ import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculati
 import { salesInvoiceSchema } from '@/lib/validators'
 import { fromDbInvoiceStatus, toDbInvoiceStatus } from '@/lib/invoice-status'
 import { postSalesInvoiceToGL } from '@/lib/gl-posting'
+import { apiError } from '@/lib/api-error'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -226,6 +227,6 @@ export async function POST(req: NextRequest) {
       },
     }, { status: 201 })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

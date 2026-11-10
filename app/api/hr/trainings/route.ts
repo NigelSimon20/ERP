@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { apiError } from '@/lib/api-error'
 
 export async function GET(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -95,6 +96,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(training, { status: 201 })
   } catch (err: any) {
     console.error('Training creation error:', err)
-    return NextResponse.json({ error: err.message || 'Failed to create training' }, { status: 400 })
+    return apiError(err, 'Failed to create training', 400)
   }
 }

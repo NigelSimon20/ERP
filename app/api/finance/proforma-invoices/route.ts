@@ -6,6 +6,7 @@ import { logAudit } from '@/lib/audit'
 import { paginate } from '@/lib/utils'
 import { nextProformaNumber } from '@/lib/auto-numbers'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals } from '@/lib/calculations'
+import { apiError } from '@/lib/api-error'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -119,6 +120,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ proformaInvoice: { ...proforma, customer: { id: customer.id, name: customer.company_name ?? '' } } }, { status: 201 })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

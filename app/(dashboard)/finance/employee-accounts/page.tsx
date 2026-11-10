@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import toast from 'react-hot-toast'
+import { fetchList } from '@/lib/fetch-list'
 import { AddRegular, DeleteRegular, EditRegular, PaymentRegular } from '@fluentui/react-icons';
 
 interface EmployeeAccount { id: string; bankName: string; accountNumber: string; accountType: string; isPrimary: boolean; active: boolean; guard: { name: string; employeeNumber: string } }
@@ -44,7 +45,7 @@ export default function EmployeeAccountsPage() {
 
   useEffect(() => { fetchAccounts() }, [])
   useEffect(() => {
-    fetch('/api/guards').then(r => r.json()).then(j => setGuards(j.guards ?? [])).catch((err) => console.error(err))
+    fetchList<Guard>('/api/guards', 'guards', 'guards').then(setGuards)
   }, [])
 
   function openCreate() { setEditing(null); reset({ guardId: '', bankName: '', accountNumber: '', accountType: 'Savings', branchCode: '', isPrimary: 'true' }); setShowDialog(true) }

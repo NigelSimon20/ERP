@@ -13,6 +13,7 @@ import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculati
 import { toDbInvoiceStatus } from '@/lib/invoice-status'
 import { checkLockDate } from '@/lib/lock-dates'
 import { z } from 'zod'
+import { apiError } from '@/lib/api-error'
 
 // Payment.status in the live DB uses Title Case ("Posted"), not the
 // SCREAMING_CASE the rest of the finance code assumes elsewhere — keep new
@@ -255,6 +256,6 @@ export async function POST(req: NextRequest) {
       updatedInvoiceBalance: receipt.newInvoiceBalance,
     }, { status: 201 })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { fetchList } from '@/lib/fetch-list'
 import { AddRegular, PeopleRegular } from '@fluentui/react-icons';
 
 interface Deployment { id: string; shift: string; startDate: string; endDate: string | null; hoursPerDay: number; ratePerHour: number; status: string; guard: { id: string; name: string; employeeNumber: string }; site: { id: string; name: string } }
@@ -57,8 +58,8 @@ export default function DeploymentsPage() {
   // Loaded independently so one failing endpoint can't blank both dropdowns
   // (a 404 on guards used to reject the Promise.all and drop the sites too).
   useEffect(() => {
-    fetch('/api/guards').then(r => r.json()).then((g) => setGuards(g.guards ?? [])).catch((err) => console.error(err))
-    fetch('/api/operations/sites').then(r => r.json()).then((s) => setSites(s.sites ?? [])).catch((err) => console.error(err))
+    fetchList<Guard>('/api/guards', 'guards', 'guards').then(setGuards)
+    fetchList<Site>('/api/operations/sites', 'sites', 'sites').then(setSites)
   }, [])
 
   async function onSubmit(data: FormValues) {

@@ -94,7 +94,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     return NextResponse.json({ invoiceId: invoice.id, invoiceNumber })
   }
 
-  const body = await req.json()
+  // The page voids with a bodyless PUT; a bare req.json() threw and 500'd.
+  const body = await req.json().catch(() => ({}))
 
   if (action === 'void') {
     if (existing.convertedInvoiceId) return NextResponse.json({ error: 'Cannot void a converted proforma invoice' }, { status: 409 })

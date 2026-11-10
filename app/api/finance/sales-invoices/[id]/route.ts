@@ -7,6 +7,7 @@ import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculati
 import { checkLockDate } from '@/lib/lock-dates'
 import { reverseJournalEntry } from '@/lib/gl-posting'
 import { z } from 'zod'
+import { apiError } from '@/lib/api-error'
 
 const updateSchema = z.object({
   dueDate: z.string().optional(),
@@ -71,7 +72,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
 
     return NextResponse.json({ invoice: updated })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }
 

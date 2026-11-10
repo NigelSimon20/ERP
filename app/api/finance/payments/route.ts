@@ -15,6 +15,7 @@ import { recalculateSupplierOutstandingBalance } from '@/lib/finance-recalculati
 import { checkLockDate } from '@/lib/lock-dates'
 import { applyBalanceDeltas } from '@/lib/gl-posting'
 import { z } from 'zod'
+import { apiError } from '@/lib/api-error'
 
 const paymentSchema = z.object({
   bankAccountId: z.string().min(1),
@@ -245,6 +246,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ payment: { ...payment.payment, reference: payment.payment.payment_number }, updatedBankBalance: payment.newBankBalance, updatedInvoiceBalance: payment.newInvoiceBalance, updatedInvoiceStatus: payment.newInvoiceStatus }, { status: 201 })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

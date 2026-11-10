@@ -6,6 +6,8 @@ import { logAudit } from '@/lib/audit'
 import { paginate } from '@/lib/utils'
 import { nextJournalReference } from '@/lib/auto-numbers'
 import { journalEntrySchema } from '@/lib/validators'
+import { toJournalEntryDto } from '@/lib/journal-entries'
+import { apiError } from '@/lib/api-error'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -56,14 +58,10 @@ export async function GET(req: NextRequest) {
     lineSums.map((sum) => [sum.journalEntryId, sum]),
   )
 
-  const enriched = entries.map((e) => ({
-    ...e,
-    // The page reads `date`; the column is `entry_date`. Without this every
-    // row passed `undefined` to date-fns and crashed the whole page.
-    date: e.entry_date,
-    totalDebit: Number(lineSumMap[e.id]?._sum.debit ?? 0),
-    totalCredit: Number(lineSumMap[e.id]?._sum.credit ?? 0),
-  }))
+  // Stable DTO: the page reads camelCase `date`, but the column is the
+  // imported snake_case `entry_date`. Spreading the raw row let that drift
+  // reach the client and crash the page on `new Date(undefined)`.
+  const enriched = entries.map((e) => toJournalEntryDto(e, lineSumMap[e.id]?._sum))
 
   return NextResponse.json({ entries: enriched, total, page })
 }
@@ -132,6 +130,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ entry }, { status: 201 })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

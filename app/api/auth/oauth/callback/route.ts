@@ -124,6 +124,8 @@ export async function GET(req: NextRequest) {
     session.name = dbUser.name
     session.email = dbUser.email
     session.isLoggedIn = true
+    session.issuedAt = Date.now()
+    session.checkedAt = Date.now()
     session.mustChangePassword = dbUser.mustChangePassword
     session.guardId = guardId
 

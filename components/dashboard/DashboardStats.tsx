@@ -2,7 +2,7 @@
 
 import { KPICard } from './KPICard'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
-import { formatDistanceToNow } from 'date-fns'
+import { timeAgo } from '@/lib/utils'
 import { ArrowTrendingRegular, BuildingRegular, ClockRegular, DocumentRegular, PeopleRegular, ShieldRegular, TaskListSquareLtrRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface Stats {
@@ -119,7 +119,7 @@ export function DashboardStats({
                     </p>
                   </div>
                   <p className="text-xs text-brand-muted flex-shrink-0">
-                    {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+                    {timeAgo(item.createdAt)}
                   </p>
                 </div>
               ))}

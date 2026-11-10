@@ -7,6 +7,7 @@ import { nextTransferReference } from '@/lib/auto-numbers'
 import { calculateTransferImpact, calculateNewBankBalance } from '@/lib/calculations'
 import { checkLockDate } from '@/lib/lock-dates'
 import { z } from 'zod'
+import { apiError } from '@/lib/api-error'
 
 const transferSchema = z.object({
   fromAccountId: z.string().min(1),
@@ -181,6 +182,6 @@ export async function POST(req: NextRequest) {
       updatedToAccount: transfer.updatedToAccount,
     }, { status: 201 })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

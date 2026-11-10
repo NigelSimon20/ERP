@@ -11,6 +11,7 @@ import { PageHeader } from '@/components/shared/PageHeader'
 import { EmptyState } from '@/components/shared/EmptyState'
 import { formatDate } from '@/lib/utils'
 import toast from 'react-hot-toast'
+import { fetchList } from '@/lib/fetch-list'
 import { AddRegular, ShieldRegular } from '@fluentui/react-icons';
 
 interface Patrol { id: string; scheduledTime: string; actualTime: string | null; status: string; notes: string | null; site: { id: string; name: string }; guard: { id: string; name: string } | null }
@@ -59,10 +60,8 @@ export default function PatrolsPage() {
   useEffect(() => { fetchPatrols() }, [date, filterSite])
   // Loaded independently so one failing endpoint can't blank both dropdowns.
   useEffect(() => {
-    fetch('/api/operations/sites').then(r => r.json()).then((s) => setSites(s.sites ?? []))
-      .catch((err) => { console.error(err); toast.error('Failed to load sites') })
-    fetch('/api/guards').then(r => r.json()).then((g) => setGuards(g.guards ?? []))
-      .catch((err) => { console.error(err); toast.error('Failed to load guards') })
+    fetchList<Site>('/api/operations/sites', 'sites', 'sites').then(setSites)
+    fetchList<Guard>('/api/guards', 'guards', 'guards').then(setGuards)
   }, [])
 
   async function onSchedule(data: ScheduleForm) {

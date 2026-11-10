@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { ensureDefaultPortals, CATEGORY_OPTIONS } from '@/lib/portals'
 import crypto from 'crypto'
+import { apiError } from '@/lib/api-error'
 
 const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN']
 
@@ -135,6 +136,6 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ portal }, { status: 201 })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed to create portal' }, { status: 400 })
+    return apiError(err, 'Failed to create portal', 400)
   }
 }

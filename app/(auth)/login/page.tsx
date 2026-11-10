@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { BrandPanel } from '@/components/auth/BrandPanel'
 import { LoginCard } from '@/components/auth/LoginCard'
 import { LoginForm } from '@/components/auth/LoginForm'
@@ -20,13 +21,14 @@ import { LoginForm } from '@/components/auth/LoginForm'
  * - Right Panel: Login form with SSO options
  */
 export default function LoginPage() {
+  const router = useRouter()
   return (
     <div className="min-h-screen bg-card">
       <main className="min-h-screen grid grid-cols-1 md:grid-cols-[1.05fr_0.95fr]">
         <BrandPanel />
         <section className="flex min-h-screen items-center justify-center px-4 py-10 sm:px-8 md:px-12 lg:px-16">
           <LoginCard>
-            <LoginForm onForgotPassword={() => {}} />
+            <LoginForm onForgotPassword={() => router.push('/forgot-password')} />
           </LoginCard>
         </section>
       </main>

@@ -7,6 +7,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { registerSchema } from '@/lib/validators'
 import { logAudit } from '@/lib/audit'
 import { getIpAddress } from '@/lib/utils'
+import { apiError } from '@/lib/api-error'
 
 export async function POST(req: NextRequest) {
   try {
@@ -71,6 +72,8 @@ export async function POST(req: NextRequest) {
     session.name = name
     session.email = normalizedEmail
     session.isLoggedIn = true
+    session.issuedAt = Date.now()
+    session.checkedAt = Date.now()
     await session.save()
 
     await logAudit({
@@ -84,7 +87,6 @@ export async function POST(req: NextRequest) {
 
     return res
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Registration failed'
-    return NextResponse.json({ error: message }, { status: 400 })
+    return apiError(err, 'Registration failed', 400)
   }
 }

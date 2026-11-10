@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { apiError } from '@/lib/api-error'
 
 function withTaxAliases<T extends { defaultVatRate: unknown; vatNumber: string | null; showVat: boolean | null; taxName: string | null; taxInclusive: boolean | null; taxAppliedByDefault: boolean | null }>(company: T) {
   return {
@@ -224,6 +225,6 @@ export async function PUT(req: NextRequest) {
 
     return NextResponse.json({ company: withTaxAliases(company) })
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

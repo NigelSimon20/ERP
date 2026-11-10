@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
-import { SessionData, sessionOptions } from '@/lib/session'
+import { SessionData, sessionOptions, SESSION_RECHECK_MS } from '@/lib/session'
 
 // Each entry lists every real path prefix (page AND api) that the rule must
 // cover. Page and API prefixes for a module are NOT always the same string
@@ -51,13 +51,31 @@ function isApiRoute(pathname: string) {
   return pathname.startsWith('/api/')
 }
 
+// Edge runtime has no Prisma, so ask a Node route. null = couldn't tell
+// (network blip); the caller lets the request through and retries later.
+async function isSessionStillValid(req: NextRequest): Promise<boolean | null> {
+  try {
+    const r = await fetch(new URL('/api/auth/session-status', req.url), {
+      headers: { cookie: req.headers.get('cookie') ?? '' },
+      cache: 'no-store',
+    })
+    if (!r.ok) return null
+    const { valid } = await r.json()
+    return typeof valid === 'boolean' ? valid : null
+  } catch {
+    return null
+  }
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  // Dotted paths are static assets -- but never skip auth for /api, where a
+  // dotted [id] (e.g. /api/hr/employees/a.b) used to bypass the role guards.
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon') ||
-    pathname.includes('.')
+    (pathname.includes('.') && !isApiRoute(pathname))
   ) {
     return NextResponse.next()
   }
@@ -103,6 +121,23 @@ export async function middleware(req: NextRequest) {
     const loginUrl = new URL('/login', req.url)
     loginUrl.searchParams.set('from', pathname)
     return NextResponse.redirect(loginUrl)
+  }
+
+  // Revocation (password reset, deactivated user), checked at most every
+  // SESSION_RECHECK_MS per session.
+  if (!session.checkedAt || Date.now() - session.checkedAt > SESSION_RECHECK_MS) {
+    const valid = await isSessionStillValid(req)
+    if (valid === false) {
+      const out = isApiRoute(pathname)
+        ? NextResponse.json({ error: 'Session expired', code: 'SESSION_REVOKED' }, { status: 401 })
+        : NextResponse.redirect(new URL('/login', req.url))
+      out.cookies.delete(sessionOptions.cookieName)
+      return out
+    }
+    if (valid === true) {
+      session.checkedAt = Date.now()
+      await session.save()
+    }
   }
 
   // Force password change

@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { commitImportJob } from '@/lib/import-export/commit'
+import { apiError } from '@/lib/api-error'
 
 export const maxDuration = 300
 
@@ -21,6 +22,6 @@ export async function POST(req: NextRequest) {
     const result = await commitImportJob(jobId, Array.isArray(excludeRowIds) ? excludeRowIds : [])
     return NextResponse.json(result)
   } catch (err) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Commit failed' }, { status: 400 })
+    return apiError(err, 'Commit failed', 400)
   }
 }

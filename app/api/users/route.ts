@@ -5,6 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { hashPassword } from '@/lib/auth'
 import { logAudit } from '@/lib/audit'
+import { apiError } from '@/lib/api-error'
 
 export async function GET() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -84,6 +85,6 @@ export async function POST(req: NextRequest) {
       { status: 201 },
     )
   } catch (err: unknown) {
-    return NextResponse.json({ error: err instanceof Error ? err.message : 'Failed' }, { status: 400 })
+    return apiError(err, 'Failed', 400)
   }
 }

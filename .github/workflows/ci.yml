@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: ravenshield_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ravenshield_test
+      SHADOW_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/shadow
+      # prisma generate / next build only need syntactically valid values here.
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/ravenshield_test
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/ravenshield_test
+      SESSION_PASSWORD: ci-session-password-at-least-32-characters
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Create shadow database
+        run: PGPASSWORD=postgres psql -h localhost -U postgres -c 'CREATE DATABASE shadow'
+      - name: Schema and migrations must not drift (P0-3)
+        run: npm run check:migrations
+      # master already carries ~212 lint errors (mostly no-explicit-any,
+      # no-unused-vars). Reported but non-blocking until that backlog is
+      # cleared; flip continue-on-error off then.
+      - run: npm run lint
+        continue-on-error: true
+      - run: npm test
+      - run: npm run build
+
+  rls:
+    # P0-5: the browser key must read nothing. Needs repo secrets; skipped on forks.
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' }}
+    env:
+      DIRECT_URL: ${{ secrets.SUPABASE_DIRECT_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: RLS check
+        if: ${{ env.DIRECT_URL != '' }}
+        run: npm run check:rls

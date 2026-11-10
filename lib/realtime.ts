@@ -16,6 +16,13 @@ function supabase(): SupabaseClient {
   return client
 }
 
+// Broadcast and presence channels are private: Supabase only admits clients
+// that pass RLS on realtime.messages, which has no policies, so the public
+// publishable key can neither listen nor send. Nothing in the app uses these
+// channels today; making them public again would expose company data to
+// anyone holding a companyId.
+const PRIVATE = { config: { private: true } }
+
 export type RealtimeEvent = 'INSERT' | 'UPDATE' | 'DELETE'
 
 export interface RealtimeChange<T = any> {
@@ -199,7 +206,7 @@ export async function broadcastEvent(
   eventType: string,
   data: any
 ) {
-  const channel = supabase().channel(channelName)
+  const channel = supabase().channel(channelName, PRIVATE)
   await channel.send({
     type: 'broadcast',
     event: eventType,
@@ -216,7 +223,7 @@ export function listenForBroadcast(
   callback: (data: any) => void
 ) {
   const channel = supabase()
-    .channel(channelName)
+    .channel(channelName, PRIVATE)
     .on('broadcast', { event: eventType }, (payload) => {
       callback(payload.payload)
     })
@@ -235,6 +242,7 @@ export async function trackPresence(
 ) {
   const channel = supabase().channel(`presence-${companyId}`, {
     config: {
+      private: true,
       presence: {
         key: userId,
       },
@@ -271,6 +279,7 @@ export async function trackPresence(
 export function getOnlineUsers(companyId: string) {
   const channel = supabase().channel(`presence-${companyId}`, {
     config: {
+      private: true,
       presence: {
         key: 'user',
       },

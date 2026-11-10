@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { apiError } from '@/lib/api-error'
 
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -49,7 +50,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ participants })
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 400 })
+    return apiError(err, 'Request failed', 400)
   }
 }
 
@@ -64,6 +65,6 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 
     return NextResponse.json(participants)
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 })
+    return apiError(err, 'Request failed', 500)
   }
 }
