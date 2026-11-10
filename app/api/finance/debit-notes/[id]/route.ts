@@ -58,7 +58,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return tx.debitNote.findUniqueOrThrow({ where: { id: params.id } })
     }, { timeout: 60000 })
 
-    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'UPDATE', module: 'DebitNotes', recordId: params.id, oldValues: { status: 'DRAFT' }, newValues: { status: 'ISSUED' } })
+    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'POST', module: 'DebitNotes', recordId: params.id, oldValues: { status: 'DRAFT' }, newValues: { status: 'ISSUED' } })
     return NextResponse.json({ debitNote: updated })
   }
 
@@ -76,7 +76,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return dn
     })
 
-    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'UPDATE', module: 'DebitNotes', recordId: params.id, oldValues: { status: existing.status }, newValues: { status: 'VOID' } })
+    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'VOID', module: 'DebitNotes', recordId: params.id, oldValues: { status: existing.status }, newValues: { status: 'VOID' } })
     return NextResponse.json({ debitNote: updated })
   }
 

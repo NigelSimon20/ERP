@@ -71,6 +71,13 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       await assertAccountsUsable(prisma, session.companyId, normalised.map((l) => l.accountId))
       const total = sumMoney(normalised.map((l) => l.debit))
 
+      // Maker-checker: above the company's threshold, the creator can't
+      // also post the journal.
+      const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { approvalThreshold: true } })
+      if (company?.approvalThreshold != null && total.gt(company.approvalThreshold) && entry.created_by_id === session.userId) {
+        throw new ApiError(`Journals over ${company.approvalThreshold.toFixed(2)} must be posted by someone other than their creator`, 403, 'APPROVAL_REQUIRED')
+      }
+
       await prisma.$transaction(async (tx) => {
         // Claim the DRAFT -> POSTED transition so a double-click can't apply
         // the balance deltas twice.
@@ -80,20 +87,17 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         })
         if (claimed.count === 0) throw new ApiError('This entry is no longer a draft', 409, 'INVALID_STATE')
         await applyBalanceDeltas(tx, normalised)
+        // Same transaction: no post without its audit row.
+        await logAudit({
+          companyId: session.companyId, userId: session.userId, userName: session.name,
+          action: 'POST', module: 'JournalEntries', recordId: params.id,
+          oldValues: { status: 'DRAFT', totalDebit: entry.total_debit ?? null },
+          newValues: { status: 'POSTED', totalDebit: Number(total), reference: entry.reference },
+        }, tx)
       }, { timeout: 60000 })
     } catch (err) {
       return apiError(err, 'Failed to post entry', 400)
     }
-
-    await logAudit({
-      companyId: session.companyId,
-      userId: session.userId,
-      userName: session.name,
-      action: 'UPDATE',
-      module: 'JournalEntries',
-      recordId: params.id,
-      newValues: { status: 'POSTED' },
-    })
 
     return NextResponse.json({ success: true, status: 'POSTED' })
   }
@@ -118,20 +122,15 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         if (claimed.count === 0) throw new ApiError('Entry is already voided', 409, 'INVALID_STATE')
         // Reverse by swapping debit and credit.
         if (wasPosted) await applyBalanceDeltas(tx, lines.map((l) => ({ accountId: l.accountId, debit: l.credit, credit: l.debit })))
+        await logAudit({
+          companyId: session.companyId, userId: session.userId, userName: session.name,
+          action: 'VOID', module: 'JournalEntries', recordId: params.id,
+          oldValues: { status: entry.status }, newValues: { status: 'VOID' },
+        }, tx)
       }, { timeout: 60000 })
     } catch (err) {
       return apiError(err, 'Failed to void entry', 400)
     }
-
-    await logAudit({
-      companyId: session.companyId,
-      userId: session.userId,
-      userName: session.name,
-      action: 'UPDATE',
-      module: 'JournalEntries',
-      recordId: params.id,
-      newValues: { status: 'VOID' },
-    })
 
     return NextResponse.json({ success: true, status: 'VOID' })
   }

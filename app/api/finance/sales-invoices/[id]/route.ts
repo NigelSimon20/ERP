@@ -124,7 +124,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         companyId: session.companyId,
         userId: session.userId,
         userName: session.name,
-        action: 'UPDATE',
+        action: 'VOID',
         module: 'SalesInvoices',
         recordId: params.id,
         newValues: { status: 'VOID' },

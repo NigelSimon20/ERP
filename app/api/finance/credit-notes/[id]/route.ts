@@ -60,7 +60,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return tx.creditNote.findUniqueOrThrow({ where: { id: params.id } })
     }, { timeout: 60000 })
 
-    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'UPDATE', module: 'CreditNotes', recordId: params.id, oldValues: { status: 'DRAFT' }, newValues: { status: 'ISSUED' } })
+    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'POST', module: 'CreditNotes', recordId: params.id, oldValues: { status: 'DRAFT' }, newValues: { status: 'ISSUED' } })
     return NextResponse.json({ creditNote: updated })
   }
 
@@ -78,7 +78,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
       return cn
     })
 
-    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'UPDATE', module: 'CreditNotes', recordId: params.id, oldValues: { status: existing.status }, newValues: { status: 'VOID' } })
+    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'VOID', module: 'CreditNotes', recordId: params.id, oldValues: { status: existing.status }, newValues: { status: 'VOID' } })
     return NextResponse.json({ creditNote: updated })
   }
 

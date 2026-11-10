@@ -1,5 +1,5 @@
 import { vi } from 'vitest'
-import { testCookies } from '../helpers/cookies'
+import { testCookies, testRequest } from '../helpers/cookies'
 
 // Runs before every test file, before any app module (and so before the
 // Prisma client) is imported. Without TEST_DATABASE_URL, Prisma would fall
@@ -17,5 +17,5 @@ delete process.env.BIRD_API_KEY
 // request scope Next only provides at runtime; serve the test's cookie.
 vi.mock('next/headers', () => ({
   cookies: () => testCookies,
-  headers: () => new Headers(),
+  headers: () => testRequest.headers,
 }))

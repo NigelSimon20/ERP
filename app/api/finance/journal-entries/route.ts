@@ -102,6 +102,10 @@ export async function POST(req: NextRequest) {
           entry_date: entryDate.toISOString(),
           description: data.description,
           status: 'DRAFT',
+          // Maker-checker compares this with whoever posts it (P1-9).
+          created_by_id: session.userId,
+          created_by: session.name,
+          created_date: new Date().toISOString(),
         },
       })
 

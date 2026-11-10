@@ -161,7 +161,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       await recalculateSupplierOutstandingBalance(tx, invoice.supplierId, session.companyId)
       return inv
     }, { timeout: 60000 })
-    await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'UPDATE', module: 'PurchaseInvoices', recordId: params.id, newValues: { status: 'VOID' } })
+    await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'VOID', module: 'PurchaseInvoices', recordId: params.id, newValues: { status: 'VOID' } })
     return NextResponse.json({ invoice: updated })
   }
 

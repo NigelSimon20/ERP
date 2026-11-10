@@ -100,7 +100,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (action === 'void') {
     if (existing.convertedInvoiceId) return NextResponse.json({ error: 'Cannot void a converted proforma invoice' }, { status: 409 })
     const updated = await prisma.proformaInvoice.update({ where: { id: params.id }, data: { status: 'VOID' } })
-    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'UPDATE', module: 'ProformaInvoices', recordId: params.id, oldValues: { status: existing.status }, newValues: { status: 'VOID' } })
+    await logAudit({ companyId, userId, userName: session.name || 'System', action: 'VOID', module: 'ProformaInvoices', recordId: params.id, oldValues: { status: existing.status }, newValues: { status: 'VOID' } })
     return NextResponse.json({ proformaInvoice: updated })
   }
 

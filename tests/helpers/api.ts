@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { sealData } from 'iron-session'
 import { sessionOptions, type SessionData } from '@/lib/session'
-import { setTestCookie, cookieHeader } from './cookies'
+import { setTestCookie, cookieHeader, testRequest } from './cookies'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- each route types its own params
 type Handler = (req: NextRequest, ctx: any) => Promise<Response>
@@ -28,6 +28,7 @@ export async function callRoute(
     headers: { 'content-type': 'application/json', cookie: cookieHeader(), ...opts.headers },
     body: opts.body === undefined ? undefined : JSON.stringify(opts.body),
   })
+  testRequest.headers = req.headers
   const res = await handler(req, { params: opts.params ?? {} })
   const text = await res.text()
   let json: any = null

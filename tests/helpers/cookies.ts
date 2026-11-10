@@ -30,3 +30,6 @@ export function setTestCookie(name: string, value: string | null) {
 export function cookieHeader(): string {
   return Array.from(jar, ([n, v]) => `${n}=${v}`).join('; ')
 }
+
+// Headers of the request currently being handled, for next/headers' headers().
+export const testRequest = { headers: new Headers() }

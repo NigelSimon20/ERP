@@ -39,6 +39,9 @@ model Company {
   taxInclusive             Boolean? @default(false) @map("tax_inclusive")
   taxAppliedByDefault      Boolean? @default(true) @map("tax_applied_by_default")
   fiscalYearStart         String   @default("01-01") @map("fiscal_year_start")
+  // P1-9 maker-checker: journals above this total need a second person to
+  // post them. NULL = off.
+  approvalThreshold       Decimal? @db.Decimal(18, 2) @map("approval_threshold")
   forceNumberPrefix        String?  @map("force_number_prefix")
   // Branding
   motto                    String?
@@ -2109,8 +2112,13 @@ model AuditTrail {
   oldValues String?
   newValues String?
   ipAddress String?
+  userAgent String?
+  requestId String?
+  // Field-level before/after for changed keys only: { field: [before, after] }.
+  changes   Json?
   createdAt DateTime @default(now())
 
+  @@index([companyId, createdAt])
   @@map("audit_trail")
 }
 
