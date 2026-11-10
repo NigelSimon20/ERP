@@ -95,7 +95,7 @@ Accept: a written list of tables showing their RLS status (all protected), and t
 
 Principle: posted journal lines are the single source of truth. Every balance, report, dashboard KPI and subledger total is derived from them, or from a cache rebuilt from them inside the same transaction.
 
-### - [ ] P1-1 · Money as Decimal; zero-tolerance balance checks (BUG-011)
+### - [x] P1-1 · Money as Decimal; zero-tolerance balance checks (BUG-011)
 
 Evidence: the trial balance for FY2026 is Dr 592,132.7628 / Cr 592,132.7328 (off by 0.03) yet is reported `balanced: true`. Stored values include 585.585, 4809.2121 and 139066.26078634209.
 
@@ -103,7 +103,7 @@ Convert all money columns to `Decimal(18,2)`, with a data migration that rounds 
 
 Accept: the trial balance sums are exact; a test posts lines of 0.1 + 0.2 and checks for exactly 0.30.
 
-### - [ ] P1-2 · Balance Sheet, Income Statement and dashboards derived from the ledger (BUG-003, BUG-006)
+### - [x] P1-2 · Balance Sheet, Income Statement and dashboards derived from the ledger (BUG-003, BUG-006)
 
 Evidence (FY2026, fiscal year starts 01-01):
 - Income Statement: revenue 261,735.73, expenses 38,271.67, net 223,464.06.
@@ -132,7 +132,7 @@ Fix:
 
 Accept: the reconcile job reports zero differences on staging after the data migration (P1-8).
 
-### - [ ] P1-4 · AR/AP subledgers reconcile to their control accounts (BUG-004)
+### - [x] P1-4 · AR/AP subledgers reconcile to their control accounts (BUG-004)
 
 Evidence: one quantity, five values — invoice balances 116,392.24; customer outstandingBal 98,148.57; dashboard 85,782.86; AI helpdesk 102,047.26; GL account 1100 223,453.42. Payables: bills 20,186.43; supplier balances 25,045.68; GL account 2000 860.43.
 
@@ -140,7 +140,7 @@ Fix: customer and supplier balances are computed from open documents (or allocat
 
 Accept: one AR figure everywhere, tying out to account 1100; the same for AP and account 2000.
 
-### - [ ] P1-5 · Receipts and invoices: concurrency, allocation and voids (BUG-026, BUG-027, BUG-028, BUG-008, BUG-009)
+### - [x] P1-5 · Receipts and invoices: concurrency, allocation and voids (BUG-026, BUG-027, BUG-028, BUG-008, BUG-009)
 
 - BUG-027 (race / lost update): two simultaneous $10 receipts on INV-000047 both posted to the bank and the GL (+$20), but `amount_paid` rose by only $10. Fix: wrap receipt creation in `prisma.$transaction`, lock the invoice row (`SELECT … FOR UPDATE` via `$queryRaw`) or use an atomic increment, and re-check the balance inside the transaction. Better still: add an Allocation table (receiptId, invoiceId, amount) and derive `amount_paid` = sum of allocations.
 - BUG-028: REC-000087 was recorded for customer "Dr Mlilo" yet reduced an invoice of "TEST - QA Customer Ltd". Fix: when `invoiceId` is given, take `customerId` from the invoice, and reject a mismatch.
@@ -154,7 +154,7 @@ Accept: one AR figure everywhere, tying out to account 1100; the same for AP and
 
 Accept: a test sends 10 receipts in parallel and the invoice paid amount equals the sum of the receipts; voiding an invoice with allocations is rejected; duplicate numbers are impossible (a test hits the unique constraint); there is a status-derivation unit test.
 
-### - [ ] P1-6 · Journal API validation (BUG-029, BUG-016)
+### - [x] P1-6 · Journal API validation (BUG-029, BUG-016)
 
 Evidence: the API accepted and posted RS-JE-000508 (all zero) and RS-JE-000510 (debit 5 and credit 5 on the same line). It accepted a draft with a non-existent account ID (RS-JE-000509); posting that draft returns a 500. The chart of accounts has duplicate codes 2000, 5101 and 5105. Account "4000 Bank Loan" is a liability coded in the revenue range. Auto-journal references are nested (JE-auto-INV-INV-INV-000035). Payroll journal RS-JE-000507 was posted with 0 lines.
 
@@ -162,7 +162,7 @@ Fix: a Zod refinement requiring each line to have exactly one of debit or credit
 
 Accept: each of these cases has a test returning 400 (not 500).
 
-### - [ ] P1-7 · Pagination and aggregates (BUG-012, BUG-014, BUG-015)
+### - [x] P1-7 · Pagination and aggregates (BUG-012, BUG-014, BUG-015)
 
 Evidence: paging sales invoices returns 117 rows but only 113 unique, so 4 invoices are never shown (the sort key isn't unique). The Sales Invoices summary cards and the HR overview ("Active Guards 10 · 25 total headcount", when the true figures are 198 of 312) are computed in the browser from page 1 only.
 
@@ -189,7 +189,7 @@ Fix:
 
 Accept: posting a journal writes an audit row with the action, the before/after diff and the IP.
 
-### - [ ] P1-10 · Statutory payroll engine (BUG-007, F-07)
+### - [x] P1-10 · Statutory payroll engine (BUG-007, F-07)
 
 Evidence: payroll previews return 204 guards, all with zero gross. The engine computes hourlyRate × hoursWorked, but hourlyRate is 0 for every guard — the stored dailyRate (5.45–5.91) is ignored — and attendance records have no hours (1,866 records, all with null check-in/check-out and hoursWorked: 0). The September run was marked PAID with $0. 201 orphan payslips have net 27,735 against gross 1,269. Payslip items: 0 earnings and 0 deductions configured.
 
@@ -202,7 +202,7 @@ Fix:
 
 Accept: a fixture with 3 guards, known rates and days produces payslips that match a hand-calculated spreadsheet; a zero-gross run cannot be approved.
 
-### - [ ] P1-11 · Input validation, HR and Ops (BUG-019, BUG-031, BUG-032, BUG-017, BUG-018, BUG-020, BUG-021, BUG-022)
+### - [x] P1-11 · Input validation, HR and Ops (BUG-019, BUG-031, BUG-032, BUG-017, BUG-018, BUG-020, BUG-021, BUG-022)
 
 - Employees API accepted a duplicate national ID (EMP-0332/0333), a date of birth of 2030-01-01, the year 275760, a daily rate of −50 and a 3,000-character name. Add: a unique `(companyId, normalised idNumber)`; age 18–75; hire date after date of birth; rate > 0; name ≤ 120 characters; the same validation in imports.
 - Overtime accepted 30 hours in one day → cap at 24 minus scheduled hours; warn above a configurable weekly limit.
@@ -255,17 +255,17 @@ Build in this order (each depends on the previous):
 - [x] `GET /finance/journal-entries` renders with entries that have null or invalid dates
 - [x] `/api/guards` returns all active guards; the incident, deployment and patrol forms load
 - [ ] Create, post and void works for: journal, sales invoice, receipt, credit note, debit note, proforma, PO, GRN, purchase invoice, payment, transfer, expense claim
-- [ ] Journal rejects: unbalanced, < 2 lines, all-zero, debit and credit on one line, foreign or missing account, negative amounts (all 400, never 500)
+- [x] Journal rejects: unbalanced, < 2 lines, all-zero, debit and credit on one line, foreign or missing account, negative amounts (all 400, never 500)
 - [ ] Locked period blocks create, post and void for journals, invoices, receipts and payments (keep the existing behaviour)
-- [ ] 10 parallel receipts on one invoice → paid = sum of receipts; GL AR = subledger AR
-- [ ] Receipt customer ≠ invoice customer → rejected
-- [ ] Voiding an invoice with allocations → rejected
+- [x] 10 parallel receipts on one invoice → paid = sum of receipts; GL AR = subledger AR
+- [x] Receipt customer ≠ invoice customer → rejected
+- [x] Voiding an invoice with allocations → rejected
 - [ ] Unique numbering per document type; imports respect the sequence
-- [ ] Balance Sheet balances without a plug; Current Year Earnings = Income Statement net profit
-- [ ] Dashboard, customer list, AI and GL report the same AR total
-- [ ] Paging returns every record exactly once; summary cards come from server totals
-- [ ] Payroll fixture matches the hand calculation; a zero-gross run cannot be approved
-- [ ] Employee validation: duplicate ID, invalid DOB, negative rate and over-long name are rejected (API and import)
+- [x] Balance Sheet balances without a plug; Current Year Earnings = Income Statement net profit
+- [x] Dashboard, customer list, AI and GL report the same AR total
+- [x] Paging returns every record exactly once; summary cards come from server totals
+- [x] Payroll fixture matches the hand calculation; a zero-gross run cannot be approved
+- [x] Employee validation: duplicate ID, invalid DOB, negative rate and over-long name are rejected (API and import)
 - [x] Security headers present; authenticated APIs return no-store; no Prisma or Zod text in any error response
 - [x] RLS check script: the anon key reads 0 rows from every table
 - [ ] Audit row includes action, before/after diff, user and IP for every create, update, post and void
@@ -303,3 +303,26 @@ Gate 0 status:
 Found during Phase 0, deferred to Phase 1:
 - Credit/debit note "issue" marks the note ISSUED before the GL transaction; a failed posting leaves an issued note with no journal (P1-5/P1-6).
 - 87 routes call `req.json()` unguarded; malformed bodies now return a clean 400 only where the route's catch uses `apiError`. 119 routes have no try/catch at all (Next returns a bare 500 — no leak, but not the `{ error, code }` shape).
+
+### Phase 1 — branch `fix/phase-1` (2026-11-10)
+
+All new tests were run against the pre-fix code where it existed and failed first. `npm test`: 129/129. `npm run build`: passes. Lint: 210 errors, all pre-existing (master 212). Schema ↔ migrations: no drift.
+
+- **P1-1** — 89 money columns → `Decimal(18,2)` (migration `20261110010000_money_decimal_18_2` **rounds existing values: owner approval required**; preview with `scripts/remediate/money-rounding.mjs --dry-run`). `lib/money.ts` rounds half-up on Decimal. Trial balance and balance sheet compare exactly (were `< 1`). Decimal serialises and adds as a number so existing UI/untyped code keeps working.
+- **P1-2** — `lib/reports/ledger.ts` sums posted lines in SQL. Balance sheet: Current Year Earnings = fiscal-YTD net profit, prior unclosed P&L its own line, `difference` reported, never plugged. Finance and executive dashboards: ledger revenue/expenses/profit for the company's fiscal year (was hard-coded to 1 Jan); "Cash collected" separate.
+- **P1-3 (partial)** — Bank accounts post opening balances as journals against 3050 Opening Balance Equity. Nightly `/api/cron/reconcile` (GL vs posted lines, bank vs GL, AR/AP vs control) notifies finance admins. Scripts: `opening-balances.mjs`, `recompute-balances.mjs` (also lists accounts named for one currency but recorded in another, e.g. 1011/1301). **Open:** per-line transaction currency + rate + reporting amount. Today a receipt into a ZWG bank posts the ZWG figure into the USD ledger. Needs an accountant decision on FX revaluation and historical vs current rates before building.
+- **P1-4** — `getReceivables`/`getPayables` from document amounts (PAID-but-owing counted; credit notes, overpayments and unallocated receipts are credits) with a control-account difference. Used by both dashboards and the AI helpdesk; customer/supplier balance recalculation follows the same rule.
+- **P1-5** — Receipts lock the invoice row (`FOR UPDATE`) and re-check inside the transaction; invoice decides the customer; GL-linked bank required. Voiding an invoice with money allocated is refused. `Idempotency-Key` on receipts (new `idempotency_keys` table). Status derived from amounts, one UPPERCASE vocabulary. Unique `(companyId, number)` for receipts/payments and invoices in migration `20261110030000` — **fails until duplicates are cleaned: accountant review via `duplicate-documents.mjs`, owner approval**. Deviation: overpaying an invoice is rejected rather than turned into credit (an unallocated receipt is the way to record credit); no separate Allocation table — the row lock meets the acceptance test.
+- **P1-6** — One rule set for every journal (`lib/journal-rules.ts`), enforced by the schema and by `postJournal`, which all auto-postings now use. Draft posting re-validates and claims atomically. Single-prefix auto references. Code-range check on account create/type change. Unique account code index **waits for the duplicate merge** (`duplicate-account-codes.mjs`).
+- **P1-7** — Paginated lists order by `(field, id)` and accept `?limit=` (≤100). Sales invoice cards and HR overview counts from the server.
+- **P1-8 (scripts written, not run on real data)** — `scripts/remediate/`: `money-rounding`, `duplicate-account-codes`, `duplicate-documents`, `opening-balances`, `recompute-balances`, `reverse-test-records`. All default to read-only; the writing ones need `--apply`. **The dry-run output for owner/accountant approval has to be produced against the database that holds the audited data** (the original `yachjdzjfckvobsezwmi` project), which this environment cannot reach.
+- **P1-9 (maker-checker partial)** — Audit rows record IP, user agent, request id and a field diff for every existing call; POST/VOID actions; journal post/void audit inside the transaction; `audit_trail` append-only via trigger. Maker-checker for journals over `Company.approvalThreshold`. **Open:** maker-checker for payments and payroll (they post immediately on create; needs an approval step in their workflow).
+- **P1-10** — Pay basis per employee (daily × paid days / monthly / hourly). `lib/payroll/engine.ts` with effective-dated, second-person-approved statutory tables (PAYE bands after NSSA, AIDS Levy, NSSA ceiling, NEC, ZIMDEF) — no rates in code. Zero-gross / inconsistent runs refused. Run journal via `postJournal`. Orphan payslips excluded. Matches a 3-guard hand calculation.
+- **P1-11** — Employee rules (API + import), incident enum, overtime cap, attendance-rate denominator, numeric low-stock compare, currency formatting, invoice notes. Fixed assets and inventory post to the GL; month-end depreciation (`/api/cron/depreciation`). Invoice imports: the import engine has no invoice module (bad invoices came from the original data load); the API already rejects due-before-issue.
+
+Also fixed along the way: GL accounts with a NULL balance never moved when posted to; currency converter used outside the caller's transaction (pool exhaustion under concurrent receipts); credit/debit notes marked ISSUED before their posting succeeded; **document numbers were unique across all tenants** (a second company's first CRN-000001 collided) — now per company.
+
+Gate 1 status — **not passed, owner action needed:**
+- Requires a staging environment holding a copy of the audited data to close a month and reconcile to the cent. None exists; this environment can only reach the owner's new, nearly empty Supabase project.
+- Before any of this reaches production: owner approval for the rounding migration and the unique-index migrations, then the remediation scripts in order (`reverse-test-records` → `opening-balances` → dedupe → `recompute-balances`), each dry-run first.
+- Phase 2 has not been started, per the rule that the current phase's gate must pass first.
