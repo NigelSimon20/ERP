@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { z } from 'zod'
 import { apiError } from '@/lib/api-error'
+import { postOpeningBalance } from '@/lib/opening-balances'
 
 const createSchema = z.object({
   bankName: z.string().min(1),
@@ -104,7 +105,8 @@ export async function POST(req: NextRequest) {
           is_bank_account: true,
           is_active: true,
           opening_balance: data.openingBalance,
-          current_balance: data.openingBalance,
+          // Moves only through journals: the opening balance below.
+          current_balance: 0,
           currency: data.currency,
           created_date: now,
           updated_date: now,
@@ -127,6 +129,11 @@ export async function POST(req: NextRequest) {
           created_date: now,
           updated_date: now,
         },
+      })
+
+      await postOpeningBalance(tx, {
+        companyId: session.companyId, accountId: coaId, amount: data.openingBalance,
+        entryDate: now, userId: session.userId, label: nextCode,
       })
 
       return { account, ledgerCode: nextCode }
