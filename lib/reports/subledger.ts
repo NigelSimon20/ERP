@@ -49,6 +49,12 @@ export async function getReceivables(db: Db, companyId: string): Promise<Subledg
     }),
     db.creditNote.findMany({ where: { companyId, status: 'ISSUED' }, select: { customerId: true, totalAmount: true } }),
   ])
+  // Receipts not allocated to an invoice still credit AR in the ledger:
+  // they are customer credit (P1-5: overpayments are credit, not clamped).
+  const unallocated = await db.payment.findMany({
+    where: { companyId, payment_type: 'Customer Receipt', status: { not: 'Void' }, OR: [{ allocations: null }, { allocations: '[]' }, { allocations: '' }] },
+    select: { customer_id: true, amount: true, currency: true },
+  })
 
   let open = ZERO, credits = ZERO, openDocuments = 0, unconverted = 0
   const byParty = new Map<string, Prisma.Decimal>()
@@ -66,6 +72,13 @@ export async function getReceivables(db: Db, companyId: string): Promise<Subledg
     const v = new D(cn.totalAmount)
     credits = credits.add(v)
     add(byParty, cn.customerId, v.neg())
+  }
+  for (const p of unallocated) {
+    const c = convert(Number(p.amount ?? 0), p.currency)
+    if (!c.converted) unconverted++
+    const v = new D(c.amount).toDecimalPlaces(2)
+    credits = credits.add(v)
+    add(byParty, p.customer_id, v.neg())
   }
   const total = open.sub(credits)
   const controlAccountBalance = await controlBalance(db, companyId, company?.receivablesAccountId ?? null)

@@ -41,7 +41,12 @@ export async function recalculateCustomerOutstandingBalance(
     outstanding += round2dp(convert(total - paid, invoice.currency).amount)
   }
   const credited = await tx.creditNote.aggregate({ where: { customerId, status: 'ISSUED' }, _sum: { totalAmount: true } })
-  outstanding = round2dp(outstanding - toNumber(credited._sum.totalAmount))
+  const unallocated = await tx.payment.findMany({
+    where: { customer_id: customerId, payment_type: 'Customer Receipt', status: { not: 'Void' }, OR: [{ allocations: null }, { allocations: '[]' }, { allocations: '' }] },
+    select: { amount: true, currency: true },
+  })
+  const unallocatedTotal = unallocated.reduce((s, p) => s + round2dp(convert(toNumber(p.amount), p.currency).amount), 0)
+  outstanding = round2dp(outstanding - toNumber(credited._sum.totalAmount) - unallocatedTotal)
 
   await tx.customer.update({
     where: { id: customerId },

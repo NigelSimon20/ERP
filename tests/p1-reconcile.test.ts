@@ -40,6 +40,8 @@ describe('P1-3 opening balances and reconciliation', () => {
       lineItems: [{ description: 'Guarding', quantity: 3, unitPrice: 33.33, taxRate: 0 }],
     } })
     expect((await callRoute(receipts.POST, { method: 'POST', path: '/api/finance/receipts', body: { bankAccountId: fx.bankAccount.id, invoiceId: inv.json.invoice.id, amount: 50, receiptDate: '2026-11-05' } })).status).toBe(201)
+    // An unallocated receipt is customer credit: still ties out.
+    expect((await callRoute(receipts.POST, { method: 'POST', path: '/api/finance/receipts', body: { bankAccountId: fx.bankAccount.id, customerId: fx.customer.id, amount: 15, receiptDate: '2026-11-06' } })).status).toBe(201)
     const r = await reconcileCompany(prisma, fx.companyId)
     expect(r.differences).toEqual([])
     expect(r.clean).toBe(true)
@@ -75,4 +77,34 @@ describe('P1-3 opening balances and reconciliation', () => {
     expect(await prisma.journalEntry.count({ where: { reference: 'JE-OB-1019' } })).toBe(1)
     expect((await ledgerBalanceSheet(prisma, fx.companyId, new Date())).balanced).toBe(true)
   })
+
+  it('reverse-test-records finds QA test data and reverses it by journal, keeping the original', async () => {
+    const qa = { id: crypto.randomUUID(), companyId: fx.companyId, company_name: 'TEST - QA Customer Ltd', is_active: true, currency: 'USD' }
+    await prisma.customer.create({ data: qa })
+    const inv = await callRoute(salesInvoices.POST, { method: 'POST', path: '/api/finance/sales-invoices', body: {
+      customerId: qa.id, issueDate: '2026-11-02', dueDate: '2026-11-30', revenueAccountId: fx.accounts.revenue.id,
+      lineItems: [{ description: 'ZZTEST line', quantity: 1, unitPrice: 100, taxRate: 0 }],
+    } })
+    const invoiceId = inv.json.invoice.id
+    await prisma.salesInvoice.update({ where: { id: invoiceId }, data: { customer_name: 'TEST - QA Customer Ltd' } })
+    const before = (await getReceivablesTotal())
+
+    const dry = runScript('reverse-test-records.mjs', '--dry-run')
+    expect(dry).toContain('TEST - QA Customer Ltd')
+    expect(dry).toContain('Dry run: nothing was written.')
+
+    runScript('reverse-test-records.mjs', '--apply')
+    const original = await prisma.journalEntry.findFirstOrThrow({ where: { source_id: invoiceId } })
+    expect(original.status).toBe('POSTED')
+    expect(await prisma.journalEntry.count({ where: { reference: `REV-${original.reference}` } })).toBe(1)
+    expect((await prisma.salesInvoice.findUniqueOrThrow({ where: { id: invoiceId } })).status).toBe('Void')
+    expect((await prisma.customer.findUniqueOrThrow({ where: { id: qa.id } })).is_active).toBe(false)
+    expect(Math.round((await getReceivablesTotal()) * 100)).toBe(Math.round(before * 100) - 10000)
+    expect((await ledgerBalanceSheet(prisma, fx.companyId, new Date())).balanced).toBe(true)
+  })
+
+  async function getReceivablesTotal() {
+    const { getReceivables } = await import('@/lib/reports/subledger')
+    return Number((await getReceivables(prisma, fx.companyId)).controlAccountBalance)
+  }
 })
