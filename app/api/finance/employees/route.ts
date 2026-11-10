@@ -36,6 +36,9 @@ export async function GET(req: NextRequest) {
     by: ['employee_id'],
     where: {
       status: 'Approved',
+      // P1-10: payslips with no payroll run are quarantined (201 orphans netted
+    // 27,735 against 1,269 gross) and excluded from every report.
+      payroll_run_id: { not: null },
       created_date: { gte: fiscalStart.toISOString().split('T')[0] },
     },
     _sum: { net_pay: true, total_earnings: true },
@@ -47,7 +50,7 @@ export async function GET(req: NextRequest) {
 
   // Most recent payslip amount
   const recentPayslips = await prisma.payslip.findMany({
-    where: { status: 'Approved' },
+    where: { status: 'Approved', payroll_run_id: { not: null } },
     orderBy: { created_date: 'desc' },
     distinct: ['employee_id'],
     select: { employee_id: true, net_pay: true, created_date: true },

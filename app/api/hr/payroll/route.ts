@@ -5,8 +5,11 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { nextJournalReference, nextPaymentReference } from '@/lib/auto-numbers'
-import { calculateBasicSalary, calculateOvertimePay, calculatePayslipItem } from '@/lib/calculations'
+import { calculatePayslipItem } from '@/lib/calculations'
+import { computePay, resolvePayBasis, payrollRunProblems, PAID_DAY_STATUSES } from '@/lib/payroll/engine'
+import { loadStatutoryTables } from '@/lib/payroll/statutory'
 import { checkLockDate } from '@/lib/lock-dates'
+import { postJournal } from '@/lib/gl-posting'
 import { hoursForStatus } from '@/lib/attendance-hours'
 
 function r2(n: number) { return Math.round(n * 100) / 100 }
@@ -19,64 +22,75 @@ async function computePayrollPreviews(companyId: string, start: Date, end: Date)
   const [guards, payslipItems, company] = await Promise.all([
     prisma.guard.findMany({ where: { companyId, status: 'Active' } }),
     prisma.payslipItem.findMany({ where: { companyId, active: true } }),
-    prisma.company.findUnique({ where: { id: companyId }, select: { standardHoursPerMonth: true } }),
+    prisma.company.findUnique({ where: { id: companyId }, select: { standardHoursPerMonth: true, defaultPayBasis: true, currency: true } }),
   ])
   const standardHoursPerMonth = company?.standardHoursPerMonth ?? 160
+  // Overtime on daily pay needs an hourly rate: the standard month spread
+  // over 26 working days.
+  const hoursPerDay = standardHoursPerMonth / 26
+  const tables = await loadStatutoryTables(prisma, companyId, end, company?.currency || 'USD')
 
   const earningItems = payslipItems.filter((i) => i.itemType === 'EARNING')
   const deductionItems = payslipItems.filter((i) => i.itemType === 'DEDUCTION')
 
-  // One query for every guard's attendance instead of one concurrent query
-  // per guard — with hundreds of active guards, firing that many parallel
-  // requests at once was unreliable against this DB's pooler (connections
-  // getting dropped mid-batch) and could 500 the whole preview/confirm.
+  // One query for every guard's attendance instead of one per guard (the
+  // pooler drops connections under hundreds of parallel queries).
   const attendanceRows = await prisma.attendance.findMany({
     where: { guardId: { in: guards.map((g) => g.id) }, date: { gte: start, lte: end } },
     select: { guardId: true, hoursWorked: true, overtimeHours: true, status: true },
   })
-  const attendanceByGuard = new Map<string, { hoursWorked: number; overtimeHours: unknown }[]>()
+  const byGuard = new Map<string, { paidDays: number; hours: number; overtime: number }>()
   for (const row of attendanceRows) {
-    const list = attendanceByGuard.get(row.guardId) ?? []
-    // Rows written outside POST /api/operations/attendance (legacy data load,
-    // direct SQL) never had hoursWorked stamped and sit at the column default
-    // of 0, which zeroed every guard's pay. Apply the same status->hours rule
-    // the attendance API uses when stamping.
+    const t = byGuard.get(row.guardId) ?? { paidDays: 0, hours: 0, overtime: 0 }
+    if ((PAID_DAY_STATUSES as readonly string[]).includes(row.status)) t.paidDays++
+    // Legacy rows never had hoursWorked stamped; derive it from the status
+    // the same way the attendance API does.
     const stored = Number(row.hoursWorked)
-    list.push({ hoursWorked: stored > 0 ? stored : hoursForStatus(row.status), overtimeHours: row.overtimeHours })
-    attendanceByGuard.set(row.guardId, list)
+    t.hours += stored > 0 ? stored : hoursForStatus(row.status)
+    t.overtime += Number(row.overtimeHours)
+    byGuard.set(row.guardId, t)
   }
 
   return guards.map((guard) => {
-    const attendance = attendanceByGuard.get(guard.id) ?? []
-
-    const hoursWorked = r2(attendance.reduce((s, a) => s + Number(a.hoursWorked), 0))
-    const overtimeHours = r2(attendance.reduce((s, a) => s + Number(a.overtimeHours), 0))
-    const hourlyRate = Number(guard.basic_salary ?? 0) / standardHoursPerMonth // estimate from basic salary, using the company's configured standard monthly hours
-
-    const basicSalary = calculateBasicSalary(hoursWorked, hourlyRate)
-    const overtimePay = calculateOvertimePay(overtimeHours, hourlyRate)
-
+    const att = byGuard.get(guard.id) ?? { paidDays: 0, hours: 0, overtime: 0 }
+    const basis = resolvePayBasis(guard, company?.defaultPayBasis ?? 'DAILY')
+    const dailyRate = Number(guard.daily_rate ?? 0)
+    const monthlySalary = Number(guard.basic_salary ?? 0)
+    // P1-10 (BUG-007): DAILY pay is daily rate x paid days. It used to be
+    // basic_salary / standard hours x hours worked, which ignored daily_rate
+    // and paid every guard $0.
+    const base = computePay({ basis, dailyRate, monthlySalary, hourlyRate: monthlySalary / standardHoursPerMonth, paidDays: att.paidDays, hoursWorked: att.hours, overtimeHours: att.overtime, hoursPerDay, standardHoursPerMonth, grade: guard.employee_type, tables: {} })
     const earningsLines = earningItems.map((item) => ({
       payslipItemId: item.id, name: item.name, type: 'EARNING',
-      amount: calculatePayslipItem(item, basicSalary, 0),
+      amount: calculatePayslipItem(item, base.basicSalary, 0),
       calculationMethod: item.calculationMethod,
     }))
-    const totalEarnings = r2(earningsLines.reduce((s, l) => s + l.amount, 0))
-    const grossPay = r2(basicSalary + overtimePay + totalEarnings)
-
-    const deductionLines = deductionItems.map((item) => ({
+    const preGross = r2(base.grossPay + earningsLines.reduce((s, l) => s + l.amount, 0))
+    const itemDeductions = deductionItems.map((item) => ({
       payslipItemId: item.id, name: item.name, type: 'DEDUCTION',
-      amount: calculatePayslipItem(item, basicSalary, grossPay),
+      amount: calculatePayslipItem(item, base.basicSalary, preGross),
       calculationMethod: item.calculationMethod,
     }))
-    const totalDeductions = r2(deductionLines.reduce((s, l) => s + l.amount, 0))
-    const netPay = r2(grossPay - totalDeductions)
+    const pay = computePay({
+      basis, dailyRate, monthlySalary, hourlyRate: monthlySalary / standardHoursPerMonth,
+      paidDays: att.paidDays, hoursWorked: att.hours, overtimeHours: att.overtime, hoursPerDay, standardHoursPerMonth,
+      grade: guard.employee_type, tables,
+      otherEarnings: earningsLines.map((l) => ({ name: l.name, amount: l.amount })),
+      otherDeductions: itemDeductions.map((l) => ({ name: l.name, amount: l.amount })),
+    })
+    const statutoryLines = pay.deductions
+      .filter((d) => !itemDeductions.some((x) => x.name === d.name))
+      .map((d) => ({ payslipItemId: null, name: d.name, type: 'DEDUCTION', amount: d.amount, calculationMethod: 'STATUTORY' }))
 
     return {
       guardId: guard.id, guardName: guard.full_name ?? '', employeeNumber: guard.employee_code ?? '',
-      whatsapp: guard.phone, hoursWorked, overtimeHours, hourlyRate,
-      basicSalary, overtimePay, totalEarnings, grossPay, totalDeductions, netPay,
-      earningsLines, deductionLines,
+      whatsapp: guard.phone, payBasis: basis, paidDays: att.paidDays, dailyRate,
+      hoursWorked: r2(att.hours), overtimeHours: r2(att.overtime),
+      basicSalary: pay.basicSalary, overtimePay: pay.overtimePay,
+      totalEarnings: r2(earningsLines.reduce((s, l) => s + l.amount, 0)),
+      grossPay: pay.grossPay, totalDeductions: pay.totalDeductions, netPay: pay.netPay,
+      employerContributions: pay.employerContributions, totalEmployerContributions: pay.totalEmployerContributions,
+      earningsLines, deductionLines: [...itemDeductions, ...statutoryLines], warnings: pay.warnings,
     }
   })
 }
@@ -137,7 +151,10 @@ export async function POST(req: NextRequest) {
     const totalDeductions = r2(previews.reduce((s, p) => s + p.totalDeductions, 0))
     const totalNet = r2(previews.reduce((s, p) => s + p.netPay, 0))
 
-    return NextResponse.json({ previews, totalGross, totalDeductions, totalNet })
+    // Shown before confirming; confirm refuses while `problems` is non-empty.
+    const problems = payrollRunProblems(previews)
+    const warnings = Array.from(new Set(previews.flatMap((p) => p.warnings)))
+    return NextResponse.json({ previews, totalGross, totalDeductions, totalNet, problems, warnings })
   }
 
   // ── Confirm ──────────────────────────────────────────────────────────────
@@ -167,9 +184,17 @@ export async function POST(req: NextRequest) {
     const guardPayslips = await computePayrollPreviews(companyId, start, end)
     if (!guardPayslips.length) return NextResponse.json({ error: 'No active guards found for this period' }, { status: 400 })
 
+    // P1-10: September's run was marked PAID at $0. Refuse a zero-gross run
+    // or any payslip whose net isn't gross minus deductions.
+    const problems = payrollRunProblems(guardPayslips)
+    if (problems.length) {
+      return NextResponse.json({ error: problems[0], code: 'PAYROLL_INVALID', problems }, { status: 400 })
+    }
+
     const totalGross = r2(guardPayslips.reduce((s: number, p: { grossPay: number }) => s + p.grossPay, 0))
     const totalDeductions = r2(guardPayslips.reduce((s: number, p: { totalDeductions: number }) => s + p.totalDeductions, 0))
     const totalNet = r2(guardPayslips.reduce((s: number, p: { netPay: number }) => s + p.netPay, 0))
+    const totalEmployer = r2(guardPayslips.reduce((s: number, p: { totalEmployerContributions: number }) => s + p.totalEmployerContributions, 0))
 
     // Explicit Company-level account mapping (Settings -> Company -> Tax)
     // replaces fuzzy account-name matching -- payroll can no longer move
@@ -178,14 +203,13 @@ export async function POST(req: NextRequest) {
     if (!glCompany?.salariesExpenseAccountId) {
       return NextResponse.json({ error: 'Salaries Expense account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
     }
-    if (totalDeductions > 0 && !glCompany.payrollLiabilitiesAccountId) {
+    if (totalDeductions + totalEmployer > 0 && !glCompany.payrollLiabilitiesAccountId) {
       return NextResponse.json({ error: 'This payroll run has deductions, but no Payroll Liabilities account is configured. Set it in Settings → Company → Tax.' }, { status: 400 })
     }
 
     const reference = await nextJournalReference(companyId)
     const paymentReference = await nextPaymentReference(companyId)
     const runId = crypto.randomUUID()
-    const journalId = crypto.randomUUID()
 
     const [expenseAccount, liabilityAccount] = await Promise.all([
       prisma.chartOfAccount.findFirst({ where: { id: glCompany.salariesExpenseAccountId, companyId } }),
@@ -196,7 +220,7 @@ export async function POST(req: NextRequest) {
     if (!expenseAccount) {
       return NextResponse.json({ error: 'The configured Salaries Expense account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
     }
-    if (totalDeductions > 0 && !liabilityAccount) {
+    if (totalDeductions + totalEmployer > 0 && !liabilityAccount) {
       return NextResponse.json({ error: 'The configured Payroll Liabilities account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
     }
 
@@ -205,6 +229,9 @@ export async function POST(req: NextRequest) {
     const bankChartAccount = bankAccount.chart_account_id
       ? await prisma.chartOfAccount.findUnique({ where: { id: bankAccount.chart_account_id } })
       : null
+    if (!bankChartAccount) {
+      return NextResponse.json({ error: 'The selected bank account has no linked GL account', code: 'BANK_NOT_LINKED' }, { status: 400 })
+    }
 
     await prisma.$transaction(async (tx) => {
       await tx.payrollRun.create({
@@ -276,33 +303,21 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      const journalLines = []
-      if (expenseAccount) {
-        journalLines.push({ id: crypto.randomUUID(), journalId, accountId: expenseAccount.id, type: 'DEBIT', amount: totalGross, description: 'Salary expense' })
-      }
-      if (liabilityAccount && totalDeductions > 0) {
-        journalLines.push({ id: crypto.randomUUID(), journalId, accountId: liabilityAccount.id, type: 'CREDIT', amount: totalDeductions, description: 'Payroll deductions payable' })
-      }
-      if (bankChartAccount) {
-        journalLines.push({ id: crypto.randomUUID(), journalId, accountId: bankChartAccount.id, type: 'CREDIT', amount: totalNet, description: 'Bank payment' })
-      }
-      if (journalLines.length) {
-        await tx.journalEntry.create({
-          data: {
-            id: journalId, companyId, reference,
-            entry_date: new Date().toISOString(),
-            description: `Payroll ${new Date(periodStart).toLocaleDateString()} – ${new Date(periodEnd).toLocaleDateString()}`,
-            total_debit: totalGross, total_credit: totalGross,
-            status: 'POSTED', created_by_id: userId,
-          },
-        })
-        await tx.journalLine.createMany({
-          data: journalLines.map((l) => ({
-            id: l.id, journalEntryId: journalId, accountId: l.accountId,
-            description: l.description, debit: l.type === 'DEBIT' ? l.amount : 0, credit: l.type === 'CREDIT' ? l.amount : 0,
-          })),
-        })
-      }
+      // Posted from the run itself (P1-10): Dr salaries (gross + employer
+      // contributions) / Cr payroll liabilities (employee deductions +
+      // employer contributions) / Cr bank (net). postJournal rejects an
+      // empty or unbalanced journal (RS-JE-000507 posted with 0 lines).
+      await postJournal(tx, {
+        companyId, reference,
+        entryDate: new Date(periodEnd).toISOString(),
+        description: `Payroll ${new Date(periodStart).toLocaleDateString()} – ${new Date(periodEnd).toLocaleDateString()}`,
+        lines: [
+          { accountId: expenseAccount.id, debit: r2(totalGross + totalEmployer), description: 'Salaries and wages incl. employer contributions' },
+          ...(totalDeductions + totalEmployer > 0 ? [{ accountId: liabilityAccount!.id, credit: r2(totalDeductions + totalEmployer), description: 'PAYE, NSSA and other payroll liabilities' }] : []),
+          { accountId: bankChartAccount!.id, credit: totalNet, description: 'Net pay' },
+        ],
+        userId, sourceType: 'payrollRun', sourceId: runId,
+      })
     }, { timeout: 60000 })
 
     // WhatsApp payslip notifications (fire-and-forget)

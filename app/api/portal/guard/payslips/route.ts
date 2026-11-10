@@ -8,7 +8,8 @@ export async function GET() {
   if (!session.guardId) return NextResponse.json({ payslips: [] })
 
   const payslips = await prisma.payslip.findMany({
-    where: { employee_id: session.guardId },
+    // Orphan payslips (no payroll run) are quarantined (P1-10).
+    where: { employee_id: session.guardId, payroll_run_id: { not: null } },
     orderBy: { pay_date: 'desc' },
     take: 24,
     select: {

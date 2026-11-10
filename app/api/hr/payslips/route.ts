@@ -21,6 +21,8 @@ export async function GET(req: NextRequest) {
     where: {
       AND: [
         { employee_id: { in: companyGuardIds } },
+        // Orphan payslips (no payroll run) are quarantined (P1-10).
+        { payroll_run_id: { not: null } },
         ...(payrollRunId ? [{ payroll_run_id: payrollRunId }] : []),
         ...(guardId ? [{ employee_id: guardId }] : []),
       ],

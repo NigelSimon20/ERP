@@ -42,6 +42,8 @@ model Company {
   // P1-9 maker-checker: journals above this total need a second person to
   // post them. NULL = off.
   approvalThreshold       Decimal? @db.Decimal(18, 2) @map("approval_threshold")
+  // P1-10: pay basis for employees without their own (DAILY | MONTHLY | HOURLY).
+  defaultPayBasis         String   @default("DAILY") @map("default_pay_basis")
   forceNumberPrefix        String?  @map("force_number_prefix")
   // Branding
   motto                    String?
@@ -297,6 +299,8 @@ model Guard {
   leave_days_entitled   Float?
   bank_account_number   String?
   daily_rate            Float?
+  // DAILY | MONTHLY | HOURLY; null = Company.defaultPayBasis (P1-10).
+  pay_basis             String?
   notes                 String?  @db.Text
   gender                String?
   leave_days_taken      Float?
@@ -2298,4 +2302,26 @@ model IdempotencyKey {
 
   @@unique([companyId, route, key])
   @@map("idempotency_keys")
+}
+
+// P1-10: effective-dated statutory tables (ZIMRA PAYE bands, AIDS Levy,
+// NSSA, NEC levy and grade minimums, ZIMDEF). Payroll uses only APPROVED
+// rows; nothing is hard-coded. `config` shape depends on `kind` -- see
+// lib/payroll/statutory.ts.
+model StatutoryTable {
+  id             String    @id @default(cuid())
+  companyId      String
+  kind           String
+  currency       String    @default("USD")
+  effectiveFrom  DateTime
+  config         Json
+  sourceDocument String
+  status         String    @default("DRAFT")
+  createdBy      String
+  approvedBy     String?
+  approvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([companyId, kind, effectiveFrom])
+  @@map("statutory_tables")
 }
