@@ -211,3 +211,21 @@ describe('P1-4 receivables subledger', () => {
     expect(dash.json.outstandingReceivables).toBe(Number(ar.total))
   })
 })
+
+describe('Issue failures leave documents as drafts', () => {
+  it('a credit note whose posting fails stays DRAFT instead of ISSUED with no journal', async () => {
+    const fx = await seedCompany('Issue Co')
+    await loginAs(fx.sessionFor(fx.users.finance))
+    const { POST: create } = await import('@/app/api/finance/credit-notes/route')
+    const { PUT: update } = await import('@/app/api/finance/credit-notes/[id]/route')
+    const c = await callRoute(create, { method: 'POST', path: '/api/finance/credit-notes', body: { customerId: fx.customer.id, issueDate: '2026-11-02', reason: 'Test', lineItems: [{ description: 'x', quantity: 1, unitPrice: 10, taxRate: 0 }] } })
+    const id = c.json.creditNote.id
+    // An inactive AR account makes postJournal refuse the posting.
+    await prisma.chartOfAccount.update({ where: { id: fx.accounts.receivables.id }, data: { is_active: false } })
+    const r = await callRoute(update, { method: 'PUT', path: `/api/finance/credit-notes/${id}?action=issue`, params: { id }, body: { revenueAccountId: fx.accounts.revenue.id } })
+    expect(r.status).toBe(400)
+    expect(r.json.code).toBe('INACTIVE_ACCOUNT')
+    expect((await prisma.creditNote.findUniqueOrThrow({ where: { id } })).status).toBe('DRAFT')
+  })
+})
+

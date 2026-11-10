@@ -848,7 +848,7 @@ model ProformaInvoice {
   company            Company         @relation(fields: [companyId], references: [id])
   customerId         String
   customer           Customer        @relation(fields: [customerId], references: [id])
-  proformaNumber     String          @unique
+  proformaNumber     String
   issueDate          DateTime
   validUntil         DateTime
   subtotal           Decimal @db.Decimal(18, 2)
@@ -864,6 +864,9 @@ model ProformaInvoice {
   @@index([companyId])
   @@index([customerId])
   @@map("proforma_invoices")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, proformaNumber])
 }
 
 model ProformaInvoiceLine {
@@ -892,7 +895,7 @@ model CreditNote {
   customerId       String
   customer         Customer         @relation(fields: [customerId], references: [id])
   salesInvoiceId   String?
-  creditNoteNumber String           @unique
+  creditNoteNumber String
   issueDate        DateTime
   reason           String           @db.Text
   subtotal         Decimal @db.Decimal(18, 2)
@@ -907,6 +910,9 @@ model CreditNote {
   @@index([companyId])
   @@index([customerId])
   @@map("credit_notes")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, creditNoteNumber])
 }
 
 model CreditNoteLine {
@@ -935,7 +941,7 @@ model DebitNote {
   supplierId        String
   supplier          Supplier        @relation(fields: [supplierId], references: [id])
   purchaseInvoiceId String?
-  debitNoteNumber   String          @unique
+  debitNoteNumber   String
   issueDate         DateTime
   reason            String          @db.Text
   subtotal          Decimal @db.Decimal(18, 2)
@@ -950,6 +956,9 @@ model DebitNote {
   @@index([companyId])
   @@index([supplierId])
   @@map("debit_notes")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, debitNoteNumber])
 }
 
 model DebitNoteLine {
@@ -985,7 +994,7 @@ model PurchaseOrder {
   company      Company               @relation(fields: [companyId], references: [id])
   supplierId   String
   supplier     Supplier              @relation(fields: [supplierId], references: [id])
-  poNumber     String                @unique
+  poNumber     String
   issueDate    DateTime
   expectedDate DateTime?
   subtotal     Decimal @db.Decimal(18, 2)
@@ -1001,6 +1010,9 @@ model PurchaseOrder {
   @@index([companyId])
   @@index([supplierId])
   @@map("purchase_orders")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, poNumber])
 }
 
 model PurchaseOrderLine {
@@ -1023,7 +1035,7 @@ model GoodsReceivedNote {
   company         Company                 @relation(fields: [companyId], references: [id])
   purchaseOrderId String
   purchaseOrder   PurchaseOrder           @relation(fields: [purchaseOrderId], references: [id])
-  grnNumber       String                  @unique
+  grnNumber       String
   receivedBy      String
   receivedAt      DateTime                @default(now())
   notes           String?                 @db.Text
@@ -1033,6 +1045,9 @@ model GoodsReceivedNote {
   @@index([companyId])
   @@index([purchaseOrderId])
   @@map("goods_received_notes")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, grnNumber])
 }
 
 model GoodsReceivedNoteLine {
@@ -1085,7 +1100,7 @@ model ExpenseClaim {
   companyId     String
   company       Company             @relation(fields: [companyId], references: [id])
   userId        String
-  claimNumber   String              @unique
+  claimNumber   String
   category      String
   amount        Decimal @db.Decimal(18, 2)
   currency      String              @default("USD")
@@ -1104,6 +1119,9 @@ model ExpenseClaim {
   @@index([userId])
   @@index([status])
   @@map("expense_claims")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, claimNumber])
 }
 
 // ============================================================
@@ -1424,7 +1442,7 @@ model PurchaseInvoice {
   id           String   @id @map("id")
   companyId    String
   supplierId   String
-  invoiceNumber String  @unique
+  invoiceNumber String
   reference    String?
   issueDate    DateTime
   dueDate      DateTime
@@ -1446,6 +1464,9 @@ model PurchaseInvoice {
   @@index([status])
   @@index([dueDate])
   @@map("purchase_invoices")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, invoiceNumber])
 }
 
 model PurchaseInvoiceLineItem {
@@ -1723,7 +1744,7 @@ model Receipt {
   id String @id
   companyId String
   receiptDate DateTime
-  reference String @unique
+  reference String
   amount Decimal @db.Decimal(18, 2)
   bankAccountId String
   customerId String
@@ -1732,6 +1753,9 @@ model Receipt {
   createdAt DateTime @default(now())
 
   @@map("receipts")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, reference])
 }
 
 model FixedAsset {
@@ -1918,7 +1942,7 @@ model Quotation {
   leadId String?
   lead Lead? @relation(fields: [leadId], references: [id])
   customerId String?
-  quoteNumber String @unique
+  quoteNumber String
   issueDate DateTime
   validUntil DateTime
   subtotal Decimal @db.Decimal(18, 2)
@@ -1931,6 +1955,9 @@ model Quotation {
   updatedAt DateTime
 
   @@map("quotations")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, quoteNumber])
 }
 
 model QuotationItem {
@@ -1955,7 +1982,7 @@ enum ContractStatus {
 model Contract {
   id               String   @id
   companyId        String
-  contractNumber   String   @unique
+  contractNumber   String
   customerId       String?
   siteId           String?
   quotationId      String?
@@ -1973,6 +2000,9 @@ model Contract {
   @@index([companyId])
   @@index([status])
   @@map("contracts")
+  // Unique per company, not across tenants (a second company's first
+  // document collided with another company's number).
+  @@unique([companyId, contractNumber])
 }
 
 model ClientLiaison {

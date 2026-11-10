@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { postCreditNoteToGL } from '@/lib/gl-posting'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
+import { apiError, ApiError } from '@/lib/api-error'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -46,19 +47,25 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (!revenueAccount) return NextResponse.json({ error: 'A valid revenue account (revenueAccountId) is required to issue a credit note' }, { status: 400 })
     const vatAccount = company.vatAccountId ? await prisma.chartOfAccount.findFirst({ where: { id: company.vatAccountId, companyId } }) : null
 
-    const claimed = await prisma.creditNote.updateMany({ where: { id: params.id, status: 'DRAFT' }, data: { status: 'ISSUED' } })
-    if (claimed.count === 0) return NextResponse.json({ error: 'This credit note is no longer DRAFT' }, { status: 409 })
-
-    const updated = await prisma.$transaction(async (tx) => {
-      await postCreditNoteToGL(tx, {
-        companyId, creditNoteId: existing.id, creditNoteNumber: existing.creditNoteNumber,
-        entryDate: existing.issueDate.toISOString(), subtotal: Number(existing.subtotal), taxAmount: Number(existing.taxAmount),
-        totalAmount: Number(existing.totalAmount), receivablesAccountId: company.receivablesAccountId!,
-        revenueAccountId: revenueAccount.id, vatAccountId: vatAccount?.id ?? null, userId,
-      })
-      await recalculateCustomerOutstandingBalance(tx, existing.customerId)
-      return tx.creditNote.findUniqueOrThrow({ where: { id: params.id } })
-    }, { timeout: 60000 })
+    // The DRAFT -> ISSUED claim is inside the transaction: if posting fails,
+    // the note stays a draft instead of ISSUED with no journal behind it.
+    let updated
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        const claimed = await tx.creditNote.updateMany({ where: { id: params.id, status: 'DRAFT' }, data: { status: 'ISSUED' } })
+        if (claimed.count === 0) throw new ApiError('This credit note is no longer DRAFT', 409, 'INVALID_STATE')
+        await postCreditNoteToGL(tx, {
+          companyId, creditNoteId: existing.id, creditNoteNumber: existing.creditNoteNumber,
+          entryDate: existing.issueDate.toISOString(), subtotal: Number(existing.subtotal), taxAmount: Number(existing.taxAmount),
+          totalAmount: Number(existing.totalAmount), receivablesAccountId: company.receivablesAccountId!,
+          revenueAccountId: revenueAccount.id, vatAccountId: vatAccount?.id ?? null, userId,
+        })
+        await recalculateCustomerOutstandingBalance(tx, existing.customerId)
+        return tx.creditNote.findUniqueOrThrow({ where: { id: params.id } })
+      }, { timeout: 60000 })
+    } catch (err) {
+      return apiError(err, 'Failed to issue', 400)
+    }
 
     await logAudit({ companyId, userId, userName: session.name || 'System', action: 'POST', module: 'CreditNotes', recordId: params.id, oldValues: { status: 'DRAFT' }, newValues: { status: 'ISSUED' } })
     return NextResponse.json({ creditNote: updated })

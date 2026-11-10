@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { postDebitNoteToGL } from '@/lib/gl-posting'
 import { recalculateSupplierOutstandingBalance } from '@/lib/finance-recalculation'
+import { apiError, ApiError } from '@/lib/api-error'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -45,18 +46,24 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const expenseAccount = await prisma.chartOfAccount.findFirst({ where: { id: body.expenseAccountId, companyId, account_type: 'EXPENSE' } })
     if (!expenseAccount) return NextResponse.json({ error: 'A valid expense account (expenseAccountId) is required to issue a debit note' }, { status: 400 })
 
-    const claimed = await prisma.debitNote.updateMany({ where: { id: params.id, status: 'DRAFT' }, data: { status: 'ISSUED' } })
-    if (claimed.count === 0) return NextResponse.json({ error: 'This debit note is no longer DRAFT' }, { status: 409 })
-
-    const updated = await prisma.$transaction(async (tx) => {
-      await postDebitNoteToGL(tx, {
-        companyId, debitNoteId: existing.id, debitNoteNumber: existing.debitNoteNumber,
-        entryDate: existing.issueDate.toISOString(), totalAmount: Number(existing.totalAmount),
-        payableAccountId: company.payablesAccountId!, expenseAccountId: expenseAccount.id, userId,
-      })
-      await recalculateSupplierOutstandingBalance(tx, existing.supplierId, companyId)
-      return tx.debitNote.findUniqueOrThrow({ where: { id: params.id } })
-    }, { timeout: 60000 })
+    // The DRAFT -> ISSUED claim is inside the transaction: if posting fails,
+    // the note stays a draft instead of ISSUED with no journal behind it.
+    let updated
+    try {
+      updated = await prisma.$transaction(async (tx) => {
+        const claimed = await tx.debitNote.updateMany({ where: { id: params.id, status: 'DRAFT' }, data: { status: 'ISSUED' } })
+        if (claimed.count === 0) throw new ApiError('This debit note is no longer DRAFT', 409, 'INVALID_STATE')
+        await postDebitNoteToGL(tx, {
+          companyId, debitNoteId: existing.id, debitNoteNumber: existing.debitNoteNumber,
+          entryDate: existing.issueDate.toISOString(), totalAmount: Number(existing.totalAmount),
+          payableAccountId: company.payablesAccountId!, expenseAccountId: expenseAccount.id, userId,
+        })
+        await recalculateSupplierOutstandingBalance(tx, existing.supplierId, companyId)
+        return tx.debitNote.findUniqueOrThrow({ where: { id: params.id } })
+      }, { timeout: 60000 })
+    } catch (err) {
+      return apiError(err, 'Failed to issue', 400)
+    }
 
     await logAudit({ companyId, userId, userName: session.name || 'System', action: 'POST', module: 'DebitNotes', recordId: params.id, oldValues: { status: 'DRAFT' }, newValues: { status: 'ISSUED' } })
     return NextResponse.json({ debitNote: updated })
