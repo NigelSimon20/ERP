@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { idempotentPost } from '@/lib/idempotency'
 import crypto from 'crypto'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ payments })
 }
 
-export async function POST(req: NextRequest) {
+async function createPayment(req: NextRequest) {
   const session = await getSession(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
@@ -255,4 +256,10 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     return apiError(err, 'Failed', 400)
   }
+}
+
+// A7: an Idempotency-Key makes a retried create return the first response
+// instead of creating a second document; without one nothing changes.
+export async function POST(req: NextRequest) {
+  return idempotentPost(req, 'POST /api/finance/payments', () => createPayment(req))
 }

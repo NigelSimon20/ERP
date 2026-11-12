@@ -1752,13 +1752,19 @@ model BankTransfer {
   toAccountId String
   amount Decimal @db.Decimal(18, 2)
   transferDate DateTime
-  reference String @unique
+  // Unique per company, not across tenants: references come from a
+  // per-company counter, so a second company's TRF-000001 collided.
+  // companyId is null on transfers made before it existed.
+  companyId String?
+  reference String
   notes String?
   status TransferStatus @default(COMPLETED)
   journalEntryId String?
   createdBy String
   createdAt DateTime @default(now())
 
+  @@unique([companyId, reference])
+  @@index([companyId])
   @@map("bank_transfers")
 }
 
@@ -2360,9 +2366,14 @@ model IdempotencyKey {
   route      String
   status     Int
   response   Json
+  // A7: sha256 of the route and request body; a reused key with a
+  // different hash is refused (IDEMPOTENCY_MISMATCH).
+  requestHash String?
   createdAt  DateTime @default(now())
 
   @@unique([companyId, route, key])
+  @@index([companyId, key])
+  @@index([createdAt])
   @@map("idempotency_keys")
 }
 
