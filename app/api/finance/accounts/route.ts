@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { seedChartOfAccounts } from '@/lib/onboarding/seedChartOfAccounts'
 import { logAudit } from '@/lib/audit'
 import { z } from 'zod'
 import { apiError } from '@/lib/api-error'
@@ -36,6 +37,23 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   const session = await auth(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // A6: load the default chart. Creates nothing if the company already has
+  // any account, so it can't disturb an existing chart.
+  if (new URL(req.url).searchParams.get('action') === 'load-default') {
+    if (!['SUPER_ADMIN', 'ADMIN', 'FINANCE_MANAGER'].includes(session.role ?? '')) {
+      return NextResponse.json({ error: 'Only admins and finance managers can load the default chart', code: 'FORBIDDEN' }, { status: 403 })
+    }
+    try {
+      const result = await seedChartOfAccounts(prisma, session.companyId, session.userId)
+      if (result.created) {
+        await logAudit({ companyId: session.companyId, userId: session.userId, userName: session.name, action: 'CREATE', module: 'ChartOfAccounts', recordId: 'default-chart', newValues: { created: result.created } })
+      }
+      return NextResponse.json({ ...result, message: result.created ? `Loaded ${result.created} accounts` : 'This company already has a chart of accounts; nothing was changed.' })
+    } catch (err) {
+      return apiError(err, 'Failed to load the default chart', 400)
+    }
+  }
 
   try {
     const data = accountSchema.parse(await req.json())

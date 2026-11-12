@@ -76,6 +76,19 @@ export default function ChartOfAccountsPage() {
 
   useEffect(() => { fetchAccounts() }, [])
 
+  // A6: a company with no accounts can load the default security-company chart.
+  const [loadingDefault, setLoadingDefault] = useState(false)
+  async function loadDefaultChart() {
+    setLoadingDefault(true)
+    try {
+      const res = await fetch('/api/finance/accounts?action=load-default', { method: 'POST' })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Failed to load the default chart'); return }
+      toast.success(json.message)
+      fetchAccounts()
+    } finally { setLoadingDefault(false) }
+  }
+
   function openCreate() {
     setEditing(null)
     reset({ accountCode: '', name: '', type: 'ASSET', parentId: '', active: true })
@@ -156,7 +169,7 @@ export default function ChartOfAccountsPage() {
         </div>
       ) : accounts.length === 0 ? (
         <div className="mt-16">
-          <EmptyState icon={BookRegular} title="No accounts yet" description="Add your first account to start your chart of accounts" action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-4"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>} />
+          <EmptyState icon={BookRegular} title="No accounts yet" description="Add your first account to start your chart of accounts" action={<div className="flex flex-wrap justify-center gap-2 mt-4"><Button onClick={loadDefaultChart} disabled={loadingDefault} className="bg-primary hover:bg-brand-red-dark text-white">{loadingDefault ? 'Loading…' : 'Load default chart'}</Button><Button variant="outline" onClick={openCreate}><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button></div>} />
         </div>
       ) : (
         <div className="mt-6 space-y-6">

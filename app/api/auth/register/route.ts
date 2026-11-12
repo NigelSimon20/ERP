@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { prisma } from '@/lib/prisma'
+import { seedChartOfAccounts } from '@/lib/onboarding/seedChartOfAccounts'
 import { hashPassword } from '@/lib/auth'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { registerSchema } from '@/lib/validators'
@@ -59,6 +60,11 @@ export async function POST(req: NextRequest) {
         },
       }),
     ])
+
+    // A6: a new company starts with a default chart of accounts and linked
+    // GL settings. Its own transaction; a failure here doesn't undo the
+    // sign-up (the Chart of Accounts page can load it later).
+    await seedChartOfAccounts(prisma, companyId, userId).catch((e) => console.error('[register] default chart failed', e))
 
     const res = NextResponse.json(
       { user: { id: userId, name, email: normalizedEmail, role: 'SUPER_ADMIN' }, company: { id: companyId, name: companyName } },
