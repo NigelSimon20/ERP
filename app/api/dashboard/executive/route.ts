@@ -3,7 +3,7 @@ import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
-import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
+import { DB_STATUS_OUTSTANDING, NOT_VOID } from '@/lib/invoice-status'
 import { overdueQueryCutoff, calculateWorkingCapital, calculateCurrentRatio } from '@/lib/calculations'
 import { buildCurrencyConverter, listAvailableCurrencies } from '@/lib/currency'
 import { computeBalanceSheet } from '@/lib/balance-sheet'
@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
     incidentGroups, allActiveSites, recentActivity, balanceSheet, contractAgg,
   ] = await Promise.all([
     prisma.salesInvoice.findMany({
-      where: { companyId, invoice_date: { gte: fiscalStart.toISOString().split('T')[0] }, status: { not: DB_STATUS_VOID } },
+      where: { companyId, invoice_date: { gte: fiscalStart.toISOString().split('T')[0] }, status: NOT_VOID },
       select: { total_amount: true, currency: true },
     }),
     prisma.salesInvoice.findMany({

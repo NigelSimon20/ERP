@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getClientSession } from '@/lib/portal-auth'
-import { deriveInvoiceStatus, DB_STATUS_VOID } from '@/lib/invoice-status'
+import { deriveInvoiceStatus, isVoidStatus } from '@/lib/invoice-status'
 
 export async function GET() {
   const session = await getClientSession()
@@ -34,7 +34,7 @@ export async function GET() {
       paidAmount: Number(i.amount_paid ?? 0),
       balanceDue: Number(i.balance_due ?? 0),
       // Same derived UPPERCASE status as the finance API (BUG-033).
-      status: deriveInvoiceStatus({ total: i.total_amount, paid: i.amount_paid, credited: i.credited_amount, dueDate: i.due_date, voided: i.status === DB_STATUS_VOID }),
+      status: deriveInvoiceStatus({ total: i.total_amount, paid: i.amount_paid, credited: i.credited_amount, dueDate: i.due_date, voided: isVoidStatus(i.status) }),
     })),
   })
 }

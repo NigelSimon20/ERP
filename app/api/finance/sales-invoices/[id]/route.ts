@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { isVoidStatus, toDbInvoiceStatus } from '@/lib/invoice-status'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
@@ -47,7 +48,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
     where: { id: params.id, companyId: session.companyId },
   })
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (invoice.status === 'Void' || Number(invoice.amount_paid ?? 0) > 0 || Number(invoice.credited_amount) > 0) {
+  if (isVoidStatus(invoice.status) || Number(invoice.amount_paid ?? 0) > 0 || Number(invoice.credited_amount) > 0) {
     return NextResponse.json({ error: 'Only unpaid invoices can be edited' }, { status: 400 })
   }
 
@@ -91,7 +92,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   if (action === 'void') {
-    if (invoice.status === 'Void') {
+    if (isVoidStatus(invoice.status)) {
       return NextResponse.json({ error: 'Invoice already voided' }, { status: 400 })
     }
     if (invoice.invoice_date) {
@@ -116,7 +117,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         }
         await tx.salesInvoice.update({
           where: { id: params.id },
-          data: { status: 'Void', updated_date: new Date().toISOString() },
+          data: { status: toDbInvoiceStatus('VOID'), updated_date: new Date().toISOString() },
         })
         if (invoice.journal_entry_id) {
           await reverseJournalEntry(tx, invoice.journal_entry_id)
@@ -157,7 +158,7 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
     where: { id: params.id, companyId: session.companyId },
   })
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (invoice.status === 'Void' || Number(invoice.amount_paid ?? 0) > 0) {
+  if (isVoidStatus(invoice.status) || Number(invoice.amount_paid ?? 0) > 0) {
     return NextResponse.json({ error: 'Only unpaid invoices can be deleted' }, { status: 400 })
   }
   if (invoice.invoice_date) {

@@ -3,7 +3,7 @@ import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
-import { DB_STATUS_VOID } from '@/lib/invoice-status'
+import { NOT_VOID } from '@/lib/invoice-status'
 
 // Feeds the BD Reports "Revenue by Customer" chart. Previously called the
 // nonexistent /api/finance/invoices (404, masked by middleware's 403 for
@@ -15,7 +15,7 @@ export async function GET() {
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const invoices = await prisma.salesInvoice.findMany({
-    where: { companyId: session.companyId, status: { not: DB_STATUS_VOID } },
+    where: { companyId: session.companyId, status: NOT_VOID },
     select: { customer_id: true, total_amount: true },
   })
 

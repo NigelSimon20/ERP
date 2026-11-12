@@ -10,7 +10,7 @@ import { money } from '@/lib/money'
 import { postJournal } from '@/lib/gl-posting'
 import { withIdempotency } from '@/lib/idempotency'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
-import { toDbInvoiceStatus } from '@/lib/invoice-status'
+import { toDbInvoiceStatus, isVoidStatus } from '@/lib/invoice-status'
 import { checkLockDate } from '@/lib/lock-dates'
 import { z } from 'zod'
 import { apiError, ApiError } from '@/lib/api-error'
@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     if (data.invoiceId) {
       const inv = await prisma.salesInvoice.findFirst({ where: { id: data.invoiceId, companyId: session.companyId }, select: { customer_id: true, status: true } })
       if (!inv) return NextResponse.json({ error: 'Invoice not found', code: 'NOT_FOUND' }, { status: 404 })
-      if (inv.status === 'Void') return NextResponse.json({ error: 'Invoice is void', code: 'INVALID_STATE' }, { status: 409 })
+      if (isVoidStatus(inv.status)) return NextResponse.json({ error: 'Invoice is void', code: 'INVALID_STATE' }, { status: 409 })
       if (customerId && inv.customer_id && customerId !== inv.customer_id) {
         return NextResponse.json({ error: 'The receipt customer does not match the invoice customer', code: 'CUSTOMER_MISMATCH' }, { status: 400 })
       }

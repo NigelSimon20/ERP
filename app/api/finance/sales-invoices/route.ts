@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { Prisma } from '@prisma/client'
 import { idempotentPost } from '@/lib/idempotency'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
@@ -9,7 +10,7 @@ import { nextInvoiceNumber } from '@/lib/auto-numbers'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals, determineInvoiceStatus, overdueQueryCutoff } from '@/lib/calculations'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
 import { salesInvoiceSchema } from '@/lib/validators'
-import { deriveInvoiceStatus, toDbInvoiceStatus, DB_STATUS_VOID } from '@/lib/invoice-status'
+import { deriveInvoiceStatus, toDbInvoiceStatus, isVoidStatus, DB_STATUS_VOID_VALUES, storedStatusValues } from '@/lib/invoice-status'
 import { postSalesInvoiceToGL } from '@/lib/gl-posting'
 import { apiError } from '@/lib/api-error'
 
@@ -32,9 +33,9 @@ export async function GET(req: NextRequest) {
   const overdueCutoff = overdueQueryCutoff().toISOString()
 
   const statusFilter: any =
-    status === 'OVERDUE' ? { status: 'Sent', due_date: { lt: overdueCutoff }, balance_due: { gt: 0 } }
-    : status === 'UNPAID' ? { status: 'Sent', OR: [{ due_date: { gte: overdueCutoff } }, { due_date: null }, { balance_due: { lte: 0 } }] }
-    : status ? { status: toDbInvoiceStatus(status) }
+    status === 'OVERDUE' ? { status: { in: storedStatusValues('UNPAID') }, due_date: { lt: overdueCutoff }, balance_due: { gt: 0 } }
+    : status === 'UNPAID' ? { status: { in: storedStatusValues('UNPAID') }, OR: [{ due_date: { gte: overdueCutoff } }, { due_date: null }, { balance_due: { lte: 0 } }] }
+    : status ? { status: { in: storedStatusValues(status) } }
     : {}
 
   const where: any = {
@@ -75,7 +76,7 @@ export async function GET(req: NextRequest) {
     totalAmount: Number(r.total_amount ?? 0),
     paidAmount: Number(r.amount_paid ?? 0),
     balanceDue: Number(r.balance_due ?? 0),
-    status: deriveInvoiceStatus({ total: r.total_amount, paid: r.amount_paid, credited: r.credited_amount, dueDate: r.due_date, voided: r.status === DB_STATUS_VOID }),
+    status: deriveInvoiceStatus({ total: r.total_amount, paid: r.amount_paid, credited: r.credited_amount, dueDate: r.due_date, voided: isVoidStatus(r.status) }),
     notes: r.overall_description,
     customer: { id: r.customer_id ?? '', name: (r.customer_id && customerMap[r.customer_id]) || r.customer_name || '' },
   }))
@@ -92,7 +93,7 @@ export async function GET(req: NextRequest) {
            COALESCE(sum(GREATEST(COALESCE(total_amount, 0) - COALESCE(amount_paid, 0) - credited_amount, 0)), 0) AS outstanding,
            COALESCE(sum(CASE WHEN due_date < ${overdueCutoff} THEN GREATEST(COALESCE(total_amount, 0) - COALESCE(amount_paid, 0) - credited_amount, 0) END), 0) AS overdue
     FROM sales_invoices
-    WHERE "companyId" = ${session.companyId} AND status IS DISTINCT FROM ${DB_STATUS_VOID}
+    WHERE "companyId" = ${session.companyId} AND (status IS NULL OR status NOT IN (${Prisma.join(DB_STATUS_VOID_VALUES)}))
       AND (${customerId ?? null}::text IS NULL OR customer_id = ${customerId ?? null}::text)
       AND (${fromIso}::text IS NULL OR invoice_date >= ${fromIso}::text)
       AND (${toIso}::text IS NULL OR invoice_date <= ${toIso}::text)`
@@ -247,7 +248,7 @@ async function createInvoice(req: NextRequest) {
         totalAmount: Number(invoice.total_amount ?? 0),
         paidAmount: Number(invoice.amount_paid ?? 0),
         balanceDue: Number(invoice.balance_due ?? 0),
-        status: deriveInvoiceStatus({ total: invoice.total_amount, paid: invoice.amount_paid, dueDate: invoice.due_date, voided: invoice.status === DB_STATUS_VOID }),
+        status: deriveInvoiceStatus({ total: invoice.total_amount, paid: invoice.amount_paid, dueDate: invoice.due_date, voided: isVoidStatus(invoice.status) }),
         customer: { id: customer.id, name: customer.company_name ?? '' },
       },
     }, { status: 201 })

@@ -97,7 +97,7 @@ describe('P1-3 opening balances and reconciliation', () => {
     const original = await prisma.journalEntry.findFirstOrThrow({ where: { source_id: invoiceId } })
     expect(original.status).toBe('POSTED')
     expect(await prisma.journalEntry.count({ where: { reference: `REV-${original.reference}` } })).toBe(1)
-    expect((await prisma.salesInvoice.findUniqueOrThrow({ where: { id: invoiceId } })).status).toBe('Void')
+    expect((await prisma.salesInvoice.findUniqueOrThrow({ where: { id: invoiceId } })).status).toBe('VOID')
     expect((await prisma.customer.findUniqueOrThrow({ where: { id: qa.id } })).is_active).toBe(false)
     expect(Math.round((await getReceivablesTotal()) * 100)).toBe(Math.round(before * 100) - 10000)
     expect((await ledgerBalanceSheet(prisma, fx.companyId, new Date())).balanced).toBe(true)

@@ -81,7 +81,7 @@ describe('A2 credit notes are applied to their invoice', () => {
     const after = await receivablesEverywhere()
     expect(after.gl).toBe(Math.round((before.gl - 11.55) * 100) / 100)
     expect(after).toEqual({ customerTotal: after.gl, invoiceSummary: after.gl, dashboard: after.gl, gl: after.gl })
-    expect(stored.status).toBe('Partial')
+    expect(stored.status).toBe('PARTIAL')
     const listed = await callRoute(salesInvoices.GET, { path: `/api/finance/sales-invoices?customerId=${fx.customers.b.id}` })
     expect(listed.json.invoices.find((x: { id: string }) => x.id === invoiceId)).toMatchObject({ status: 'PARTIAL', balanceDue: 103.95 })
   })
@@ -96,7 +96,7 @@ describe('A2 credit notes are applied to their invoice', () => {
     expect((await receipt(fx, { invoiceId, amount: 103.95 })).status).toBe(201)
     const stored = await inv(invoiceId)
     expect(Number(stored.balance_due)).toBe(0)
-    expect(stored.status).toBe('Paid')
+    expect(stored.status).toBe('PAID')
   })
 
   it('voiding the credit note reverses its allocation', async () => {

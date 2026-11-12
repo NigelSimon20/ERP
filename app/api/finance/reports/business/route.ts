@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
-import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
+import { DB_STATUS_OUTSTANDING, NOT_VOID } from '@/lib/invoice-status'
 
 const NORMAL_DEBIT = ['ASSET', 'EXPENSE']
 function computeBalance(type: string, debit: number, credit: number) {
@@ -112,7 +112,7 @@ export async function GET(req: NextRequest) {
 
   if (type === 'TAX_SUMMARY') {
     const [salesAgg, purchaseAgg] = await Promise.all([
-      prisma.salesInvoice.aggregate({ where: { companyId, status: { not: DB_STATUS_VOID }, invoice_date: { gte: startDate, lte: endDate } }, _sum: { tax_amount: true } }),
+      prisma.salesInvoice.aggregate({ where: { companyId, status: NOT_VOID, invoice_date: { gte: startDate, lte: endDate } }, _sum: { tax_amount: true } }),
       prisma.purchaseInvoice.aggregate({ where: { companyId, status: { not: 'VOID' }, issueDate: { gte: new Date(startDate), lte: new Date(endDate) } }, _sum: { taxAmount: true } }),
     ])
     const outputTax = Number(salesAgg._sum.tax_amount ?? 0)

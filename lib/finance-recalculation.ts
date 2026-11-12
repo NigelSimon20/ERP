@@ -1,5 +1,5 @@
 import { Prisma } from '@prisma/client'
-import { DB_STATUS_VOID } from '@/lib/invoice-status'
+import { NOT_VOID } from '@/lib/invoice-status'
 import { buildCurrencyConverter } from '@/lib/currency'
 import { round2dp } from '@/lib/calculations'
 
@@ -14,7 +14,7 @@ export async function recalculateCustomerOutstandingBalance(
 ): Promise<number> {
   const [invoices, customer] = await Promise.all([
     tx.salesInvoice.findMany({
-      where: { customer_id: customerId, status: { not: DB_STATUS_VOID } },
+      where: { customer_id: customerId, status: NOT_VOID },
       select: { total_amount: true, amount_paid: true, credited_amount: true, currency: true, companyId: true },
     }),
     tx.customer.findUnique({ where: { id: customerId }, select: { companyId: true } }),

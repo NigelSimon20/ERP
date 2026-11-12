@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client'
-import { DB_STATUS_VOID } from '@/lib/invoice-status'
+import { NOT_VOID } from '@/lib/invoice-status'
 import { buildCurrencyConverter } from '@/lib/currency'
 import { ledgerBalances } from './ledger'
 
@@ -44,7 +44,7 @@ export async function getReceivables(db: Db, companyId: string): Promise<Subledg
   const convert = await buildCurrencyConverter(company?.currency || 'USD', new Date(), db)
   const [invoices, creditNotes] = await Promise.all([
     db.salesInvoice.findMany({
-      where: { companyId, status: { not: DB_STATUS_VOID } },
+      where: { companyId, status: NOT_VOID },
       select: { customer_id: true, total_amount: true, amount_paid: true, credited_amount: true, currency: true },
     }),
     db.creditNote.findMany({ where: { companyId, status: 'ISSUED' }, select: { customerId: true, totalAmount: true, allocatedAmount: true } }),

@@ -5,7 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { cashInBank as sharedCashInBank } from '@/lib/reports/finance-headlines'
 import { isRateStale } from '@/lib/fx/rbz'
-import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
+import { DB_STATUS_OUTSTANDING, NOT_VOID } from '@/lib/invoice-status'
 import { overdueQueryCutoff, calculateWorkingCapital, calculateCurrentRatio, calculateQuickRatio, calculateDebtToEquity } from '@/lib/calculations'
 import { buildCurrencyConverter, listAvailableCurrencies } from '@/lib/currency'
 import { computeBalanceSheet, computeTrialBalance } from '@/lib/balance-sheet'
@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
     balanceSheet, trialBalance,
   ] = await Promise.all([
     prisma.salesInvoice.findMany({
-      where: { companyId, status: { not: DB_STATUS_VOID } },
+      where: { companyId, status: NOT_VOID },
       select: { invoice_number: true, customer_id: true, total_amount: true, balance_due: true, due_date: true, status: true, currency: true },
     }),
     prisma.payment.findMany({

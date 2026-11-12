@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { NOT_VOID } from '@/lib/invoice-status'
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
   const customerIds = customers.map((c) => c.id)
   const balances = await prisma.salesInvoice.groupBy({
     by: ['customer_id'],
-    where: { customer_id: { in: customerIds }, status: { not: 'Void' } },
+    where: { customer_id: { in: customerIds }, status: NOT_VOID },
     _sum: { balance_due: true },
   })
   const balanceMap = Object.fromEntries(balances.map((b) => [b.customer_id, Number(b._sum.balance_due ?? 0)]))

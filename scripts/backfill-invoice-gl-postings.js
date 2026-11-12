@@ -52,7 +52,7 @@ async function main() {
     if (arAccount) {
       const invoices = await client.query(
         `SELECT id, invoice_number, invoice_date, subtotal, tax_amount, total_amount, status, revenue_account_id
-         FROM sales_invoices WHERE "companyId" = $1 AND journal_entry_id IS NULL AND status != 'Void'`,
+         FROM sales_invoices WHERE "companyId" = $1 AND journal_entry_id IS NULL AND status NOT IN ('Void', 'VOID')`,
         [companyId],
       )
       console.log(`  Sales invoices to post: ${invoices.rows.length}`)

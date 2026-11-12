@@ -1,5 +1,6 @@
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { DB_STATUS_OUTSTANDING } from '@/lib/invoice-status'
 import { sendWhatsAppMessage } from '@/lib/whatsapp'
 import { formatCurrency } from '@/lib/utils'
 import { isPastDue } from '@/lib/calculations'
@@ -56,7 +57,7 @@ async function notifyRoleDigest(params: {
 
 export async function runOverdueInvoiceAlerts() {
   const invoices = await prisma.salesInvoice.findMany({
-    where: { status: { in: ['Sent', 'Partial'] }, due_date: { not: null } },
+    where: { status: { in: DB_STATUS_OUTSTANDING }, due_date: { not: null } },
     select: { id: true, companyId: true, balance_due: true, due_date: true },
   }).then((rows) => rows.filter((i) => i.due_date && isPastDue(i.due_date)))
   const overdue = invoices.filter((i) => Number(i.balance_due ?? 0) > 0)

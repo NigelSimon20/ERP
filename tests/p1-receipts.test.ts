@@ -66,7 +66,7 @@ describe('P1-5 receipts and invoices', () => {
     const v = await callRoute(salesInvoice.POST, { method: 'POST', path: `/api/finance/sales-invoices/${id}?action=void`, params: { id } })
     expect(v.status, JSON.stringify(v.json)).toBe(409)
     expect(v.json.code).toBe('HAS_ALLOCATIONS')
-    expect((await prisma.salesInvoice.findUniqueOrThrow({ where: { id } })).status).not.toBe('Void')
+    expect(['Void', 'VOID']).not.toContain((await prisma.salesInvoice.findUniqueOrThrow({ where: { id } })).status)
   })
 
   it('still voids an invoice with nothing allocated', async () => {

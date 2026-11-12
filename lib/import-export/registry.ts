@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client'
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { NOT_VOID } from '@/lib/invoice-status'
 import { nextForceNumber, nextCustomerNumber, nextSupplierNumber, nextSiteNumber, parseNum } from '@/lib/auto-numbers'
 import { splitName } from '@/lib/guards'
 import type { ImportRecord, ModuleImportConfig } from './types'
@@ -253,7 +254,7 @@ const customersConfig: ModuleImportConfig = {
       prisma.customer.findMany({ where: { companyId }, orderBy: { company_name: 'asc' } }),
       prisma.salesInvoice.groupBy({
         by: ['customer_id'],
-        where: { companyId, status: { not: 'Void' } },
+        where: { companyId, status: NOT_VOID },
         _sum: { balance_due: true },
       }),
     ])

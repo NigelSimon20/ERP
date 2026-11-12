@@ -7,7 +7,7 @@ import { logAudit } from '@/lib/audit'
 import { paginate, pageLimit } from '@/lib/utils'
 import { nextCreditNoteNumber } from '@/lib/auto-numbers'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals } from '@/lib/calculations'
-import { DB_STATUS_VOID } from '@/lib/invoice-status'
+import { isVoidStatus } from '@/lib/invoice-status'
 import { apiError } from '@/lib/api-error'
 
 async function getSession(req: NextRequest) {
@@ -59,7 +59,7 @@ async function createCreditNote(req: NextRequest) {
     if (salesInvoiceId) {
       const inv = await prisma.salesInvoice.findFirst({ where: { id: salesInvoiceId, companyId: session.companyId }, select: { customer_id: true, status: true } })
       if (!inv) return NextResponse.json({ error: 'Invoice not found', code: 'NOT_FOUND' }, { status: 404 })
-      if (inv.status === DB_STATUS_VOID) return NextResponse.json({ error: 'That invoice has been voided', code: 'INVALID_STATE' }, { status: 409 })
+      if (isVoidStatus(inv.status)) return NextResponse.json({ error: 'That invoice has been voided', code: 'INVALID_STATE' }, { status: 409 })
       if (customerId && inv.customer_id && customerId !== inv.customer_id) {
         return NextResponse.json({ error: 'The customer does not match the invoice’s customer', code: 'CUSTOMER_MISMATCH' }, { status: 400 })
       }

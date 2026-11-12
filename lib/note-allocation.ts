@@ -2,7 +2,7 @@ import { Prisma, type InvoiceStatus } from '@prisma/client'
 import { ApiError } from './api-error'
 import { money } from './money'
 import { determineInvoiceStatus } from './calculations'
-import { toDbInvoiceStatus, DB_STATUS_VOID } from './invoice-status'
+import { toDbInvoiceStatus, isVoidStatus } from './invoice-status'
 
 type Tx = Prisma.TransactionClient
 const D = Prisma.Decimal
@@ -29,7 +29,7 @@ export async function applyCreditNoteToInvoice(tx: Tx, note: { id: string; compa
     SELECT total_amount, amount_paid, credited_amount, due_date, status FROM sales_invoices
     WHERE id = ${note.salesInvoiceId} AND "companyId" = ${note.companyId} FOR UPDATE`
   if (!inv) throw new ApiError('The invoice this credit note is for no longer exists', 400, 'INVALID_REFERENCE')
-  if (inv.status === DB_STATUS_VOID) throw new ApiError('The invoice this credit note is for has been voided', 409, 'INVALID_STATE')
+  if (isVoidStatus(inv.status)) throw new ApiError('The invoice this credit note is for has been voided', 409, 'INVALID_STATE')
   const total = money(inv.total_amount), paid = money(inv.amount_paid), credited = money(inv.credited_amount)
   const balance = total.sub(paid).sub(credited)
   const amount = money(note.totalAmount)

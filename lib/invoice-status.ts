@@ -1,20 +1,22 @@
 import { isPastDue } from '@/lib/calculations'
 
-// SalesInvoice.status in the live DB is plain Title-Case text imported from
-// the legacy system ("Sent", "Partial", "Paid", "Void" — no "Draft" or
-// "Unpaid" ever appears), while the rest of the finance code/UI was written
-// assuming SCREAMING_CASE ("UNPAID", "PARTIAL", "PAID", "OVERDUE", "VOID").
-// These helpers translate at the API boundary so both sides can keep their
-// own convention: the DB keeps its imported values, the UI keeps its enum.
+// A9.2: one invoice status vocabulary, UPPERCASE: UNPAID | PARTIAL | PAID |
+// OVERDUE | VOID. OVERDUE is never stored (it comes from the due date), so
+// the stored values are UNPAID, PARTIAL, PAID and VOID.
+//
+// Rows imported from the legacy system hold Title-Case values ("Sent",
+// "Partial", "Paid", "Void"). Until scripts/remediate/invoice-status.mjs has
+// converted them (owner-approved), every query and check accepts both
+// spellings, and new writes use the UPPERCASE ones.
 const TO_DB: Record<string, string> = {
-  UNPAID: 'Sent',
-  PARTIAL: 'Partial',
-  PAID: 'Paid',
-  OVERDUE: 'Sent', // overdue is derived from due date, not a stored value
-  VOID: 'Void',
+  UNPAID: 'UNPAID',
+  PARTIAL: 'PARTIAL',
+  PAID: 'PAID',
+  OVERDUE: 'UNPAID', // overdue is derived from due date, not a stored value
+  VOID: 'VOID',
 }
 
-const FROM_DB: Record<string, string> = {
+export const LEGACY_TO_CANONICAL: Record<string, string> = {
   Sent: 'UNPAID',
   Partial: 'PARTIAL',
   Paid: 'PAID',
@@ -25,19 +27,29 @@ export function toDbInvoiceStatus(uiStatus: string): string {
   return TO_DB[uiStatus] ?? uiStatus
 }
 
+// Every stored value (legacy or canonical) that means the given status.
+export function storedStatusValues(uiStatus: string): string[] {
+  const canonical = TO_DB[uiStatus] ?? uiStatus
+  return [canonical, ...Object.keys(LEGACY_TO_CANONICAL).filter((k) => LEGACY_TO_CANONICAL[k] === canonical)]
+}
+
 export function fromDbInvoiceStatus(dbStatus: string | null | undefined, dueDate?: string | Date | null, balanceDue?: number): string {
-  const mapped = dbStatus ? (FROM_DB[dbStatus] ?? dbStatus.toUpperCase()) : 'UNPAID'
+  const mapped = dbStatus ? (LEGACY_TO_CANONICAL[dbStatus] ?? dbStatus.toUpperCase()) : 'UNPAID'
   if (mapped === 'VOID' || mapped === 'PAID') return mapped
   if (dueDate && Number(balanceDue ?? 0) > 0 && isPastDue(dueDate)) return 'OVERDUE'
   return mapped
 }
 
-// Real stored SalesInvoice.status values that mean "not yet fully paid"
-// (OVERDUE has no stored equivalent — it's purely a function of due date,
-// see fromDbInvoiceStatus above — so any Prisma query for "overdue" needs an
-// explicit due_date/balance_due condition, not a status match).
-export const DB_STATUS_OUTSTANDING = ['Sent', 'Partial']
-export const DB_STATUS_VOID = 'Void'
+// Stored values that mean "not yet fully paid" (OVERDUE has no stored
+// equivalent, so an "overdue" query needs an explicit due_date/balance_due
+// condition, not a status match).
+export const DB_STATUS_OUTSTANDING = [...storedStatusValues('UNPAID'), ...storedStatusValues('PARTIAL')]
+export const DB_STATUS_VOID_VALUES = storedStatusValues('VOID')
+// Prisma filter: not voided. (NULL status rows are excluded, as before.)
+export const NOT_VOID = { notIn: DB_STATUS_VOID_VALUES }
+export function isVoidStatus(status: string | null | undefined): boolean {
+  return !!status && DB_STATUS_VOID_VALUES.includes(status)
+}
 
 export type InvoiceStatusUi = 'VOID' | 'PAID' | 'PARTIAL' | 'OVERDUE' | 'UNPAID'
 

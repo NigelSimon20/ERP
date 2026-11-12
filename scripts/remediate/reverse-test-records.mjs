@@ -82,7 +82,7 @@ for (const je of found.journal_entries) {
       [crypto.randomUUID(), revId, l.accountId, `Reversal: ${l.description ?? ''}`, l.credit, l.debit])
   }
 }
-await db.query(`UPDATE sales_invoices SET status = 'Void', updated_date = now()::text WHERE id = ANY($1)`, [found.sales_invoices.map((r) => r.id)])
+await db.query(`UPDATE sales_invoices SET status = 'VOID', updated_date = now()::text WHERE id = ANY($1)`, [found.sales_invoices.map((r) => r.id)])
 await db.query(`UPDATE payments SET status = 'Void', updated_date = now()::text WHERE id = ANY($1)`, [found.payments.map((r) => r.id)])
 await db.query(`UPDATE bank_transfers SET status = 'CANCELLED' WHERE id = ANY($1)`, [found.bank_transfers.map((r) => r.id)])
 // Inventory items have no active flag: they are listed for manual review.
