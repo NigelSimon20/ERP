@@ -57,7 +57,7 @@ export async function POST(req: NextRequest) {
     }
 
     const lockError = await checkLockDate(session.companyId, new Date(data.transferDate))
-    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+    if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
 
     const [fromAccount, toAccount] = await Promise.all([
       prisma.bankAccount.findFirst({ where: { id: data.fromAccountId, companyId: session.companyId } }),

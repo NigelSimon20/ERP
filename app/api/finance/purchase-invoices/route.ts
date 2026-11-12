@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
   if (due <= issue) return NextResponse.json({ error: 'Due date must be after issue date' }, { status: 400 })
 
   const lock = await prisma.lockDate.findFirst({ where: { companyId, lockedUntil: { gte: issue } } })
-  if (lock) return NextResponse.json({ error: `Period is locked until ${lock.lockedUntil.toISOString().split('T')[0]}` }, { status: 400 })
+  if (lock) return NextResponse.json({ error: `Period is locked until ${lock.lockedUntil.toISOString().split('T')[0]}`, code: 'PERIOD_LOCKED' }, { status: 422 })
 
   const supplier = await prisma.supplier.findFirst({ where: { id: supplierId, companyId } })
   if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 })

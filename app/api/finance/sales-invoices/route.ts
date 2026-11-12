@@ -125,7 +125,7 @@ export async function POST(req: NextRequest) {
     })
     if (lockDate) {
       return NextResponse.json(
-        { error: `Period is locked until ${lockDate.lockedUntil.toLocaleDateString()}` },
+        { error: `Period is locked until ${lockDate.lockedUntil.toLocaleDateString()}`, code: 'PERIOD_LOCKED' },
         { status: 422 },
       )
     }

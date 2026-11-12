@@ -37,7 +37,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     if (existing.status !== 'DRAFT') return NextResponse.json({ error: 'Only DRAFT debit notes can be issued' }, { status: 409 })
 
     const lockDate = await prisma.lockDate.findFirst({ where: { companyId, lockedUntil: { gte: existing.issueDate } } })
-    if (lockDate) return NextResponse.json({ error: `Period is locked until ${lockDate.lockedUntil.toLocaleDateString()}` }, { status: 422 })
+    if (lockDate) return NextResponse.json({ error: `Period is locked until ${lockDate.lockedUntil.toLocaleDateString()}`, code: 'PERIOD_LOCKED' }, { status: 422 })
 
     const company = await prisma.company.findUnique({ where: { id: companyId }, select: { payablesAccountId: true } })
     if (!company?.payablesAccountId) return NextResponse.json({ error: 'Accounts Payable account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })

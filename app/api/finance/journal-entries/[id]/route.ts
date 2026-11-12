@@ -108,7 +108,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     }
     if (entry.entry_date) {
       const lockError = await checkLockDate(session.companyId, new Date(entry.entry_date))
-      if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+      if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
     }
 
     const wasPosted = entry.status === 'POSTED'

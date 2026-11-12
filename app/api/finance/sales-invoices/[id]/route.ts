@@ -94,7 +94,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     }
     if (invoice.invoice_date) {
       const lockError = await checkLockDate(session.companyId, new Date(invoice.invoice_date))
-      if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+      if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
     }
 
     const customerId = invoice.customer_id
@@ -156,7 +156,7 @@ export async function DELETE(req: NextRequest, { params }: Ctx) {
   }
   if (invoice.invoice_date) {
     const lockError = await checkLockDate(session.companyId, new Date(invoice.invoice_date))
-    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+    if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
   }
 
   const customerId = invoice.customer_id

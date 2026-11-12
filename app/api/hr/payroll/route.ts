@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
     if (existingRun) return NextResponse.json({ error: 'A payroll run for this period has already been processed' }, { status: 409 })
 
     const lockError = await checkLockDate(companyId, end)
-    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+    if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
 
     const bankAccount = await prisma.bankAccount.findFirst({ where: { id: bankAccountId, companyId } })
     if (!bankAccount) return NextResponse.json({ error: 'Bank account not found' }, { status: 404 })

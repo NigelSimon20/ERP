@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
     const data = receiptSchema.parse(await req.json())
 
     const lockError = await checkLockDate(session.companyId, new Date(data.receiptDate))
-    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+    if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
 
     const bankAccount = await prisma.bankAccount.findFirst({ where: { id: data.bankAccountId, companyId: session.companyId } })
     if (!bankAccount) return NextResponse.json({ error: 'Bank account not found' }, { status: 404 })

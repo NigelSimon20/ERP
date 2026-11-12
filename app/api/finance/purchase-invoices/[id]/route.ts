@@ -48,7 +48,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
   if (!['DRAFT', 'UNPAID'].includes(invoice.status as string)) return NextResponse.json({ error: `Cannot edit a ${invoice.status} invoice` }, { status: 400 })
   if (invoice.issueDate) {
     const lockError = await checkLockDate(session.companyId, new Date(invoice.issueDate))
-    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+    if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
   }
 
   const body = await req.json()
@@ -150,7 +150,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     if (Number(invoice.paidAmount) > 0) return NextResponse.json({ error: 'Cannot void: payments exist' }, { status: 400 })
     if (invoice.issueDate) {
       const lockError = await checkLockDate(session.companyId, new Date(invoice.issueDate))
-      if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+      if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
     }
 
     const updated = await prisma.$transaction(async (tx) => {
@@ -177,7 +177,7 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
   if (invoice.status !== 'UNPAID') return NextResponse.json({ error: 'Can only delete unpaid invoices' }, { status: 400 })
   if (invoice.issueDate) {
     const lockError = await checkLockDate(session.companyId, new Date(invoice.issueDate))
-    if (lockError) return NextResponse.json({ error: lockError }, { status: 422 })
+    if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
   }
 
   await prisma.$transaction(async (tx) => {
