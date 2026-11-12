@@ -207,3 +207,49 @@ describe('A3 payroll guards', () => {
     expect([r.status, r.json.code]).toEqual([422, 'PERIOD_LOCKED'])
   })
 })
+
+describe('A3 statutory tables and warnings', () => {
+  const preview = () => callRoute(payroll.POST, { method: 'POST', path: '/api/hr/payroll?action=preview', body: nov })
+  const addAndApprove = async (fx: ZZ, body: Record<string, unknown>) => {
+    await loginAs(fx.sessionFor(fx.users.hr))
+    const r = await callRoute(tables.POST, { method: 'POST', path: '/api/hr/statutory-tables', body: { currency: 'USD', sourceDocument: 'Test fixture (not a real schedule)', ...body } })
+    expect(r.status, JSON.stringify(r.json)).toBe(201)
+    await loginAs(fx.sessionFor(fx.users.admin))
+    expect((await callRoute(table.PUT, { method: 'PUT', path: `/api/hr/statutory-tables/${r.json.table.id}?action=approve`, params: { id: r.json.table.id } })).status).toBe(200)
+  }
+
+  it('with no approved tables, nothing is deducted and the preview warns', async () => {
+    const fx = await seedZZTest({ label: 'ZZTEST No Tables', bank1Funds: 0 })
+    for (const g of fx.guards) await attendance(g.id, Array(4).fill('PRESENT'))
+    await loginAs(fx.sessionFor(fx.users.hr))
+    const r = await preview()
+    expect(r.json.totalDeductions).toBe(0)
+    expect(r.json.warnings).toContain('No approved PAYE table is effective for this period')
+  })
+
+  it('a version past its effectiveTo no longer applies; effectiveTo before effectiveFrom is rejected', async () => {
+    const fx = await seedZZTest({ label: 'ZZTEST Expired', bank1Funds: 0 })
+    for (const g of fx.guards) await attendance(g.id, Array(26).fill('PRESENT'))
+    await loginAs(fx.sessionFor(fx.users.hr))
+    const bad = await callRoute(tables.POST, { method: 'POST', path: '/api/hr/statutory-tables', body: { kind: 'NSSA', effectiveFrom: '2026-06-01', effectiveTo: '2026-01-01', sourceDocument: 'Bad dates', config: NSSA } })
+    expect(bad.status).toBe(400)
+    await addAndApprove(fx, { kind: 'NSSA', effectiveFrom: '2025-01-01', effectiveTo: '2026-10-31', config: NSSA })
+    await loginAs(fx.sessionFor(fx.users.hr))
+    expect((await preview()).json.warnings).toContain('No approved NSSA table is effective for this period')
+    await addAndApprove(fx, { kind: 'NSSA', effectiveFrom: '2026-11-01', config: NSSA })
+    await loginAs(fx.sessionFor(fx.users.hr))
+    const r = await preview()
+    expect(r.json.warnings).not.toContain('No approved NSSA table is effective for this period')
+    expect(r.json.previews[0].deductionLines.find((l: { name: string }) => l.name === 'NSSA (employee)').amount).toBe(7.02)
+  })
+
+  it('pay below the NEC grade minimum warns on preview but does not block the run', async () => {
+    const fx = await seedZZTest({ label: 'ZZTEST NEC', bank1Funds: 0 })
+    for (const g of fx.guards) await attendance(g.id, Array(5).fill('PRESENT'))
+    await addAndApprove(fx, { kind: 'NEC', effectiveFrom: '2026-01-01', config: { employeeRate: 0, employerRate: 0, gradeMinimums: { Guard: 200 } } })
+    await loginAs(fx.sessionFor(fx.users.hr))
+    const r = await preview()
+    expect(r.json.warnings.some((w: string) => /Monthly rate 156\.00 is below the NEC minimum 200\.00 for grade Guard/.test(w)), JSON.stringify(r.json.warnings)).toBe(true)
+    expect((await confirm(fx)).status).toBe(201)
+  })
+})

@@ -4,6 +4,9 @@ export type PayBasis = 'DAILY' | 'MONTHLY' | 'HOURLY'
 
 // Attendance statuses that are paid days (P1-10). LEAVE counts as paid;
 // unpaid leave is recorded as ABSENT/AWOL or via an UNPAID leave request.
+// Working days in a full month (the payroll route spreads standard hours over the same 26).
+export const WORKING_DAYS_PER_MONTH = 26
+
 export const PAID_DAY_STATUSES = ['PRESENT', 'INDUCTION_PAID', 'LEAVE'] as const
 
 export interface PayInput {
@@ -91,9 +94,14 @@ export function computePay(i: PayInput): PayResult {
   if (t.NEC) {
     deductions.push({ name: 'NEC levy (employee)', amount: r2((grossPay * t.NEC.employeeRate) / 100) })
     employer.push({ name: 'NEC levy (employer)', amount: r2((grossPay * t.NEC.employerRate) / 100) })
+    // A3: compare the full-month rate (not this period's attendance) with the
+    // grade minimum, whatever the pay basis. A warning only; it never blocks.
     const minimum = i.grade ? t.NEC.gradeMinimums[i.grade] : undefined
-    if (minimum !== undefined && i.basis === 'MONTHLY' && basicSalary < minimum) {
-      warnings.push(`Basic pay ${basicSalary.toFixed(2)} is below the NEC minimum ${minimum.toFixed(2)} for grade ${i.grade}`)
+    const monthlyRate = i.basis === 'MONTHLY' ? i.monthlySalary
+      : i.basis === 'DAILY' ? r2(i.dailyRate * WORKING_DAYS_PER_MONTH)
+      : r2(i.hourlyRate * i.standardHoursPerMonth)
+    if (minimum !== undefined && monthlyRate < minimum) {
+      warnings.push(`Monthly rate ${monthlyRate.toFixed(2)} is below the NEC minimum ${minimum.toFixed(2)} for grade ${i.grade}`)
     }
   }
   if (t.ZIMDEF) employer.push({ name: 'ZIMDEF', amount: r2((grossPay * t.ZIMDEF.employerRate) / 100) })
