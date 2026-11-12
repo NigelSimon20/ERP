@@ -16,6 +16,9 @@ const createSchema = z.object({
   accountType: z.string().min(1),
   currency: z.string().length(3).default('USD'),
   openingBalance: z.coerce.number().default(0),
+  // A9.6: link an existing ASSET account instead of creating one.
+  glAccountId: z.string().min(1).optional().nullable(),
+  accountName: z.string().trim().max(120).optional().nullable(),
 })
 
 async function getSession(req: NextRequest) {
@@ -74,7 +77,39 @@ export async function POST(req: NextRequest) {
   try {
     const data = createSchema.parse(await req.json())
 
+    // A9.6: a given GL account must be this company's, an active ASSET, and
+    // not already behind another bank account.
+    if (data.glAccountId) {
+      const gl = await prisma.chartOfAccount.findFirst({ where: { id: data.glAccountId, companyId: session.companyId } })
+      if (!gl || gl.account_type !== 'ASSET' || gl.is_active === false) {
+        return NextResponse.json({ error: 'The GL account must be an active asset account of this company', code: 'GL_ACCOUNT_INVALID' }, { status: 400 })
+      }
+      const linked = await prisma.bankAccount.findFirst({ where: { companyId: session.companyId, chart_account_id: gl.id }, select: { id: true } })
+      if (linked) return NextResponse.json({ error: 'That GL account is already linked to another bank account', code: 'GL_ACCOUNT_IN_USE' }, { status: 409 })
+    }
+
     const result = await prisma.$transaction(async (tx) => {
+      if (data.glAccountId) {
+        const now = new Date().toISOString()
+        const gl = await tx.chartOfAccount.update({ where: { id: data.glAccountId }, data: { is_bank_account: true, updated_date: now } })
+        await postOpeningBalance(tx, {
+          companyId: session.companyId, accountId: gl.id, amount: data.openingBalance,
+          entryDate: now, userId: session.userId, label: gl.account_code ?? gl.id.slice(0, 8),
+        })
+        // The stored balance starts at whatever the ledger already holds for
+        // the account (including the opening balance just posted).
+        const ledger = (await ledgerBalances(tx, session.companyId, {})).find((a) => a.id === gl.id)?.balance ?? new Prisma.Decimal(0)
+        const account = await tx.bankAccount.create({
+          data: {
+            id: crypto.randomUUID(), companyId: session.companyId, account_name: data.accountName || null,
+            bank_name: data.bankName, account_number: data.accountNumber, account_type: data.accountType,
+            currency: data.currency, opening_balance: data.openingBalance, current_balance: ledger,
+            chart_account_id: gl.id, is_active: true, created_date: now, updated_date: now,
+          },
+        })
+        return { account, ledgerCode: gl.account_code ?? '' }
+      }
+
       // Find highest bank-series account code (1010–1099) to auto-increment
       const existingBankAccounts = await tx.chartOfAccount.findMany({
         where: {
@@ -118,6 +153,7 @@ export async function POST(req: NextRequest) {
         data: {
           id: crypto.randomUUID(),
           companyId: session.companyId,
+          account_name: data.accountName || null,
           bank_name: data.bankName,
           account_number: data.accountNumber,
           account_type: data.accountType,

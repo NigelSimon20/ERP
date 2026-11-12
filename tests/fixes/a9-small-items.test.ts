@@ -139,3 +139,42 @@ describe('A9.5 a rejected receipt or payment leaves no gap in the numbering', ()
     expect(n(second)).toBe(n(first) + 1)
   })
 })
+
+describe('A9.6 bank account create honours glAccountId and saves accountName', () => {
+  let fx: ZZ
+  let create: (body: Record<string, unknown>) => ReturnType<typeof callRoute>
+  beforeAll(async () => {
+    fx = await seedZZTest({ label: 'ZZTEST Bank Create', bank1Funds: 0 })
+    await loginAs(fx.sessionFor(fx.users.finance))
+    const banks = await import('@/app/api/finance/bank-accounts/route')
+    create = (body) => callRoute(banks.POST, { method: 'POST', path: '/api/finance/bank-accounts', body: { bankName: 'Stanbic', accountNumber: '9140001', accountType: 'Current', currency: 'USD', ...body } })
+  })
+
+  it('links the given ASSET account instead of creating one, and keeps accountName', async () => {
+    const { default: crypto } = await import('crypto')
+    const glId = crypto.randomUUID()
+    await prisma.chartOfAccount.create({ data: { id: glId, companyId: fx.companyId, account_code: '1030', account_name: 'Stanbic USD', account_type: 'ASSET', is_active: true, current_balance: 0 } })
+    const before = await prisma.chartOfAccount.count({ where: { companyId: fx.companyId } })
+    const r = await create({ glAccountId: glId, accountName: 'Stanbic Operating', openingBalance: 250 })
+    expect(r.status, JSON.stringify(r.json)).toBe(201)
+    expect(r.json.account).toMatchObject({ chart_account_id: glId, account_name: 'Stanbic Operating' })
+    expect(await prisma.chartOfAccount.count({ where: { companyId: fx.companyId } })).toBe(before)
+    const { ledgerBalances } = await import('@/lib/reports/ledger')
+    expect(Number((await ledgerBalances(prisma, fx.companyId, {})).find((a) => a.id === glId)?.balance)).toBe(250)
+    expect(Number(r.json.account.current_balance)).toBe(250)
+  })
+
+  it('rejects a non-asset account, one already linked to a bank, and another company’s account', async () => {
+    expect((await create({ glAccountId: fx.accounts.revenue.id })).json.code).toBe('GL_ACCOUNT_INVALID')
+    expect((await create({ glAccountId: fx.accounts.bank1.id })).json.code).toBe('GL_ACCOUNT_IN_USE')
+    const other = await seedZZTest({ label: 'ZZTEST Bank Other', bank1Funds: 0 })
+    expect((await create({ glAccountId: other.accounts.prepaid.id })).json.code).toBe('GL_ACCOUNT_INVALID')
+  })
+
+  it('without glAccountId it still creates the GL account, and saves accountName', async () => {
+    const r = await create({ accountName: 'Petty cash float' })
+    expect(r.status).toBe(201)
+    expect(r.json.account.account_name).toBe('Petty cash float')
+    expect(r.json.account.chart_account_id).toBeTruthy()
+  })
+})
