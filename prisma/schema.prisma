@@ -2376,6 +2376,8 @@ model StatutoryTable {
   kind           String
   currency       String    @default("USD")
   effectiveFrom  DateTime
+  // A3: last day this version applies; null = until replaced.
+  effectiveTo    DateTime?
   config         Json
   sourceDocument String
   status         String    @default("DRAFT")

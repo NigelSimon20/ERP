@@ -15,9 +15,10 @@ const createSchema = z.object({
   kind: z.enum(STATUTORY_KINDS),
   currency: z.string().trim().length(3).default('USD'),
   effectiveFrom: z.string().refine((v) => !isNaN(new Date(v).getTime()), 'effectiveFrom is not a valid date'),
+  effectiveTo: z.string().refine((v) => !isNaN(new Date(v).getTime()), 'effectiveTo is not a valid date').optional().nullable(),
   sourceDocument: z.string().trim().min(3, 'Name the source document (e.g. ZIMRA tax tables, SI number)').max(500),
   config: z.unknown(),
-})
+}).refine((d) => !d.effectiveTo || new Date(d.effectiveTo) >= new Date(d.effectiveFrom), { message: 'effectiveTo must be on or after effectiveFrom', path: ['effectiveTo'] })
 
 export async function GET() {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -35,7 +36,7 @@ export async function POST(req: NextRequest) {
     const table = await prisma.statutoryTable.create({
       data: {
         companyId: session.companyId, kind: data.kind, currency: data.currency.toUpperCase(),
-        effectiveFrom: new Date(data.effectiveFrom), config, sourceDocument: data.sourceDocument,
+        effectiveFrom: new Date(data.effectiveFrom), effectiveTo: data.effectiveTo ? new Date(data.effectiveTo) : null, config, sourceDocument: data.sourceDocument,
         status: 'DRAFT', createdBy: session.userId,
       },
     })

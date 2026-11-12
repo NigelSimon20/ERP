@@ -38,10 +38,11 @@ export interface StatutoryTables {
   ZIMDEF?: z.infer<typeof zimdefConfig>
 }
 
-// Latest APPROVED table per kind effective on `asAt`, in `currency`.
+// Latest APPROVED table per kind effective on `asAt` (the period end), in
+// `currency`. A version whose effectiveTo has passed no longer applies.
 export async function loadStatutoryTables(db: Db, companyId: string, asAt: Date, currency = 'USD'): Promise<StatutoryTables> {
   const rows = await db.statutoryTable.findMany({
-    where: { companyId, status: 'APPROVED', currency, effectiveFrom: { lte: asAt } },
+    where: { companyId, status: 'APPROVED', currency, effectiveFrom: { lte: asAt }, OR: [{ effectiveTo: null }, { effectiveTo: { gte: asAt } }] },
     orderBy: { effectiveFrom: 'desc' },
   })
   const out: StatutoryTables = {}

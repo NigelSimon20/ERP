@@ -81,6 +81,7 @@ const nav: NavItem[] = [
       { label: 'Employees', href: '/human-resources/employees' },
       { label: 'Payroll', href: '/human-resources/payroll' },
       { label: 'Payslips', href: '/human-resources/payslips' },
+      { label: 'Statutory Tables', href: '/human-resources/statutory-tables' },
       { label: 'Pay Items', href: '/human-resources/payslip-items' },
       { label: 'Leave Management', href: '/human-resources/leave-management' },
       { label: 'Overtime Requests', href: '/human-resources/overtime' },
