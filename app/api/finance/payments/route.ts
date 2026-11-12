@@ -162,11 +162,14 @@ async function createPayment(req: NextRequest) {
       apAccountId = apAccount.id
     }
 
-    const reference = await nextPaymentReference(session.companyId)
+    // A9.5: the number is claimed inside the transaction, after validation,
+    // so a rejected request rolls it back and leaves no gap.
+    let reference = ''
     const methodLabel = METHOD_LABELS[data.method ?? 'OTHER'] ?? data.method ?? 'Other'
     const bankGLId = bankAccount.chart_account_id
 
     const payment = await prisma.$transaction(async (tx) => {
+      reference = await nextPaymentReference(session.companyId, tx)
       const p = await tx.payment.create({
         data: {
           id: crypto.randomUUID(),

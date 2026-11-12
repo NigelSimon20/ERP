@@ -135,11 +135,14 @@ export async function POST(req: NextRequest) {
       customerId = inv.customer_id
     }
 
-    const reference = await nextReceiptReference(session.companyId)
+    // A9.5: the number is claimed inside the transaction, after validation,
+    // so a rejected request rolls it back and leaves no gap.
+    let reference = ''
     const methodLabel = METHOD_LABELS[data.method ?? 'OTHER'] ?? data.method ?? 'Other'
     const bankGLId = bankAccount.chart_account_id
 
     const receipt = await prisma.$transaction(async (tx) => {
+      reference = await nextReceiptReference(session.companyId, tx)
       let updatedInvoice: unknown = null
       let newInvoiceStatus: string | undefined = undefined
       let newInvoiceBalance: number | undefined = undefined

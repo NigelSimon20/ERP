@@ -109,3 +109,33 @@ describe('A9.3 month-end depreciation catches up missed months', () => {
     expect(await prisma.notification.count({ where: { companyId: fx.companyId, type: 'DEPRECIATION_BLOCKED' } })).toBeGreaterThan(0)
   })
 })
+
+describe('A9.5 a rejected receipt or payment leaves no gap in the numbering', () => {
+  it('receipt numbers stay consecutive across a rejected overpayment', async () => {
+    const { invoice, receipt } = await import('../regression/actions')
+    const fx = await seedZZTest({ label: 'ZZTEST Numbers' })
+    await loginAs(fx.sessionFor(fx.users.finance))
+    const inv = await invoice(fx, 30)
+    const first = await receipt(fx, { invoiceId: inv.id, amount: 10 })
+    expect((await receipt(fx, { invoiceId: inv.id, amount: 999 })).json.code).toBe('OVERPAYMENT')
+    const second = await receipt(fx, { invoiceId: inv.id, amount: 10 })
+    const n = (r: { json: { receipt: { payment_number?: string; reference?: string } } }) => Number((r.json.receipt.payment_number ?? r.json.receipt.reference)!.match(/(\d+)$/)![1])
+    expect(n(second)).toBe(n(first) + 1)
+  })
+
+  it('payment numbers stay consecutive across a payment refused inside its transaction', async () => {
+    const { payment } = await import('../regression/actions')
+    const fx = await seedZZTest({ label: 'ZZTEST Pay Numbers' })
+    await loginAs(fx.sessionFor(fx.users.finance))
+    const pay = () => payment(fx, { amount: 5, entityType: 'EXPENSE', expenseAccountId: fx.accounts.officeExpenses.id })
+    const first = await pay()
+    expect(first.status).toBe(201)
+    // The bank's GL account is inactive: postJournal refuses inside the transaction.
+    await prisma.chartOfAccount.update({ where: { id: fx.accounts.bank1.id }, data: { is_active: false } })
+    expect((await pay()).status).toBe(400)
+    await prisma.chartOfAccount.update({ where: { id: fx.accounts.bank1.id }, data: { is_active: true } })
+    const second = await pay()
+    const n = (r: { json: { payment: { reference: string } } }) => Number(r.json.payment.reference.match(/(\d+)$/)![1])
+    expect(n(second)).toBe(n(first) + 1)
+  })
+})

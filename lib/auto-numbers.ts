@@ -1,4 +1,7 @@
+import { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
+
+type Db = Prisma.TransactionClient | typeof prisma
 
 export function parseNum(ref: string | null): number {
   if (!ref) return 0
@@ -20,8 +23,10 @@ async function getPrefix(companyId: string): Promise<string> {
  * the read-last-record-then-increment race that lets concurrent requests
  * generate duplicate numbers.
  */
-async function claimCounter(companyId: string, field: string): Promise<number> {
-  const updated: any = await prisma.company.update({
+// Pass a transaction client to claim the number inside the caller's
+// transaction, so a rejected request rolls the counter back (A9.5: no gaps).
+async function claimCounter(companyId: string, field: string, db: Db = prisma): Promise<number> {
+  const updated: any = await db.company.update({
     where: { id: companyId },
     data: { [field]: { increment: 1 } },
     select: { [field]: true },
@@ -73,17 +78,17 @@ export async function nextForceNumber(companyId: string): Promise<string> {
   return `${prefix}FN-${String(n).padStart(4, '0')}`
 }
 
-export async function nextPaymentReference(companyId: string): Promise<string> {
-  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { paymentPrefix: true } })
+export async function nextPaymentReference(companyId: string, db: Db = prisma): Promise<string> {
+  const company = await db.company.findUnique({ where: { id: companyId }, select: { paymentPrefix: true } })
   const tag = company?.paymentPrefix || 'PAY'
-  const n = await claimCounter(companyId, 'nextPaymentNumber')
+  const n = await claimCounter(companyId, 'nextPaymentNumber', db)
   return `${tag}-${String(n).padStart(6, '0')}`
 }
 
-export async function nextReceiptReference(companyId: string): Promise<string> {
-  const company = await prisma.company.findUnique({ where: { id: companyId }, select: { receiptPrefix: true } })
+export async function nextReceiptReference(companyId: string, db: Db = prisma): Promise<string> {
+  const company = await db.company.findUnique({ where: { id: companyId }, select: { receiptPrefix: true } })
   const tag = company?.receiptPrefix || 'RCP'
-  const n = await claimCounter(companyId, 'nextReceiptNumber')
+  const n = await claimCounter(companyId, 'nextReceiptNumber', db)
   return `${tag}-${String(n).padStart(6, '0')}`
 }
 
