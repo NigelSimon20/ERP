@@ -4,12 +4,11 @@ import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
-import { nextJournalReference, nextPaymentReference } from '@/lib/auto-numbers'
+import { nextJournalReference } from '@/lib/auto-numbers'
 import { calculatePayslipItem } from '@/lib/calculations'
 import { computePay, resolvePayBasis, payrollRunProblems, PAID_DAY_STATUSES } from '@/lib/payroll/engine'
 import { loadStatutoryTables } from '@/lib/payroll/statutory'
 import { checkLockDate } from '@/lib/lock-dates'
-import { postJournal } from '@/lib/gl-posting'
 import { hoursForStatus } from '@/lib/attendance-hours'
 
 function r2(n: number) { return Math.round(n * 100) / 100 }
@@ -159,33 +158,37 @@ export async function POST(req: NextRequest) {
 
   // ── Confirm ──────────────────────────────────────────────────────────────
   if (action === 'confirm') {
+    // A3: confirm creates a DRAFT run (payslips, no journal, no money moved).
+    // Approving posts it to the GL; paying moves the money. See
+    // app/api/hr/payroll/[id]/route.ts. bankAccountId is the intended bank
+    // and can be changed when paying.
     const { periodStart, periodEnd, bankAccountId } = body
-    if (!periodStart || !periodEnd || !bankAccountId) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+    if (!periodStart || !periodEnd) {
+      return NextResponse.json({ error: 'Missing required fields', code: 'VALIDATION_ERROR' }, { status: 400 })
     }
 
     const start = new Date(periodStart)
     const end = new Date(periodEnd)
-    if (end <= start) return NextResponse.json({ error: 'periodEnd must be after periodStart' }, { status: 400 })
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return NextResponse.json({ error: 'Invalid period dates', code: 'VALIDATION_ERROR' }, { status: 400 })
+    if (end <= start) return NextResponse.json({ error: 'periodEnd must be after periodStart', code: 'VALIDATION_ERROR' }, { status: 400 })
 
     const existingRun = await prisma.payrollRun.findFirst({ where: { companyId, periodStart: start, periodEnd: end } })
-    if (existingRun) return NextResponse.json({ error: 'A payroll run for this period has already been processed' }, { status: 409 })
+    if (existingRun) return NextResponse.json({ error: 'A payroll run for this period already exists', code: 'DUPLICATE_PERIOD' }, { status: 409 })
 
     const lockError = await checkLockDate(companyId, end)
     if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })
 
-    const bankAccount = await prisma.bankAccount.findFirst({ where: { id: bankAccountId, companyId } })
-    if (!bankAccount) return NextResponse.json({ error: 'Bank account not found' }, { status: 404 })
+    if (bankAccountId) {
+      const bankAccount = await prisma.bankAccount.findFirst({ where: { id: bankAccountId, companyId } })
+      if (!bankAccount) return NextResponse.json({ error: 'Bank account not found', code: 'NOT_FOUND' }, { status: 404 })
+    }
 
-    // Recompute from Attendance/guard data rather than trusting whatever the
-    // client submits — this used to accept the request body's grossPay/
-    // netPay/etc. wholesale and post them straight to the GL and bank
-    // balance with no server-side cross-check.
+    // Recomputed from attendance/guard data, never taken from the client.
     const guardPayslips = await computePayrollPreviews(companyId, start, end)
-    if (!guardPayslips.length) return NextResponse.json({ error: 'No active guards found for this period' }, { status: 400 })
+    if (!guardPayslips.length) return NextResponse.json({ error: 'No active guards found for this period', code: 'PAYROLL_INVALID' }, { status: 400 })
 
-    // P1-10: September's run was marked PAID at $0. Refuse a zero-gross run
-    // or any payslip whose net isn't gross minus deductions.
+    // P1-10: refuse a zero-gross run or any payslip whose net isn't gross
+    // minus deductions.
     const problems = payrollRunProblems(guardPayslips)
     if (problems.length) {
       return NextResponse.json({ error: problems[0], code: 'PAYROLL_INVALID', problems }, { status: 400 })
@@ -196,145 +199,48 @@ export async function POST(req: NextRequest) {
     const totalNet = r2(guardPayslips.reduce((s: number, p: { netPay: number }) => s + p.netPay, 0))
     const totalEmployer = r2(guardPayslips.reduce((s: number, p: { totalEmployerContributions: number }) => s + p.totalEmployerContributions, 0))
 
-    // Explicit Company-level account mapping (Settings -> Company -> Tax)
-    // replaces fuzzy account-name matching -- payroll can no longer move
-    // real money while silently posting no GL entry (or a partial one) for it.
-    const glCompany = await prisma.company.findUnique({ where: { id: companyId }, select: { salariesExpenseAccountId: true, payrollLiabilitiesAccountId: true } })
-    if (!glCompany?.salariesExpenseAccountId) {
-      return NextResponse.json({ error: 'Salaries Expense account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
-    }
-    if (totalDeductions + totalEmployer > 0 && !glCompany.payrollLiabilitiesAccountId) {
-      return NextResponse.json({ error: 'This payroll run has deductions, but no Payroll Liabilities account is configured. Set it in Settings → Company → Tax.' }, { status: 400 })
-    }
-
     const reference = await nextJournalReference(companyId)
-    const paymentReference = await nextPaymentReference(companyId)
     const runId = crypto.randomUUID()
-
-    const [expenseAccount, liabilityAccount] = await Promise.all([
-      prisma.chartOfAccount.findFirst({ where: { id: glCompany.salariesExpenseAccountId, companyId } }),
-      glCompany.payrollLiabilitiesAccountId
-        ? prisma.chartOfAccount.findFirst({ where: { id: glCompany.payrollLiabilitiesAccountId, companyId } })
-        : null,
-    ])
-    if (!expenseAccount) {
-      return NextResponse.json({ error: 'The configured Salaries Expense account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
-    }
-    if (totalDeductions + totalEmployer > 0 && !liabilityAccount) {
-      return NextResponse.json({ error: 'The configured Payroll Liabilities account no longer exists. Re-select it in Settings → Company → Tax.' }, { status: 400 })
-    }
-
-    // Use the disbursement bank account's own linked GL account, same as
-    // receipts/payments/transfers already do, instead of guessing by name.
-    const bankChartAccount = bankAccount.chart_account_id
-      ? await prisma.chartOfAccount.findUnique({ where: { id: bankAccount.chart_account_id } })
-      : null
-    if (!bankChartAccount) {
-      return NextResponse.json({ error: 'The selected bank account has no linked GL account', code: 'BANK_NOT_LINKED' }, { status: 400 })
-    }
 
     await prisma.$transaction(async (tx) => {
       await tx.payrollRun.create({
         data: {
-          id: runId, companyId, reference, periodStart: new Date(periodStart), periodEnd: new Date(periodEnd),
-          runDate: new Date(), status: 'PAID',
-          totalGross, totalDeductions, totalNet,
-          bankAccountId, processedBy: userId,
+          id: runId, companyId, reference, periodStart: start, periodEnd: end,
+          runDate: new Date(), status: 'DRAFT',
+          totalGross, totalDeductions, totalNet, totalEmployerContributions: totalEmployer,
+          bankAccountId: bankAccountId || null, processedBy: userId,
         },
       })
 
-      // Batched via createMany (2 round trips total) instead of one
-      // payslip.create + payslipLine.createMany per guard — with hundreds of
-      // active guards, the per-guard loop meant hundreds of sequential
-      // round trips inside a single interactive transaction, which reliably
-      // exceeded the transaction timeout against this DB's pooler latency.
+      // Batched via createMany (2 round trips) instead of one per guard.
       const nowIso = new Date().toISOString()
-      const payDate = new Date(periodEnd).toISOString().split('T')[0]
+      const payDate = end.toISOString().split('T')[0]
       const payslipRows = guardPayslips.map((g) => {
         const payslipId = crypto.randomUUID()
         return {
           id: payslipId, payroll_run_id: runId, employee_id: g.guardId, payslip_number: `PS-${payslipId.substring(0, 8)}`,
           basic_salary: g.basicSalary, net_pay: g.netPay, total_deductions: g.totalDeductions,
-          total_earnings: g.grossPay, status: 'Approved', created_by_id: userId,
+          total_earnings: g.grossPay, total_contributions_employer: g.totalEmployerContributions, status: 'Draft', created_by_id: userId,
           hours_worked: g.hoursWorked ?? null, overtime_hours: g.overtimeHours ?? null, overtime_pay: g.overtimePay ?? null,
           created_date: nowIso, pay_date: payDate,
         }
       })
       await tx.payslip.createMany({ data: payslipRows })
 
+      // Every earning and deduction (PAYE, NSSA, AIDS Levy, ...) is its own line.
       const payslipLineRows = guardPayslips.flatMap((g, i) =>
-        [...(g.earningsLines ?? []), ...(g.deductionLines ?? [])].map((l: { name: string; type: string; amount: number; calculationMethod: string }) => ({
-          id: crypto.randomUUID(), payslipId: payslipRows[i].id, itemName: l.name, itemType: l.type as any,
+        [...(g.earningsLines ?? []), ...(g.deductionLines ?? [])].map((l: { name: string; type: string; amount: number }) => ({
+          id: crypto.randomUUID(), payslipId: payslipRows[i].id, itemName: l.name, itemType: l.type as 'EARNING' | 'DEDUCTION',
           amount: l.amount,
         })),
       )
       if (payslipLineRows.length) {
         await tx.payslipLine.createMany({ data: payslipLineRows })
       }
-
-      await tx.bankAccount.update({
-        where: { id: bankAccountId },
-        data: { current_balance: { decrement: totalNet } },
-      })
-
-      // Payroll disbursement never created a `Payment` row before, so it was
-      // invisible to Cash Out / Cash Flow KPIs (which sum from `Payment`,
-      // not from BankAccount.current_balance) even though the bank balance
-      // itself was already correctly decremented above.
-      await tx.payment.create({
-        data: {
-          id: crypto.randomUUID(),
-          companyId,
-          bank_account_id: bankAccountId,
-          bank_account_name: bankAccount.account_name ?? '',
-          payment_number: paymentReference,
-          amount: totalNet,
-          payment_date: new Date(periodEnd).toISOString(),
-          payment_method: 'Bank Transfer',
-          payment_type: 'Payroll Payment',
-          description: `Payroll run ${new Date(periodStart).toLocaleDateString()} – ${new Date(periodEnd).toLocaleDateString()}`,
-          party_name: 'Payroll',
-          currency: bankAccount.currency ?? 'USD',
-          status: 'Posted',
-          created_by_id: userId,
-          created_by: session.name,
-          created_date: new Date().toISOString(),
-          updated_date: new Date().toISOString(),
-        },
-      })
-
-      // Posted from the run itself (P1-10): Dr salaries (gross + employer
-      // contributions) / Cr payroll liabilities (employee deductions +
-      // employer contributions) / Cr bank (net). postJournal rejects an
-      // empty or unbalanced journal (RS-JE-000507 posted with 0 lines).
-      await postJournal(tx, {
-        companyId, reference,
-        entryDate: new Date(periodEnd).toISOString(),
-        description: `Payroll ${new Date(periodStart).toLocaleDateString()} – ${new Date(periodEnd).toLocaleDateString()}`,
-        lines: [
-          { accountId: expenseAccount.id, debit: r2(totalGross + totalEmployer), description: 'Salaries and wages incl. employer contributions' },
-          ...(totalDeductions + totalEmployer > 0 ? [{ accountId: liabilityAccount!.id, credit: r2(totalDeductions + totalEmployer), description: 'PAYE, NSSA and other payroll liabilities' }] : []),
-          { accountId: bankChartAccount!.id, credit: totalNet, description: 'Net pay' },
-        ],
-        userId, sourceType: 'payrollRun', sourceId: runId,
-      })
     }, { timeout: 60000 })
 
-    // WhatsApp payslip notifications (fire-and-forget)
-    if (process.env.WHATSAPP_WEBHOOK_URL) {
-      for (const g of guardPayslips) {
-        if (g.whatsapp) {
-          const msg = `\u{1F4B0} Payslip Ready — ${g.guardName}\nPeriod: ${new Date(periodStart).toLocaleDateString()} to ${new Date(periodEnd).toLocaleDateString()}\nGross: ${Number(g.grossPay).toFixed(2)} | Deductions: ${Number(g.totalDeductions).toFixed(2)} | Net Pay: ${Number(g.netPay).toFixed(2)}\n— Ravenshield ERP`
-          fetch(process.env.WHATSAPP_WEBHOOK_URL, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ to: g.whatsapp, message: msg }),
-          }).catch(() => {})
-        }
-      }
-    }
-
-    await logAudit({ companyId, userId, userName: session.name, action: 'CREATE', module: 'PayrollRun', recordId: runId, newValues: { reference, totalGross, totalNet } })
-    return NextResponse.json({ success: true, runId, reference, totalGross, totalDeductions, totalNet }, { status: 201 })
+    await logAudit({ companyId, userId, userName: session.name, action: 'CREATE', module: 'PayrollRun', recordId: runId, newValues: { reference, status: 'DRAFT', totalGross, totalNet } })
+    return NextResponse.json({ success: true, runId, reference, status: 'DRAFT', totalGross, totalDeductions, totalNet, totalEmployerContributions: totalEmployer }, { status: 201 })
   }
 
   return NextResponse.json({ error: 'Use ?action=preview or ?action=confirm' }, { status: 400 })

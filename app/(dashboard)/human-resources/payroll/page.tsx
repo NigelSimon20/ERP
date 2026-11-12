@@ -13,12 +13,12 @@ import toast from 'react-hot-toast'
 import { CheckmarkCircleRegular, ChevronLeftRegular, LinkRegular } from '@fluentui/react-icons';
 
 interface BankAccount { id: string; bankName: string; currency: string; currentBalance: number }
-interface GuardPreview { guardId: string; guardName: string; employeeNumber: string; hoursWorked: number; overtimeHours: number; basicSalary: number; overtimePay: number; totalEarnings: number; grossPay: number; totalDeductions: number; netPay: number; earningsLines: { name: string; amount: number }[]; deductionLines: { name: string; amount: number }[] }
-interface PreviewResult { previews: GuardPreview[]; totalGross: number; totalDeductions: number; totalNet: number }
+interface GuardPreview { warnings?: string[]; guardId: string; guardName: string; employeeNumber: string; hoursWorked: number; overtimeHours: number; basicSalary: number; overtimePay: number; totalEarnings: number; grossPay: number; totalDeductions: number; netPay: number; earningsLines: { name: string; amount: number }[]; deductionLines: { name: string; amount: number }[] }
+interface PreviewResult { previews: GuardPreview[]; totalGross: number; totalDeductions: number; totalNet: number; warnings?: string[] }
 interface PayrollRun { id: string; reference: string; payPeriodStart: string; payPeriodEnd: string; runDate: string; totalGross: number; totalDeductions: number; totalNet: number; status: string; processedBy: { name: string } | null; bankAccount: { name: string } | null }
 type SetupForm = { periodStart: string; periodEnd: string; bankAccountId: string }
 
-const STATUS_STYLES: Record<string, string> = { PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', CONFIRMED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', DRAFT: 'bg-muted text-muted-foreground' }
+const STATUS_STYLES: Record<string, string> = { PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', APPROVED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', CONFIRMED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', DRAFT: 'bg-muted text-muted-foreground' }
 
 export default function PayrollPage() {
   const [step, setStep] = useState<1 | 2 | 3>(1)
@@ -88,7 +88,26 @@ export default function PayrollPage() {
     } finally { setConfirming(false) }
   }
 
+  // A3: a run is approved by a second person (posts it to the GL), then paid
+  // (moves the money). A DRAFT can be deleted; an APPROVED run reversed.
+  const [busyRun, setBusyRun] = useState<string | null>(null)
+  async function runAction(r: PayrollRun, action: 'approve' | 'pay' | 'reverse' | 'delete') {
+    if (action === 'delete' && !confirm('Delete this draft payroll run and its payslips?')) return
+    if (action === 'reverse' && !confirm('Reverse the approval journal and return this run to DRAFT?')) return
+    setBusyRun(r.id)
+    try {
+      const res = action === 'delete'
+        ? await fetch(`/api/hr/payroll/${r.id}`, { method: 'DELETE' })
+        : await fetch(`/api/hr/payroll/${r.id}?action=${action}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })
+      const json = await res.json()
+      if (!res.ok) { toast.error(json.error ?? 'Payroll action failed'); return }
+      toast.success({ approve: 'Payroll approved and posted', pay: 'Payroll paid', reverse: 'Approval reversed', delete: 'Draft deleted' }[action])
+      fetchRuns()
+    } finally { setBusyRun(null) }
+  }
+
   const selectedBank = bankAccounts.find(b => b.id === setupData?.bankAccountId)
+  const previewWarnings = preview ? Array.from(new Set([...(preview.warnings ?? []), ...preview.previews.flatMap((g) => g.warnings ?? [])])) : []
 
   return (
     <div>
@@ -177,16 +196,23 @@ export default function PayrollPage() {
                 </table>
               </div>
 
+              {previewWarnings.length > 0 && (
+                <div className="mt-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-400">
+                  <p className="font-medium mb-1">Check before confirming</p>
+                  <ul className="list-disc ml-5 space-y-0.5">{previewWarnings.map((w) => <li key={w}>{w}</li>)}</ul>
+                </div>
+              )}
+
               {selectedBank && (
                 <div className="mt-3 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-4 py-3 text-sm">
-                  <span className="font-medium text-amber-800 dark:text-amber-400">Bank deduction: </span>
-                  <span className="text-amber-700 dark:text-amber-400">{formatCurrency(preview.totalNet)} will be deducted from <strong>{selectedBank.bankName}</strong> (current balance: {formatCurrency(Number(selectedBank.currentBalance))})</span>
+                  <span className="font-medium text-amber-800 dark:text-amber-400">Nothing is paid yet: </span>
+                  <span className="text-amber-700 dark:text-amber-400">this creates a draft run. Once someone else approves it, paying it will take {formatCurrency(preview.totalNet)} from <strong>{selectedBank.bankName}</strong> (current balance: {formatCurrency(Number(selectedBank.currentBalance))}).</span>
                 </div>
               )}
 
               <div className="mt-4 flex items-center gap-3">
                 <Button type="button" variant="outline" onClick={() => setStep(1)}><ChevronLeftRegular className="h-4 w-4 mr-1" /> Back to Setup</Button>
-                <Button type="button" disabled={confirming} onClick={onConfirm} className="bg-primary hover:bg-brand-red-dark text-white">{confirming ? 'Processing…' : 'Confirm & Process Payroll'}</Button>
+                <Button type="button" disabled={confirming} onClick={onConfirm} className="bg-primary hover:bg-brand-red-dark text-white">{confirming ? 'Creating…' : 'Create Draft Payroll Run'}</Button>
               </div>
             </div>
           )}
@@ -195,12 +221,13 @@ export default function PayrollPage() {
           {step === 3 && confirmedResult && (
             <div className="text-center py-8">
               <CheckmarkCircleRegular className="h-14 w-14 text-green-500 dark:text-green-400 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-foreground mb-1">Payroll Processed</h2>
+              <h2 className="text-xl font-semibold text-foreground mb-1">Draft Payroll Run Created</h2>
+              <p className="text-muted-foreground text-sm mb-2">It needs approval by a second person, then payment, from the list below.</p>
               <p className="text-muted-foreground text-sm mb-4">Reference: <span className="font-mono font-medium">{confirmedResult.reference}</span></p>
               <div className="inline-grid grid-cols-3 gap-6 text-center mb-6">
                 <div><p className="text-xs text-brand-muted-light mb-0.5">Total Gross</p><p className="font-semibold">{formatCurrency(confirmedResult.totalGross)}</p></div>
                 <div><p className="text-xs text-brand-muted-light mb-0.5">Deductions</p><p className="font-semibold text-primary">{formatCurrency(confirmedResult.totalDeductions)}</p></div>
-                <div><p className="text-xs text-brand-muted-light mb-0.5">Net Paid</p><p className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(confirmedResult.totalNet)}</p></div>
+                <div><p className="text-xs text-brand-muted-light mb-0.5">Net Pay</p><p className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(confirmedResult.totalNet)}</p></div>
               </div>
               <div className="flex items-center justify-center gap-4">
                 <Link href="/human-resources/payslips" className="text-sm text-primary hover:underline flex items-center gap-1"><LinkRegular className="h-3.5 w-3.5" /> View Payslips</Link>
@@ -238,7 +265,17 @@ export default function PayrollPage() {
                     <td className="px-4 py-3 text-right font-semibold text-green-700 dark:text-green-400">{formatCurrency(Number(r.totalNet))}</td>
                     <td className="px-4 py-3"><span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[r.status] ?? 'bg-muted text-muted-foreground'}`}>{r.status}</span></td>
                     <td className="px-4 py-3">
-                      <Link href={`/human-resources/payslips?payrollRunId=${r.id}`} className="text-xs text-primary hover:underline">View payslips</Link>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link href={`/human-resources/payslips?payrollRunId=${r.id}`} className="text-xs text-primary hover:underline">View payslips</Link>
+                        {r.status === 'DRAFT' && <>
+                          <button type="button" disabled={busyRun === r.id} onClick={() => runAction(r, 'approve')} className="text-xs font-medium text-primary hover:underline">Approve</button>
+                          <button type="button" disabled={busyRun === r.id} onClick={() => runAction(r, 'delete')} className="text-xs text-muted-foreground hover:underline">Delete</button>
+                        </>}
+                        {r.status === 'APPROVED' && <>
+                          <button type="button" disabled={busyRun === r.id} onClick={() => runAction(r, 'pay')} className="text-xs font-medium text-green-700 dark:text-green-400 hover:underline">Pay</button>
+                          <button type="button" disabled={busyRun === r.id} onClick={() => runAction(r, 'reverse')} className="text-xs text-muted-foreground hover:underline">Reverse</button>
+                        </>}
+                      </div>
                     </td>
                   </tr>
                 ))}

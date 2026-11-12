@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { payeFor } from '@/lib/payroll/statutory'
 import { payrollRunProblems } from '@/lib/payroll/engine'
 import * as payroll from '@/app/api/hr/payroll/route'
+import * as runRoute from '@/app/api/hr/payroll/[id]/route'
 import * as tables from '@/app/api/hr/statutory-tables/route'
 import * as table from '@/app/api/hr/statutory-tables/[id]/route'
 import { seedCompany, type Fixture } from './helpers/fixtures'
@@ -81,10 +82,17 @@ describe('P1-10 statutory payroll', () => {
     expect(r.json.totalGross).toBe(1177.63)
   })
 
-  it('confirming posts a balanced journal: Dr salaries / Cr liabilities / Cr bank', async () => {
+  // A3 changed the lifecycle: confirm creates a DRAFT, and approval (by a
+  // second user) posts Dr salaries / Cr liabilities / Cr Net Pay Payable.
+  it('approving posts a balanced journal: Dr salaries / Cr liabilities / Cr net pay payable', async () => {
+    await loginAs(fx.sessionFor(fx.users.hr))
     const r = await callRoute(payroll.POST, { method: 'POST', path: '/api/hr/payroll?action=confirm', body: { ...period, bankAccountId: fx.bankAccount.id } })
     expect(r.status, JSON.stringify(r.json)).toBe(201)
-    const run = await prisma.payrollRun.findFirstOrThrow({ where: { companyId: fx.companyId } })
+    await loginAs(fx.sessionFor(fx.users.admin))
+    const approved = await callRoute(runRoute.POST, { method: 'POST', path: `/api/hr/payroll/${r.json.runId}?action=approve`, params: { id: r.json.runId } })
+    expect(approved.status, JSON.stringify(approved.json)).toBe(200)
+    const run_ = await prisma.payrollRun.findFirstOrThrow({ where: { companyId: fx.companyId } })
+    const run = run_
     expect(Number(run.totalNet)).toBe(932.63)
     const je = await prisma.journalEntry.findFirstOrThrow({ where: { companyId: fx.companyId, source_type: 'payrollRun', source_id: run.id } })
     const sums = await prisma.journalLine.aggregate({ where: { journalEntryId: je.id }, _sum: { debit: true, credit: true } })

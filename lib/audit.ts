@@ -2,7 +2,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
 import crypto from 'crypto'
 
-export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'POST' | 'VOID' | 'LOGIN' | 'LOGOUT' | 'VIEW' | 'EXPORT'
+export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'POST' | 'APPROVE' | 'VOID' | 'LOGIN' | 'LOGOUT' | 'VIEW' | 'EXPORT'
 
 export interface AuditParams {
   companyId: string

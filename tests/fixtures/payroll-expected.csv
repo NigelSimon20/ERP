@@ -1,0 +1,4 @@
+guard,paid_days,daily_rate,gross,nssa_employee,paye,aids_levy,total_deductions,net,nssa_employer,zimdef
+ZZ Guard 1,26,6.00,156.00,7.02,9.80,0.29,17.11,138.89,7.02,1.56
+ZZ Guard 2,23,6.00,138.00,6.21,6.36,0.19,12.76,125.24,6.21,1.38
+ZZ Guard 3,10,6.00,60.00,2.70,0.00,0.00,2.70,57.30,2.70,0.60

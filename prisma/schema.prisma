@@ -42,6 +42,10 @@ model Company {
   // A2: a credit/debit note larger than its invoice's balance leaves the
   // excess as unapplied credit (true) or is rejected (false, the default).
   allowUnappliedCredit    Boolean  @default(false) @map("allow_unapplied_credit")
+  // A3: a payroll run must be approved by someone other than its creator.
+  payrollRequireSecondApprover Boolean @default(true) @map("payroll_require_second_approver")
+  // A3: credited on approval with the net pay; null = account 2210.
+  netPayPayableAccountId   String?  @map("net_pay_payable_account_id")
   // P1-9 maker-checker: journals above this total need a second person to
   // post them. NULL = off.
   approvalThreshold       Decimal? @db.Decimal(18, 2) @map("approval_threshold")
@@ -1612,6 +1616,8 @@ enum PayItemType {
 enum PayrollStatus {
   DRAFT
   CONFIRMED
+  // A3: approved and posted to Net Pay Payable, not yet paid out.
+  APPROVED
   PAID
 }
 
@@ -1916,6 +1922,14 @@ model PayrollRun {
   totalNet Decimal @db.Decimal(18, 2)
   processedBy String
   bankAccountId String?
+  // A3: DRAFT -> APPROVED (journal to Net Pay Payable) -> PAID (bank).
+  totalEmployerContributions Decimal @default(0) @db.Decimal(18, 2)
+  approvedBy String?
+  approvedAt DateTime?
+  approvalJournalId String?
+  paidBy String?
+  paidAt DateTime?
+  paymentJournalId String?
   createdAt DateTime @default(now())
 
   @@map("payroll_runs")
