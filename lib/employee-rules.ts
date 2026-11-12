@@ -25,6 +25,10 @@ function parseDate(v: string | Date | null | undefined): Date | null | 'invalid'
   if (v == null || v === '') return null
   const d = v instanceof Date ? v : new Date(v)
   if (isNaN(d.getTime())) return 'invalid'
+  // new Date('1990-02-31') silently rolls over to 3 March; a calendar date
+  // must come back out exactly as it went in.
+  const ymd = typeof v === 'string' ? /^(\d{4})-(\d{2})-(\d{2})/.exec(v) : null
+  if (ymd && d.toISOString().slice(0, 10) !== `${ymd[1]}-${ymd[2]}-${ymd[3]}`) return 'invalid'
   const y = d.getUTCFullYear()
   return y < 1900 || y > 2200 ? 'invalid' : d
 }

@@ -83,6 +83,15 @@ describe('Regression R23: employee validation', () => {
   })
 })
 
+describe('Regression R23: imports apply the same employee rules', () => {
+  it('an import row with an impossible date of birth is rejected', async () => {
+    const { getModuleConfig } = await import('@/lib/import-export/registry')
+    const cfg = getModuleConfig('employees')
+    expect(cfg.customValidate!({ full_name: 'Ok Name', date_of_birth: '1990-02-31', hire_date: '2015-01-01', daily_rate: 6 })).toHaveLength(1)
+    expect(cfg.customValidate!({ full_name: 'Ok Name', date_of_birth: '1990-02-28', hire_date: '2015-01-01', daily_rate: 6 })).toEqual([])
+  })
+})
+
 describe('Regression R24: chart of accounts', () => {
   let fx: ZZ
   beforeAll(async () => {
