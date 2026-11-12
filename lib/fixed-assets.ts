@@ -1,8 +1,10 @@
+import crypto from 'crypto'
 import { Prisma, PrismaClient, type FixedAsset } from '@prisma/client'
 import { ApiError } from './api-error'
 import { postJournal } from './gl-posting'
 import { ensureOpeningBalanceEquity } from './opening-balances'
 import { money } from './money'
+import { checkLockDate } from './lock-dates'
 
 type Db = PrismaClient | Prisma.TransactionClient
 
@@ -62,10 +64,11 @@ export async function depreciateAssetForPeriod(
   if (periodOf(asset.purchaseDate) > period) return 0
   const price = money(asset.purchasePrice)
   const remaining = price.sub(money(asset.accumulatedDepreciation))
-  if (!remaining.isPositive() || asset.usefulLifeYears <= 0) return 0
+  // decimal.js isPositive() is true for zero, hence gt(0).
+  if (!remaining.gt(0) || asset.usefulLifeYears <= 0) return 0
   const monthly = money(price.div(asset.usefulLifeYears * 12))
   const charge = monthly.gt(remaining) ? remaining : monthly
-  if (!charge.isPositive()) return 0
+  if (!charge.gt(0)) return 0
 
   // Claim the month first so a concurrent run can't charge it again.
   const claimed = await tx.fixedAsset.updateMany({
@@ -104,13 +107,55 @@ export async function requireDepreciationAccounts(db: Db, companyId: string) {
   return { accumulated: a.accumulated, expense: a.expense }
 }
 
+function nextPeriod(period: string): string {
+  const [y, m] = period.split('-').map(Number)
+  return periodOf(new Date(Date.UTC(y, m, 1)))
+}
+
+function monthEnd(period: string): Date {
+  const [y, m] = period.split('-').map(Number)
+  return new Date(Date.UTC(y, m, 0, 23, 59, 59))
+}
+
+export interface DepreciationBlock { assetId: string; name: string; period: string }
+
+// A9.3: month-end depreciation for every active asset, catching up every
+// month not yet charged (from the purchase month, or the month after the
+// last one charged) up to `period`, each month as its own journal dated at
+// month end. A month inside a locked period is never posted: that asset
+// stops there and is reported in `blocked`, so a month is never skipped
+// silently (an accountant unlocks the period or books an adjustment).
 export async function runMonthEndDepreciation(db: PrismaClient, companyId: string, period: string, userId = 'system') {
   const accounts = await requireDepreciationAccounts(db, companyId)
   const assets = await db.fixedAsset.findMany({ where: { companyId, status: 'ACTIVE' } })
   let total = 0, charged = 0
-  for (const asset of assets) {
-    const amount = await db.$transaction((tx) => depreciateAssetForPeriod(tx, asset, period, accounts, userId))
-    if (amount > 0) { total += amount; charged++ }
+  const blocked: DepreciationBlock[] = []
+  for (const a of assets) {
+    let p = a.lastDepreciatedPeriod ? nextPeriod(a.lastDepreciatedPeriod) : periodOf(a.purchaseDate)
+    for (; p <= period; p = nextPeriod(p)) {
+      if (await checkLockDate(companyId, monthEnd(p))) {
+        blocked.push({ assetId: a.id, name: a.name, period: p })
+        break
+      }
+      const fresh = await db.fixedAsset.findUniqueOrThrow({ where: { id: a.id } })
+      const amount = await db.$transaction((tx) => depreciateAssetForPeriod(tx, fresh, p, accounts, userId))
+      if (amount > 0) { total += amount; charged++ }
+      else if (money(fresh.purchasePrice).sub(money(fresh.accumulatedDepreciation)).lte(0)) break
+    }
   }
-  return { period, assets: assets.length, charged, total: Math.round(total * 100) / 100 }
+  if (blocked.length) await notifyDepreciationBlocked(db, companyId, period, blocked)
+  return { period, assets: assets.length, charged, total: Math.round(total * 100) / 100, blocked }
+}
+
+async function notifyDepreciationBlocked(db: PrismaClient, companyId: string, period: string, blocked: DepreciationBlock[]) {
+  const admins = await db.user.findMany({ where: { companyId, active: true, role: { in: ['SUPER_ADMIN', 'ADMIN', 'FINANCE_MANAGER'] } }, select: { id: true } })
+  const list = blocked.slice(0, 5).map((b) => `${b.name} (${b.period})`).join(', ')
+  await db.notification.createMany({
+    data: admins.map((u) => ({
+      id: crypto.randomUUID(), userId: u.id, companyId, type: 'DEPRECIATION_BLOCKED',
+      title: `Depreciation to ${period}: ${blocked.length} asset(s) wait on a locked period`,
+      message: `Not charged because the month is locked: ${list}. Unlock the period or post an adjustment.`,
+      link: '/finance/fixed-assets',
+    })),
+  })
 }

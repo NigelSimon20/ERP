@@ -57,3 +57,55 @@ describe('A9.2 one invoice status vocabulary', () => {
     expect((await prisma.salesInvoice.findUniqueOrThrow({ where: { id: rows[1].id } })).status).toBe('PAID')
   })
 })
+
+describe('A9.3 month-end depreciation catches up missed months', () => {
+  const run = async (period: string) => {
+    const cron = await import('@/app/api/cron/depreciation/route')
+    process.env.CRON_SECRET = 'test-cron-secret'
+    return callRoute(cron.GET, { path: `/api/cron/depreciation?period=${period}`, headers: { authorization: 'Bearer test-cron-secret' } })
+  }
+  const addAsset = async (fx: ZZ, name: string, purchaseDate: string) => {
+    const assets = await import('@/app/api/finance/fixed-assets/route')
+    const r = await callRoute(assets.POST, { method: 'POST', path: '/api/finance/fixed-assets', body: { name, category: 'Equipment', purchaseDate, purchasePrice: 1200, usefulLifeYears: 1 } })
+    expect(r.status, JSON.stringify(r.json)).toBe(201)
+    return r.json.asset.id as string
+  }
+  const journals = (assetId: string) => prisma.journalEntry.findMany({ where: { source_type: 'depreciation', source_id: assetId, status: 'POSTED' }, orderBy: { entry_date: 'asc' } })
+
+  it('charges every month from purchase, one journal per month dated at month end, once', async () => {
+    const fx = await seedZZTest({ label: 'ZZTEST Dep', bank1Funds: 0 })
+    await loginAs(fx.sessionFor(fx.users.finance))
+    const id = await addAsset(fx, 'Radio mast', '2026-06-15')
+    const r = await run('2026-11')
+    expect(r.status, JSON.stringify(r.json)).toBe(200)
+    const js = await journals(id)
+    expect(js.map((j) => j.entry_date?.slice(0, 10))).toEqual(['2026-06-30', '2026-07-31', '2026-08-31', '2026-09-30', '2026-10-31', '2026-11-30'])
+    expect(js.every((j) => Number(j.total_debit) === 100)).toBe(true)
+    expect(Number((await prisma.fixedAsset.findUniqueOrThrow({ where: { id } })).accumulatedDepreciation)).toBe(600)
+    await run('2026-11')
+    expect(await journals(id)).toHaveLength(6)
+  })
+
+  it('stops at the purchase price', async () => {
+    const fx = await seedZZTest({ label: 'ZZTEST Dep Full', bank1Funds: 0 })
+    await loginAs(fx.sessionFor(fx.users.finance))
+    const id = await addAsset(fx, 'Old bike', '2025-11-10')
+    await run('2026-11')
+    const asset = await prisma.fixedAsset.findUniqueOrThrow({ where: { id } })
+    expect([Number(asset.accumulatedDepreciation), Number(asset.currentValue)]).toEqual([1200, 0])
+    expect(await journals(id)).toHaveLength(12)
+  })
+
+  it('never posts into a locked month: the asset waits, and finance is told', async () => {
+    const fx = await seedZZTest({ label: 'ZZTEST Dep Locked', bank1Funds: 0 })
+    await loginAs(fx.sessionFor(fx.users.finance))
+    const id = await addAsset(fx, 'Gate camera', '2026-07-05')
+    const lockDates = await import('@/app/api/finance/lock-dates/route')
+    await callRoute(lockDates.POST, { method: 'POST', path: '/api/finance/lock-dates', body: { lockedUntil: '2026-08-31' } })
+    const r = await run('2026-11')
+    expect(await journals(id)).toHaveLength(0)
+    const mine = r.json.results.find((x: { companyId: string }) => x.companyId === fx.companyId)
+    expect(mine.blocked).toEqual([{ assetId: id, name: 'Gate camera', period: '2026-07' }])
+    expect(await prisma.notification.count({ where: { companyId: fx.companyId, type: 'DEPRECIATION_BLOCKED' } })).toBeGreaterThan(0)
+  })
+})

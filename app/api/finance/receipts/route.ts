@@ -121,7 +121,7 @@ export async function POST(req: NextRequest) {
     }
 
     const amount = money(data.amount)
-    if (!amount.isPositive()) return NextResponse.json({ error: 'Amount must be greater than zero', code: 'VALIDATION_ERROR' }, { status: 400 })
+    if (!amount.gt(0)) return NextResponse.json({ error: 'Amount must be greater than zero', code: 'VALIDATION_ERROR' }, { status: 400 })
 
     // BUG-028: when an invoice is given, it decides the customer.
     let customerId: string | null = data.customerId ?? null
