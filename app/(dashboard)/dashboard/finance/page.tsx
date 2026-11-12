@@ -24,6 +24,8 @@ interface FinanceData {
   totalRevenue: number
   totalCollected: number
   outstandingReceivables: number
+  exchangeRateStale?: boolean
+  latestRateDate?: string | null
   totalExpenses: number
   netProfit: number
   cashCollected: number
@@ -129,6 +131,12 @@ export default function FinanceDashboardPage() {
   return (
     <DashboardPageShell title="Finance Dashboard" subtitle="Revenue, expenses & receivables">
       <div className="space-y-6">
+        {/* A5: converted figures use the newest rate; say so when it's old. */}
+        {data?.exchangeRateStale && (
+          <div className="rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-400">
+            Exchange rates are out of date{data.latestRateDate ? ` (latest ${new Date(data.latestRateDate).toLocaleDateString()})` : ' (none entered yet)'}. Figures in other currencies may be converted at an old rate. <a href="/finance/exchange-rates" className="underline">Update rates</a>
+          </div>
+        )}
         {/* Quick Actions */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap gap-2">

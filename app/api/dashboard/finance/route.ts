@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { isRateStale } from '@/lib/fx/rbz'
 import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
 import { overdueQueryCutoff, calculateWorkingCapital, calculateCurrentRatio, calculateQuickRatio, calculateDebtToEquity } from '@/lib/calculations'
 import { buildCurrencyConverter, listAvailableCurrencies } from '@/lib/currency'
@@ -191,6 +192,7 @@ export async function GET(req: NextRequest) {
     if (val !== null) totalExpenses += val
   })
 
+  const latestRate = await prisma.exchangeRate.findFirst({ orderBy: { effectiveDate: 'desc' }, select: { effectiveDate: true } })
   let cashInBank = 0
   let pettyCash = 0
   const bankBalances: { bankName: string; accountNumber: string; balance: number; currency: string }[] = []
@@ -205,6 +207,9 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     reportingCurrency,
     viewCurrency,
+    // A5: warn when the newest exchange rate is more than 3 days old.
+    latestRateDate: latestRate?.effectiveDate ?? null,
+    exchangeRateStale: isRateStale(latestRate?.effectiveDate ?? null),
     availableCurrencies,
     excludedCount: isNative ? 0 : excludedCount,
     // Ledger basis, reporting currency, fiscal year to date.

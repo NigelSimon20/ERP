@@ -44,6 +44,7 @@ const CURRENCIES = ['USD', 'ZWG', 'ZWL', 'ZAR', 'EUR', 'GBP', 'ZMW', 'BWP']
 export default function ExchangeRatesPage() {
   const [rates, setRates] = useState<ExchangeRate[]>([])
   const [currentRates, setCurrentRates] = useState<ExchangeRate[]>([])
+  const [stale, setStale] = useState<{ latest: string | null } | null>(null)
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -66,6 +67,7 @@ export default function ExchangeRatesPage() {
       }
       setRates(json.rates ?? [])
       setCurrentRates(json.currentRates ?? [])
+      setStale(json.stale ? { latest: json.latestEffectiveDate ?? null } : null)
     } catch {
       toast.error('Network error loading exchange rates')
       setRates([])
@@ -117,6 +119,13 @@ export default function ExchangeRatesPage() {
           <Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Rate</Button>
         </div>
       } />
+
+      {/* A5: warn when the newest rate is more than 3 days old */}
+      {stale && (
+        <div className="mt-4 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/30 px-4 py-3 text-sm text-amber-800 dark:text-amber-400">
+          {stale.latest ? `The newest rate is from ${new Date(stale.latest).toLocaleDateString()}, more than 3 days ago.` : 'No exchange rates have been entered yet.'} Sync from RBZ or add today’s rate manually.
+        </div>
+      )}
 
       {/* Current Rates Cards */}
       {currentRates.length > 0 && (

@@ -5,6 +5,7 @@ import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { syncRbzExchangeRates } from '@/lib/rbz-rates'
+import { isRateStale } from '@/lib/fx/rbz'
 import { apiError } from '@/lib/api-error'
 
 async function getSession(req: NextRequest) {
@@ -61,6 +62,9 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     rates: rates.map((r) => ({ ...r, rate: Number(r.rate), createdByUser: r.createdBy && creatorMap[r.createdBy] ? { name: creatorMap[r.createdBy].name } : null })),
     currentRates,
+    // A5: the page warns when the newest rate is more than 3 days old.
+    latestEffectiveDate: rates[0]?.effectiveDate ?? null,
+    stale: isRateStale(rates[0]?.effectiveDate ?? null),
   })
 }
 
