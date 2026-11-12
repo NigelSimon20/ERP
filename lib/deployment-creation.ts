@@ -1,5 +1,8 @@
 import crypto from 'crypto'
 import { prisma } from '@/lib/prisma'
+import { ShiftType } from '@prisma/client'
+
+const SHIFT_TYPES = Object.values(ShiftType)
 
 export class DeploymentValidationError extends Error {
   status: number
@@ -32,12 +35,27 @@ export async function createDeployment(params: CreateDeploymentParams) {
   if (!guardId || !siteId || !startDate) {
     throw new DeploymentValidationError('guardId, siteId, and startDate are required')
   }
+  // A9.4: bad dates and numbers reached Prisma (500); the guard was never
+  // checked against the company.
+  const invalidDate = (v: unknown) => isNaN(new Date(v as string).getTime())
+  if (invalidDate(startDate)) throw new DeploymentValidationError('Start date is not a valid date')
+  if (endDate && invalidDate(endDate)) throw new DeploymentValidationError('End date is not a valid date')
+  if (shiftType && !SHIFT_TYPES.includes(shiftType as ShiftType)) throw new DeploymentValidationError(`Shift must be one of ${SHIFT_TYPES.join(', ')}`)
+  for (const [label, v, max] of [['Hours per day', hoursPerDay, 24], ['Rate per hour', ratePerHour, 1e6]] as const) {
+    if (v == null || (v as unknown) === '') continue
+    const n = Number(v)
+    if (!Number.isFinite(n) || n < 0 || n > max) throw new DeploymentValidationError(`${label} must be a number between 0 and ${max}`)
+  }
   if (endDate && new Date(endDate) <= new Date(startDate)) {
     throw new DeploymentValidationError('End date must be after start date')
   }
 
-  const site = await prisma.site.findFirst({ where: { id: siteId, companyId } })
+  const [site, guard] = await Promise.all([
+    prisma.site.findFirst({ where: { id: siteId, companyId } }),
+    prisma.guard.findFirst({ where: { id: guardId, companyId }, select: { id: true } }),
+  ])
   if (!site) throw new DeploymentValidationError('Site not found', 404)
+  if (!guard) throw new DeploymentValidationError('Guard not found', 404)
   if (site.status && site.status !== 'Active') {
     throw new DeploymentValidationError(`Cannot deploy to a ${site.status} site`)
   }
@@ -59,7 +77,7 @@ export async function createDeployment(params: CreateDeploymentParams) {
       companyId,
       guardId,
       siteId,
-      shiftType: (shiftType as any) || 'DAY',
+      shiftType: (shiftType as ShiftType) || 'DAY',
       startDate: new Date(startDate),
       endDate: endDate ? new Date(endDate) : null,
       hoursPerDay: hoursPerDay != null ? Number(hoursPerDay) : 8,

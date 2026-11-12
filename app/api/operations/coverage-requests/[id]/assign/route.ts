@@ -56,7 +56,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     return NextResponse.json({ deployment, request: updatedRequest, filledCount, requiredGuards: request.requiredGuards }, { status: 201 })
   } catch (err: unknown) {
-    if (err instanceof DeploymentValidationError) return NextResponse.json({ error: err.message }, { status: err.status })
+    if (err instanceof DeploymentValidationError) return NextResponse.json({ error: err.message, code: err.status === 404 ? 'NOT_FOUND' : 'VALIDATION_ERROR' }, { status: err.status })
     throw err
   }
 }

@@ -3,6 +3,9 @@ import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { AttendanceStatus, ShiftType } from '@prisma/client'
+import { z } from 'zod'
+import { apiError } from '@/lib/api-error'
 import { logAudit } from '@/lib/audit'
 import { hoursForStatus, attendanceRate, NOT_ROSTERED_STATUSES } from '@/lib/attendance-hours'
 
@@ -88,6 +91,49 @@ export async function GET(req: NextRequest) {
   })
 }
 
+// A9.4: attendance input is validated (an invalid date reached Prisma as a
+// 500), and the guard and site must belong to the session's company (they
+// were never checked, so any company's guard could be written to).
+const validDate = (label: string) => z.string({ error: `${label} is required` }).refine((v) => !isNaN(new Date(v).getTime()), `${label} is not a valid date`)
+const optionalDate = (label: string) => validDate(label).optional().nullable().or(z.literal(''))
+const recordSchema = z.object({
+  guardId: z.string({ error: 'Guard is required' }).min(1, 'Guard is required'),
+  siteId: z.string().min(1).optional().nullable().or(z.literal('')),
+  date: validDate('Date'),
+  checkIn: optionalDate('Check-in'),
+  checkOut: optionalDate('Check-out'),
+  status: z.nativeEnum(AttendanceStatus).default('PRESENT'),
+  shift: z.nativeEnum(ShiftType).optional().nullable().or(z.literal('')),
+  notes: z.string().max(2000).optional().nullable(),
+  overtimeHours: z.coerce.number().min(0).max(24).optional().nullable(),
+})
+type AttendanceInput = z.infer<typeof recordSchema>
+
+async function checkOwnership(companyId: string, recs: AttendanceInput[]): Promise<string | null> {
+  const guardIds = Array.from(new Set(recs.map((r) => r.guardId)))
+  const siteIds = Array.from(new Set(recs.map((r) => r.siteId).filter((v): v is string => !!v)))
+  const [guards, sites] = await Promise.all([
+    prisma.guard.count({ where: { companyId, id: { in: guardIds } } }),
+    siteIds.length ? prisma.site.count({ where: { companyId, id: { in: siteIds } } }) : 0,
+  ])
+  if (guards !== guardIds.length) return 'Guard not found'
+  if (sites !== siteIds.length) return 'Site not found'
+  return null
+}
+
+function writeData(r: AttendanceInput) {
+  return {
+    siteId: r.siteId || null,
+    checkIn: r.checkIn ? new Date(r.checkIn) : null,
+    checkOut: r.checkOut ? new Date(r.checkOut) : null,
+    hoursWorked: hoursForStatus(r.status),
+    overtimeHours: r.overtimeHours ?? 0,
+    status: r.status,
+    shift: r.shift || null,
+    notes: r.notes || null,
+  }
+}
+
 export async function POST(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -95,29 +141,34 @@ export async function POST(req: NextRequest) {
   const { companyId, userId, name: userName } = session
   const { searchParams } = new URL(req.url)
   const action = searchParams.get('action')
+  const body = await req.json().catch(() => null)
 
   if (action === 'bulk') {
-    const { records } = await req.json()
-    if (!Array.isArray(records)) return NextResponse.json({ error: 'records array required' }, { status: 400 })
+    const records = body?.records
+    if (!Array.isArray(records)) return NextResponse.json({ error: 'records array required', code: 'VALIDATION_ERROR' }, { status: 400 })
 
     const results: { success: number; errors: string[] } = { success: 0, errors: [] }
+    const valid: AttendanceInput[] = []
+    records.forEach((rec: unknown, i: number) => {
+      const parsed = recordSchema.safeParse(rec)
+      if (parsed.success) valid.push(parsed.data)
+      else results.errors.push(`Row ${i + 1}: ${parsed.error.issues[0]?.message ?? 'invalid'}`)
+    })
+    const ownership = valid.length ? await checkOwnership(companyId, valid) : null
+    if (ownership) return NextResponse.json({ error: ownership, code: 'NOT_FOUND' }, { status: 404 })
 
-    for (const rec of records) {
+    for (const rec of valid) {
       try {
-        const { guardId, siteId, date, status, shift, notes, overtimeHours } = rec
-        if (!guardId || !date) { results.errors.push('Missing guardId or date for record'); continue }
-
-        const hoursWorked = hoursForStatus(status || 'PRESENT')
-        const otHours = overtimeHours != null ? Number(overtimeHours) : 0
-
+        const date = new Date(rec.date)
         await prisma.attendance.upsert({
-          where: { guardId_date: { guardId, date: new Date(date) } },
-          update: { siteId: siteId || null, status: status || 'PRESENT', shift: shift || null, hoursWorked, overtimeHours: otHours, notes: notes || null },
-          create: { id: crypto.randomUUID(), guardId, siteId: siteId || null, date: new Date(date), status: status || 'PRESENT', shift: shift || null, hoursWorked, overtimeHours: otHours, notes: notes || null },
+          where: { guardId_date: { guardId: rec.guardId, date } },
+          update: writeData(rec),
+          create: { id: crypto.randomUUID(), guardId: rec.guardId, date, ...writeData(rec) },
         })
         results.success++
       } catch (e) {
-        results.errors.push(`Row error: ${e instanceof Error ? e.message : 'unknown'}`)
+        console.error('[attendance bulk] row failed', e)
+        results.errors.push(`Could not save the record for ${rec.date}`)
       }
     }
 
@@ -126,20 +177,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(results)
   }
 
-  const body = await req.json()
-  const { guardId, siteId, date, checkIn, checkOut, status, shift, notes, overtimeHours } = body
+  const parsed = recordSchema.safeParse(body)
+  if (!parsed.success) return apiError(parsed.error)
+  const rec = parsed.data
+  const ownership = await checkOwnership(companyId, [rec])
+  if (ownership) return NextResponse.json({ error: ownership, code: 'NOT_FOUND' }, { status: 404 })
 
-  if (!guardId || !date) return NextResponse.json({ error: 'guardId and date are required' }, { status: 400 })
-
-  const hoursWorked = hoursForStatus(status || 'PRESENT')
-  const otHours = overtimeHours != null ? Number(overtimeHours) : 0
-
-  const existing = await prisma.attendance.findUnique({ where: { guardId_date: { guardId, date: new Date(date) } } })
+  const date = new Date(rec.date)
+  const existing = await prisma.attendance.findUnique({ where: { guardId_date: { guardId: rec.guardId, date } } })
 
   const record = await prisma.attendance.upsert({
-    where: { guardId_date: { guardId, date: new Date(date) } },
-    update: { siteId: siteId || null, checkIn: checkIn ? new Date(checkIn) : null, checkOut: checkOut ? new Date(checkOut) : null, hoursWorked, overtimeHours: otHours, status: status || 'PRESENT', shift: shift || null, notes: notes || null },
-    create: { id: crypto.randomUUID(), guardId, siteId: siteId || null, date: new Date(date), checkIn: checkIn ? new Date(checkIn) : null, checkOut: checkOut ? new Date(checkOut) : null, hoursWorked, overtimeHours: otHours, status: status || 'PRESENT', shift: shift || null, notes: notes || null },
+    where: { guardId_date: { guardId: rec.guardId, date } },
+    update: writeData(rec),
+    create: { id: crypto.randomUUID(), guardId: rec.guardId, date, ...writeData(rec) },
   })
 
   await logAudit({ companyId, userId, userName, action: existing ? 'UPDATE' : 'CREATE', module: 'AttendanceRecord', recordId: record.id, newValues: record })

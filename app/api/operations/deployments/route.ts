@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { apiError } from '@/lib/api-error'
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { companyId, userId, name: userName } = session
-  const body = await req.json()
+  const body = await req.json().catch(() => ({}))
   const { guardId, siteId, shift, shiftType, startDate, endDate, hoursPerDay, ratePerHour } = body
 
   try {
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ deployment }, { status: 201 })
   } catch (err: unknown) {
-    if (err instanceof DeploymentValidationError) return NextResponse.json({ error: err.message }, { status: err.status })
-    throw err
+    if (err instanceof DeploymentValidationError) return NextResponse.json({ error: err.message, code: err.status === 404 ? 'NOT_FOUND' : 'VALIDATION_ERROR' }, { status: err.status })
+    return apiError(err, 'Failed to create the deployment')
   }
 }

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { apiError } from '@/lib/api-error'
 import { getIronSession } from 'iron-session'
 import { cookies } from 'next/headers'
 import { SessionData, sessionOptions } from '@/lib/session'
@@ -58,25 +60,36 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ patrols: enrichedPatrols, complianceRates })
 }
 
+const validDate = (label: string) => z.string({ error: `${label} is required` }).refine((v) => !isNaN(new Date(v).getTime()), `${label} is not a valid date and time`)
+const patrolSchema = z.object({
+  siteId: z.string({ error: 'Site is required' }).min(1, 'Site is required'),
+  guardId: z.string({ error: 'Guard is required' }).min(1, 'Guard is required'),
+  scheduledTime: validDate('Scheduled time'),
+  notes: z.string().max(2000).optional().nullable(),
+})
+
 export async function POST(req: NextRequest) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
   if (!session.isLoggedIn) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const { companyId, userId, name: userName } = session
-  const body = await req.json()
-  const { siteId, guardId, scheduledTime, notes } = body
-
-  if (!siteId || !scheduledTime) return NextResponse.json({ error: 'siteId and scheduledTime are required' }, { status: 400 })
+  // A9.4: an invalid scheduledTime reached Prisma as Invalid Date (500).
+  const parsed = patrolSchema.safeParse(await req.json().catch(() => null))
+  if (!parsed.success) return apiError(parsed.error)
+  const { siteId, guardId, scheduledTime, notes } = parsed.data
 
   const site = await prisma.site.findFirst({ where: { id: siteId, companyId } })
-  if (!site) return NextResponse.json({ error: 'Site not found' }, { status: 404 })
+  if (!site) return NextResponse.json({ error: 'Site not found', code: 'NOT_FOUND' }, { status: 404 })
+  if (!(await prisma.guard.findFirst({ where: { id: guardId, companyId }, select: { id: true } }))) {
+    return NextResponse.json({ error: 'Guard not found', code: 'NOT_FOUND' }, { status: 404 })
+  }
 
   const patrol = await prisma.patrol.create({
     data: {
       id: crypto.randomUUID(),
       companyId,
       siteId,
-      guardId: guardId || null,
+      guardId,
       scheduledTime: new Date(scheduledTime),
       updatedAt: new Date(),
       status: 'SCHEDULED',
