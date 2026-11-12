@@ -26,6 +26,7 @@ interface Payment {
 
 interface BankAccount { id: string; bankName: string; accountNumber: string; currency: string }
 interface PurchaseInvoice { id: string; invoiceNumber: string; balanceDue: number }
+interface Supplier { id: string; name: string }
 interface ExpenseAccount { id: string; account_name: string | null; account_code: string | null; account_type: string | null }
 
 type FormValues = {
@@ -37,6 +38,7 @@ type FormValues = {
   entityType: string
   invoiceId: string
   expenseAccountId: string
+  supplierId: string
   notes: string
 }
 
@@ -47,11 +49,12 @@ export default function PaymentsPage() {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([])
   const [purchaseInvoices, setPurchaseInvoices] = useState<PurchaseInvoice[]>([])
   const [expenseAccounts, setExpenseAccounts] = useState<ExpenseAccount[]>([])
+  const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(true)
   const [showDialog, setShowDialog] = useState(false)
 
   const { register, handleSubmit, control, reset, watch, formState: { isSubmitting } } = useForm<FormValues>({
-    defaultValues: { bankAccountId: '', paymentDate: new Date().toISOString().split('T')[0], payee: '', amount: '', method: 'BANK_TRANSFER', entityType: '', invoiceId: '', expenseAccountId: '', notes: '' },
+    defaultValues: { bankAccountId: '', paymentDate: new Date().toISOString().split('T')[0], payee: '', amount: '', method: 'BANK_TRANSFER', entityType: '', invoiceId: '', expenseAccountId: '', supplierId: '', notes: '' },
   })
   const entityType = watch('entityType')
 
@@ -88,13 +91,18 @@ export default function PaymentsPage() {
       const acctJson = await acctRes.json()
       setExpenseAccounts((acctJson.accounts ?? []).filter((a: ExpenseAccount) => a.account_type === 'EXPENSE'))
     } catch { /* expense accounts optional */ }
+    try {
+      const supRes = await fetch('/api/finance/suppliers')
+      const supJson = await supRes.json()
+      setSuppliers((supJson.suppliers ?? []).map((s: Supplier) => ({ id: s.id, name: s.name })))
+    } catch { /* suppliers optional */ }
   }
 
   useEffect(() => { fetchPayments() }, [])
   useEffect(() => { fetchSupporting() }, [])
 
   function openCreate() {
-    reset({ bankAccountId: '', paymentDate: new Date().toISOString().split('T')[0], payee: '', amount: '', method: 'BANK_TRANSFER', entityType: '', invoiceId: '', expenseAccountId: '', notes: '' })
+    reset({ bankAccountId: '', paymentDate: new Date().toISOString().split('T')[0], payee: '', amount: '', method: 'BANK_TRANSFER', entityType: '', invoiceId: '', expenseAccountId: '', supplierId: '', notes: '' })
     setShowDialog(true)
   }
 
@@ -129,13 +137,12 @@ export default function PaymentsPage() {
       method: data.method,
       notes: data.notes || undefined,
     }
-    if (data.entityType === 'PURCHASE_INVOICE' && data.invoiceId) {
-      payload.entityType = 'PURCHASE_INVOICE'
-      payload.entityId = data.invoiceId
-    } else if (data.entityType === 'EXPENSE' && data.expenseAccountId) {
-      payload.entityType = 'EXPENSE'
-      payload.expenseAccountId = data.expenseAccountId
-    }
+    // A1: every payment says what it pays for; the API rejects an untyped one.
+    if (!data.entityType) { toast.error('Choose what this payment is for'); return }
+    payload.entityType = data.entityType
+    if (data.entityType === 'PURCHASE_INVOICE') payload.entityId = data.invoiceId || undefined
+    if (data.entityType === 'EXPENSE') payload.expenseAccountId = data.expenseAccountId || undefined
+    if (data.entityType === 'SUPPLIER_ADVANCE') payload.supplierId = data.supplierId || undefined
     const res = await fetch('/api/finance/payments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -264,14 +271,14 @@ export default function PaymentsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label>Payment Type</Label>
-              <Controller control={control} name="entityType" render={({ field }) => (
+              <Label>Payment For *</Label>
+              <Controller control={control} name="entityType" rules={{ required: 'Required' }} render={({ field }) => (
                 <Select onValueChange={field.onChange} value={field.value}>
-                  <SelectTrigger><SelectValue placeholder="Not linked" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Select what this pays for" /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Not linked</SelectItem>
-                    <SelectItem value="PURCHASE_INVOICE">Purchase Invoice</SelectItem>
-                    <SelectItem value="EXPENSE">Direct Expense</SelectItem>
+                    <SelectItem value="PURCHASE_INVOICE">Supplier bill</SelectItem>
+                    <SelectItem value="EXPENSE">Direct expense</SelectItem>
+                    <SelectItem value="SUPPLIER_ADVANCE">Supplier advance (no bill yet)</SelectItem>
                   </SelectContent>
                 </Select>
               )} />
@@ -279,7 +286,7 @@ export default function PaymentsPage() {
 
             {entityType === 'PURCHASE_INVOICE' && (
               <div className="space-y-1.5">
-                <Label>Invoice</Label>
+                <Label>Bill *</Label>
                 <Controller control={control} name="invoiceId" render={({ field }) => (
                   <Select onValueChange={field.onChange} value={field.value}>
                     <SelectTrigger><SelectValue placeholder="Select invoice" /></SelectTrigger>
@@ -310,6 +317,23 @@ export default function PaymentsPage() {
                     </SelectContent>
                   </Select>
                 )} />
+              </div>
+            )}
+
+            {entityType === 'SUPPLIER_ADVANCE' && (
+              <div className="space-y-1.5">
+                <Label>Supplier *</Label>
+                <Controller control={control} name="supplierId" render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Select supplier" /></SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map((s) => (
+                        <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )} />
+                <p className="text-xs text-muted-foreground">Recorded in 1450 Supplier Advances until a bill arrives.</p>
               </div>
             )}
 
