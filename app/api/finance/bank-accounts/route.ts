@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
+import { ledgerBalances } from '@/lib/reports/ledger'
 import { logAudit } from '@/lib/audit'
 import { z } from 'zod'
 import { apiError } from '@/lib/api-error'
@@ -31,27 +33,26 @@ export async function GET(req: NextRequest) {
     orderBy: { bank_name: 'asc' },
   })
 
-  const ids = accounts.map((a) => a.id)
-
-  const [receiptAggs, paymentAggs] = await Promise.all([
-    prisma.payment.groupBy({
-      by: ['bank_account_id'],
-      where: { bank_account_id: { in: ids }, companyId: session.companyId, payment_type: 'Customer Receipt' },
-      _sum: { amount: true },
-    }),
-    prisma.payment.groupBy({
-      by: ['bank_account_id'],
-      where: { bank_account_id: { in: ids }, payment_type: { not: 'Customer Receipt' } },
-      _sum: { amount: true },
-    }),
+  // A4: the calculated balance is the bank's GL account in the ledger (every
+  // posted receipt, payment, transfer and payroll payment), plus its opening
+  // balance only if that hasn't been posted as an opening-balance journal yet.
+  // It used to add up receipts and payments alone, so transfers and payroll
+  // showed as a variance even when the books agreed.
+  const glIds = accounts.map((a) => a.chart_account_id).filter((v): v is string => !!v)
+  const [ledger, openingJournals] = await Promise.all([
+    ledgerBalances(prisma, session.companyId, {}),
+    glIds.length
+      ? prisma.journalEntry.findMany({ where: { companyId: session.companyId, source_type: 'openingBalance', source_id: { in: glIds }, status: 'POSTED' }, select: { source_id: true } })
+      : [],
   ])
-
-  const receiptMap = Object.fromEntries(
-    receiptAggs.map((r) => [r.bank_account_id, Number(r._sum.amount ?? 0)]),
-  )
-  const paymentMap = Object.fromEntries(
-    paymentAggs.map((p) => [p.bank_account_id, Number(p._sum.amount ?? 0)]),
-  )
+  const glBalance = new Map(ledger.map((r) => [r.id, r.balance]))
+  const openingPosted = new Set(openingJournals.map((j) => j.source_id))
+  const calculated = (a: (typeof accounts)[number]) => {
+    const opening = new Prisma.Decimal(a.opening_balance ?? 0)
+    if (!a.chart_account_id) return Number(opening)
+    const gl = glBalance.get(a.chart_account_id) ?? new Prisma.Decimal(0)
+    return Number(openingPosted.has(a.chart_account_id) ? gl : gl.add(opening))
+  }
 
   const result = accounts.map((a) => ({
     ...a,
@@ -60,8 +61,7 @@ export async function GET(req: NextRequest) {
     accountType: a.account_type,
     openingBalance: Number(a.opening_balance),
     currentBalance: Number(a.current_balance),
-    calculatedBalance:
-      Number(a.opening_balance) + (receiptMap[a.id] ?? 0) - (paymentMap[a.id] ?? 0),
+    calculatedBalance: calculated(a),
   }))
 
   return NextResponse.json({ accounts: result })

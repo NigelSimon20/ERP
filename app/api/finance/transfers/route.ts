@@ -7,7 +7,9 @@ import { nextTransferReference } from '@/lib/auto-numbers'
 import { calculateTransferImpact, calculateNewBankBalance } from '@/lib/calculations'
 import { checkLockDate } from '@/lib/lock-dates'
 import { z } from 'zod'
-import { apiError } from '@/lib/api-error'
+import { apiError, ApiError } from '@/lib/api-error'
+import { postJournal } from '@/lib/gl-posting'
+import { autoJournalReference } from '@/lib/journal-rules'
 
 const transferSchema = z.object({
   fromAccountId: z.string().min(1),
@@ -67,6 +69,9 @@ export async function POST(req: NextRequest) {
     if (!fromAccount || !toAccount) {
       return NextResponse.json({ error: 'Bank account not found' }, { status: 404 })
     }
+    if (!fromAccount.chart_account_id || !toAccount.chart_account_id) {
+      return NextResponse.json({ error: 'Both bank accounts need a linked GL account', code: 'BANK_NOT_LINKED' }, { status: 400 })
+    }
 
     const fromBalance = Number(fromAccount.current_balance ?? 0)
     const toBalance = Number(toAccount.current_balance ?? 0)
@@ -86,7 +91,7 @@ export async function POST(req: NextRequest) {
         where: { id: data.fromAccountId, current_balance: { gte: data.amount } },
         data: { current_balance: { decrement: data.amount } },
       })
-      if (decremented.count === 0) throw new Error('Insufficient balance in source account')
+      if (decremented.count === 0) throw new ApiError('Insufficient balance in source account', 400, 'INSUFFICIENT_FUNDS')
       await tx.bankAccount.update({
         where: { id: data.toAccountId },
         data: { current_balance: { increment: data.amount } },
@@ -109,52 +114,22 @@ export async function POST(req: NextRequest) {
         },
       })
 
-      const [fromLedger, toLedger] = await Promise.all([
-        tx.bankAccount.findUnique({ where: { id: data.fromAccountId }, select: { chart_account_id: true } }).catch(() => null),
-        tx.bankAccount.findUnique({ where: { id: data.toAccountId }, select: { chart_account_id: true } }).catch(() => null),
-      ])
-
-      const fromLedgerId = fromLedger?.chart_account_id
-      const toLedgerId = toLedger?.chart_account_id
-
-      if (fromLedgerId && toLedgerId) {
-        const je = await tx.journalEntry.create({
-          data: {
-            id: crypto.randomUUID(),
-            companyId: session.companyId,
-            reference: `JE-auto-${reference}`,
-            entry_date: new Date(data.transferDate).toISOString(),
-            description: `Bank transfer`,
-            total_debit: data.amount,
-            total_credit: data.amount,
-            status: 'POSTED',
-            created_by_id: session.userId,
-          },
-        })
-        await tx.journalLine.createMany({
-          data: [
-            {
-              id: crypto.randomUUID(),
-              journalEntryId: je.id,
-              accountId: toLedgerId,
-              description: 'Transfer in',
-              debit: data.amount,
-              credit: 0,
-            },
-            {
-              id: crypto.randomUUID(),
-              journalEntryId: je.id,
-              accountId: fromLedgerId,
-              description: 'Transfer out',
-              debit: 0,
-              credit: data.amount,
-            },
-          ],
-        })
-
-        await tx.chartOfAccount.update({ where: { id: toLedgerId }, data: { current_balance: { increment: data.amount } } })
-        await tx.chartOfAccount.update({ where: { id: fromLedgerId }, data: { current_balance: { decrement: data.amount } } })
-      }
+      // A4: every transfer reaches the ledger through the validated path, so
+      // each bank's stored balance, its GL account and its calculated
+      // balance move together.
+      await postJournal(tx, {
+        companyId: session.companyId,
+        reference: autoJournalReference('TRF', reference),
+        entryDate: new Date(data.transferDate).toISOString(),
+        description: 'Bank transfer',
+        lines: [
+          { accountId: toAccount.chart_account_id!, debit: data.amount, description: 'Transfer in' },
+          { accountId: fromAccount.chart_account_id!, credit: data.amount, description: 'Transfer out' },
+        ],
+        userId: session.userId,
+        sourceType: 'bankTransfer',
+        sourceId: t.id,
+      })
 
       return { transfer: t, updatedFromAccount, updatedToAccount }
     }, { timeout: 60000 })
