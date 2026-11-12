@@ -12,6 +12,8 @@ import { apiError, ApiError } from '@/lib/api-error'
 const updateSchema = z.object({
   dueDate: z.string().optional(),
   description: z.string().optional(),
+  // A9.1: API clients send `notes`; the page sends `description`.
+  notes: z.string().optional(),
 })
 
 async function getSession(req: NextRequest) {
@@ -55,7 +57,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
       where: { id: params.id },
       data: {
         due_date: data.dueDate ?? undefined,
-        overall_description: data.description,
+        overall_description: data.notes ?? data.description,
         updated_date: new Date().toISOString(),
       },
     })
