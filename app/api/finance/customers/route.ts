@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { z } from 'zod'
 import { apiError } from '@/lib/api-error'
+import { getReceivables } from '@/lib/reports/subledger'
 
 const customerSchema = z.object({
   name: z.string().min(1),
@@ -33,12 +34,11 @@ export async function GET(req: NextRequest) {
     orderBy: { company_name: 'asc' },
   })
 
-  const [balanceAggs, invoiceCountAggs] = await Promise.all([
-    prisma.salesInvoice.groupBy({
-      by: ['customer_id'],
-      where: { status: { not: 'Void' }, companyId: session.companyId },
-      _sum: { balance_due: true },
-    }),
+  const [receivables, invoiceCountAggs] = await Promise.all([
+    // A2: Σ open invoice balances − Σ unapplied credits (credit notes,
+    // unallocated receipts, overpayments), from the receivables subledger,
+    // which ties to GL 1100. Same figure as the dashboard and the AI.
+    getReceivables(prisma, session.companyId),
     prisma.salesInvoice.groupBy({
       by: ['customer_id'],
       where: { companyId: session.companyId },
@@ -46,9 +46,6 @@ export async function GET(req: NextRequest) {
     }),
   ])
 
-  const balanceMap = Object.fromEntries(
-    balanceAggs.map((b) => [b.customer_id, Number(b._sum.balance_due ?? 0)]),
-  )
   const invoiceCountMap = Object.fromEntries(
     invoiceCountAggs.map((c) => [c.customer_id, c._count.id]),
   )
@@ -61,7 +58,7 @@ export async function GET(req: NextRequest) {
     address: c.billing_address,
     paymentTerms: c.payment_terms ?? 30,
     creditLimit: Number(c.credit_limit ?? 0),
-    outstandingBal: balanceMap[c.id] ?? 0,
+    outstandingBal: Number(receivables.byParty.get(c.id) ?? 0),
     invoiceCount: invoiceCountMap[c.id] ?? 0,
   }))
 

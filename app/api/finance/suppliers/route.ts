@@ -3,6 +3,7 @@ import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
+import { getPayables } from '@/lib/reports/subledger'
 
 async function getSession(req: NextRequest) {
   const res = NextResponse.next()
@@ -14,7 +15,7 @@ export async function GET(req: NextRequest) {
   const session = await getSession(req)
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const [suppliers, balances] = await Promise.all([
+  const [suppliers, balances, payables] = await Promise.all([
     prisma.supplier.findMany({
       where: { companyId: session.companyId },
       orderBy: { company_name: 'asc' },
@@ -26,6 +27,9 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
       _max: { issueDate: true },
     }),
+    // A2: what each supplier is owed comes from the payables subledger
+    // (open bills less unapplied debit notes), which ties to GL 2000.
+    getPayables(prisma, session.companyId),
   ])
 
   const balanceMap = Object.fromEntries(balances.map((b) => [b.supplierId, b]))
@@ -35,7 +39,7 @@ export async function GET(req: NextRequest) {
       ...s,
       name: s.company_name ?? '',
       paymentTerms: s.payment_terms ?? 30,
-      outstandingBal: Number(balanceMap[s.id]?._sum.balanceDue ?? 0),
+      outstandingBal: Number(payables.byParty.get(s.id) ?? 0),
       invoiceCount: balanceMap[s.id]?._count.id ?? 0,
       lastInvoiceDate: balanceMap[s.id]?._max.issueDate ?? null,
     })),

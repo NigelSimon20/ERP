@@ -15,7 +15,7 @@ const D = Prisma.Decimal
 //   AR_SUBLEDGER    -> A2 (credit notes reduce invoice and customer balances)
 //   AP_SUBLEDGER    -> A1 (every payment settles a bill, an expense or an advance)
 //   BANK_CALCULATED -> A4 (calculated balance comes from the ledger)
-export const PENDING = new Set<string>(['AR_SUBLEDGER', 'BANK_CALCULATED'])
+export const PENDING = new Set<string>(['BANK_CALCULATED'])
 
 // Run in afterAll of every regression file. Logs in as the tenant's admin
 // (afterAll runs last, so this doesn't disturb the tests' own session).

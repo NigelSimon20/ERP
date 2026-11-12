@@ -45,7 +45,7 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
     where: { id: params.id, companyId: session.companyId },
   })
   if (!invoice) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  if (invoice.status === 'Void' || Number(invoice.amount_paid ?? 0) > 0) {
+  if (invoice.status === 'Void' || Number(invoice.amount_paid ?? 0) > 0 || Number(invoice.credited_amount) > 0) {
     return NextResponse.json({ error: 'Only unpaid invoices can be edited' }, { status: 400 })
   }
 
@@ -104,9 +104,13 @@ export async function POST(req: NextRequest, { params }: Ctx) {
         // BUG-026: voiding while receipts are allocated left them posted
         // against nothing (an orphan AR credit). Lock the row so a receipt
         // can't land mid-void, then refuse while any money is allocated.
-        const [locked] = await tx.$queryRaw<{ amount_paid: unknown }[]>`SELECT amount_paid FROM sales_invoices WHERE id = ${params.id} FOR UPDATE`
+        const [locked] = await tx.$queryRaw<{ amount_paid: unknown; credited_amount: unknown }[]>`SELECT amount_paid, credited_amount FROM sales_invoices WHERE id = ${params.id} FOR UPDATE`
         if (Number(locked?.amount_paid ?? 0) !== 0) {
           throw new ApiError('This invoice has receipts allocated to it. Reverse those receipts before voiding it.', 409, 'HAS_ALLOCATIONS')
+        }
+        // A2: an applied credit note is an allocation too.
+        if (Number(locked?.credited_amount ?? 0) !== 0) {
+          throw new ApiError('This invoice has a credit note applied to it. Void the credit note before voiding the invoice.', 409, 'HAS_ALLOCATIONS')
         }
         await tx.salesInvoice.update({
           where: { id: params.id },

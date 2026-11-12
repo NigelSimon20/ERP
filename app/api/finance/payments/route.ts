@@ -208,8 +208,10 @@ export async function POST(req: NextRequest) {
       // if linked purchase invoice, update paid/balance/status and supplier outstanding
       if (entityType === 'PURCHASE_INVOICE' && invoice) {
         const newPaidAmount = round2dp(Number(invoice.paidAmount ?? invoice.paid_amount ?? 0) + Number(data.amount))
-        newInvoiceBalance = calculateBalanceDue(Number(invoice.totalAmount ?? invoice.total_amount ?? 0), newPaidAmount)
-        newInvoiceStatus = determineInvoiceStatus(Number(invoice.totalAmount ?? invoice.total_amount ?? 0), newPaidAmount, new Date(invoice.dueDate ?? invoice.due_date ?? invoice.due_date))
+        // A2: applied debit notes reduce what is left to pay.
+        const credited = Number(invoice.creditedAmount ?? 0)
+        newInvoiceBalance = calculateBalanceDue(Number(invoice.totalAmount ?? invoice.total_amount ?? 0), round2dp(newPaidAmount + credited))
+        newInvoiceStatus = determineInvoiceStatus(Number(invoice.totalAmount ?? invoice.total_amount ?? 0), round2dp(newPaidAmount + credited), new Date(invoice.dueDate ?? invoice.due_date ?? invoice.due_date))
         updatedInvoice = await tx.purchaseInvoice.update({ where: { id: data.entityId }, data: { paidAmount: newPaidAmount, balanceDue: newInvoiceBalance, status: newInvoiceStatus as any } })
 
         // recalc supplier outstanding from AP invoices

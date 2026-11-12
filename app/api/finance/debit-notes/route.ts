@@ -49,12 +49,25 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { supplierId, purchaseInvoiceId, issueDate, reason, lineItems } = body
-    if (!supplierId || !issueDate || !reason) return NextResponse.json({ error: 'supplierId, issueDate, reason required' }, { status: 400 })
-    if (!Array.isArray(lineItems) || lineItems.length === 0) return NextResponse.json({ error: 'At least one line item required' }, { status: 400 })
+    const { issueDate, reason, lineItems } = body
+    // A2: the bill may come as invoiceId or purchaseInvoiceId; when given, the
+    // supplier is the bill's (and a different one is rejected).
+    const purchaseInvoiceId: string | null = body.invoiceId || body.purchaseInvoiceId || null
+    let supplierId: string | undefined = body.supplierId
+    if (purchaseInvoiceId) {
+      const bill = await prisma.purchaseInvoice.findFirst({ where: { id: purchaseInvoiceId, companyId: session.companyId }, select: { supplierId: true, status: true } })
+      if (!bill) return NextResponse.json({ error: 'Bill not found', code: 'NOT_FOUND' }, { status: 404 })
+      if (bill.status === 'VOID') return NextResponse.json({ error: 'That bill has been voided', code: 'INVALID_STATE' }, { status: 409 })
+      if (supplierId && supplierId !== bill.supplierId) {
+        return NextResponse.json({ error: 'The supplier does not match the bill’s supplier', code: 'SUPPLIER_MISMATCH' }, { status: 400 })
+      }
+      supplierId = bill.supplierId
+    }
+    if (!supplierId || !issueDate || !reason) return NextResponse.json({ error: 'supplierId (or invoiceId), issueDate, reason required', code: 'VALIDATION_ERROR' }, { status: 400 })
+    if (!Array.isArray(lineItems) || lineItems.length === 0) return NextResponse.json({ error: 'At least one line item required', code: 'VALIDATION_ERROR' }, { status: 400 })
 
     const supplier = await prisma.supplier.findFirst({ where: { id: supplierId, companyId: session.companyId } })
-    if (!supplier) return NextResponse.json({ error: 'Supplier not found' }, { status: 404 })
+    if (!supplier) return NextResponse.json({ error: 'Supplier not found', code: 'NOT_FOUND' }, { status: 404 })
 
     const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { showVat: true, taxInclusive: true } })
     const taxEnabled = company?.showVat ?? true
@@ -72,7 +85,7 @@ export async function POST(req: NextRequest) {
       const dn = await tx.debitNote.create({
         data: {
           companyId: session.companyId,
-          supplierId,
+          supplierId: supplier.id,
           purchaseInvoiceId: purchaseInvoiceId || null,
           debitNoteNumber,
           issueDate: new Date(issueDate),

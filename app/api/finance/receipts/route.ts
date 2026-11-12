@@ -149,19 +149,21 @@ export async function POST(req: NextRequest) {
         // BUG-027: lock the invoice row so concurrent receipts queue up and
         // each sees the previous one's amount_paid (two $10 receipts used to
         // raise it by $10 between them).
-        const [locked] = await tx.$queryRaw<{ total_amount: Prisma.Decimal | null; amount_paid: Prisma.Decimal | null; due_date: string | null; invoice_number: string | null }[]>`
-          SELECT total_amount, amount_paid, due_date, invoice_number FROM sales_invoices WHERE id = ${data.invoiceId} FOR UPDATE`
+        const [locked] = await tx.$queryRaw<{ total_amount: Prisma.Decimal | null; amount_paid: Prisma.Decimal | null; credited_amount: Prisma.Decimal; due_date: string | null; invoice_number: string | null }[]>`
+          SELECT total_amount, amount_paid, credited_amount, due_date, invoice_number FROM sales_invoices WHERE id = ${data.invoiceId} FOR UPDATE`
         const total = money(locked.total_amount)
         const paid = money(locked.amount_paid)
-        const owed = total.sub(paid)
+        // A2: applied credit notes reduce what is left to pay.
+        const credited = money(locked.credited_amount)
+        const owed = total.sub(paid).sub(credited)
         if (amount.gt(owed)) {
           throw new ApiError(`Receipt amount (${amount.toFixed(2)}) exceeds invoice balance due (${owed.toFixed(2)})`, 400, 'OVERPAYMENT')
         }
         const newPaid = paid.add(amount)
-        newInvoiceBalance = Number(total.sub(newPaid))
-        newInvoiceStatus = toDbInvoiceStatus(determineInvoiceStatus(Number(total), Number(newPaid), new Date(locked.due_date ?? Date.now())))
+        newInvoiceBalance = Number(total.sub(newPaid).sub(credited))
+        newInvoiceStatus = toDbInvoiceStatus(determineInvoiceStatus(Number(total), Number(newPaid.add(credited)), new Date(locked.due_date ?? Date.now())))
         invoiceNumber = locked.invoice_number ?? ''
-        updatedInvoice = await tx.salesInvoice.update({ where: { id: data.invoiceId }, data: { amount_paid: newPaid, balance_due: total.sub(newPaid), status: newInvoiceStatus } })
+        updatedInvoice = await tx.salesInvoice.update({ where: { id: data.invoiceId }, data: { amount_paid: newPaid, balance_due: total.sub(newPaid).sub(credited), status: newInvoiceStatus } })
       }
 
       const r = await tx.payment.create({

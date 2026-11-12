@@ -39,6 +39,9 @@ model Company {
   taxInclusive             Boolean? @default(false) @map("tax_inclusive")
   taxAppliedByDefault      Boolean? @default(true) @map("tax_applied_by_default")
   fiscalYearStart         String   @default("01-01") @map("fiscal_year_start")
+  // A2: a credit/debit note larger than its invoice's balance leaves the
+  // excess as unapplied credit (true) or is rejected (false, the default).
+  allowUnappliedCredit    Boolean  @default(false) @map("allow_unapplied_credit")
   // P1-9 maker-checker: journals above this total need a second person to
   // post them. NULL = off.
   approvalThreshold       Decimal? @db.Decimal(18, 2) @map("approval_threshold")
@@ -908,6 +911,8 @@ model CreditNote {
   totalAmount      Decimal @db.Decimal(18, 2)
   status           CreditNoteStatus @default(DRAFT)
   journalEntryId   String?
+  // A2: amount applied to salesInvoiceId; the rest is unapplied customer credit.
+  allocatedAmount  Decimal          @default(0) @db.Decimal(18, 2)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
   lineItems        CreditNoteLine[]
@@ -954,6 +959,8 @@ model DebitNote {
   totalAmount       Decimal @db.Decimal(18, 2)
   status            DebitNoteStatus @default(DRAFT)
   journalEntryId    String?
+  // A2: amount applied to purchaseInvoiceId; the rest is unapplied supplier credit.
+  allocatedAmount   Decimal         @default(0) @db.Decimal(18, 2)
   createdAt         DateTime        @default(now())
   updatedAt         DateTime        @updatedAt
   lineItems         DebitNoteLine[]
@@ -1407,6 +1414,8 @@ model SalesInvoice {
   revenue_account_id     String?
   customer_name          String?
   balance_due            Decimal? @db.Decimal(18, 2)
+  // A2: total of credit notes applied to this invoice. balance_due = total - paid - credited.
+  credited_amount        Decimal  @default(0) @db.Decimal(18, 2)
   customer_id            String?
   supplier_id            String?
   overall_description    String?  @db.Text
@@ -1456,6 +1465,8 @@ model PurchaseInvoice {
   totalAmount  Decimal @db.Decimal(18, 2)
   paidAmount   Decimal? @db.Decimal(18, 2) @default(0)
   balanceDue   Decimal @db.Decimal(18, 2)
+  // A2: total of debit notes applied to this bill. balanceDue = total - paid - credited.
+  creditedAmount Decimal @default(0) @db.Decimal(18, 2)
   status       InvoiceStatus @default(UNPAID)
   notes        String?  @db.Text
   journalEntryId String?

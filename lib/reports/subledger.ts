@@ -45,9 +45,9 @@ export async function getReceivables(db: Db, companyId: string): Promise<Subledg
   const [invoices, creditNotes] = await Promise.all([
     db.salesInvoice.findMany({
       where: { companyId, status: { not: DB_STATUS_VOID } },
-      select: { customer_id: true, total_amount: true, amount_paid: true, currency: true },
+      select: { customer_id: true, total_amount: true, amount_paid: true, credited_amount: true, currency: true },
     }),
-    db.creditNote.findMany({ where: { companyId, status: 'ISSUED' }, select: { customerId: true, totalAmount: true } }),
+    db.creditNote.findMany({ where: { companyId, status: 'ISSUED' }, select: { customerId: true, totalAmount: true, allocatedAmount: true } }),
   ])
   // Receipts not allocated to an invoice still credit AR in the ledger:
   // they are customer credit (P1-5: overpayments are credit, not clamped).
@@ -59,7 +59,7 @@ export async function getReceivables(db: Db, companyId: string): Promise<Subledg
   let open = ZERO, credits = ZERO, openDocuments = 0, unconverted = 0
   const byParty = new Map<string, Prisma.Decimal>()
   for (const inv of invoices) {
-    const owed = new D(inv.total_amount ?? 0).sub(new D(inv.amount_paid ?? 0))
+    const owed = new D(inv.total_amount ?? 0).sub(new D(inv.amount_paid ?? 0)).sub(new D(inv.credited_amount))
     if (owed.isZero()) continue
     const c = convert(Number(owed), inv.currency)
     if (!c.converted) unconverted++
@@ -67,9 +67,12 @@ export async function getReceivables(db: Db, companyId: string): Promise<Subledg
     if (v.isPositive()) { open = open.add(v); openDocuments++ } else credits = credits.add(v.neg())
     add(byParty, inv.customer_id, v)
   }
-  // Issued credit notes credit AR in the ledger; they reduce what is owed.
+  // Issued credit notes credit AR in the ledger. The part applied to an
+  // invoice is already off that invoice's balance (A2); the rest is
+  // unapplied customer credit.
   for (const cn of creditNotes) {
-    const v = new D(cn.totalAmount)
+    const v = new D(cn.totalAmount).sub(new D(cn.allocatedAmount))
+    if (v.isZero()) continue
     credits = credits.add(v)
     add(byParty, cn.customerId, v.neg())
   }
@@ -93,20 +96,23 @@ export async function getReceivables(db: Db, companyId: string): Promise<Subledg
 export async function getPayables(db: Db, companyId: string): Promise<Subledger> {
   const company = await db.company.findUnique({ where: { id: companyId }, select: { payablesAccountId: true } })
   const [bills, debitNotes] = await Promise.all([
-    db.purchaseInvoice.findMany({ where: { companyId, status: { not: 'VOID' } }, select: { supplierId: true, totalAmount: true, paidAmount: true } }),
-    db.debitNote.findMany({ where: { companyId, status: 'ISSUED' }, select: { supplierId: true, totalAmount: true } }),
+    db.purchaseInvoice.findMany({ where: { companyId, status: { not: 'VOID' } }, select: { supplierId: true, totalAmount: true, paidAmount: true, creditedAmount: true } }),
+    db.debitNote.findMany({ where: { companyId, status: 'ISSUED' }, select: { supplierId: true, totalAmount: true, allocatedAmount: true } }),
   ])
   let open = ZERO, credits = ZERO, openDocuments = 0
   const byParty = new Map<string, Prisma.Decimal>()
   for (const b of bills) {
-    const owed = new D(b.totalAmount).sub(new D(b.paidAmount ?? 0))
+    const owed = new D(b.totalAmount).sub(new D(b.paidAmount ?? 0)).sub(new D(b.creditedAmount))
     if (owed.isZero()) continue
     if (owed.isPositive()) { open = open.add(owed); openDocuments++ } else credits = credits.add(owed.neg())
     add(byParty, b.supplierId, owed)
   }
+  // Only the unapplied part of a debit note is a separate credit (A2).
   for (const dn of debitNotes) {
-    credits = credits.add(new D(dn.totalAmount))
-    add(byParty, dn.supplierId, new D(dn.totalAmount).neg())
+    const v = new D(dn.totalAmount).sub(new D(dn.allocatedAmount))
+    if (v.isZero()) continue
+    credits = credits.add(v)
+    add(byParty, dn.supplierId, v.neg())
   }
   const total = open.sub(credits)
   const controlAccountBalance = await controlBalance(db, companyId, company?.payablesAccountId ?? null)

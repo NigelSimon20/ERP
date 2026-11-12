@@ -147,7 +147,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   if (action === 'void') {
     if ((invoice.status as string) === 'VOID') return NextResponse.json({ error: 'Already voided' }, { status: 400 })
-    if (Number(invoice.paidAmount) > 0) return NextResponse.json({ error: 'Cannot void: payments exist' }, { status: 400 })
+    // A2: payments and applied debit notes are both allocations.
+    if (Number(invoice.paidAmount) > 0) return NextResponse.json({ error: 'Cannot void: payments exist', code: 'HAS_ALLOCATIONS' }, { status: 409 })
+    if (Number(invoice.creditedAmount) > 0) return NextResponse.json({ error: 'Cannot void: a debit note is applied to this bill. Void the debit note first.', code: 'HAS_ALLOCATIONS' }, { status: 409 })
     if (invoice.issueDate) {
       const lockError = await checkLockDate(session.companyId, new Date(invoice.issueDate))
       if (lockError) return NextResponse.json({ error: lockError, code: 'PERIOD_LOCKED' }, { status: 422 })

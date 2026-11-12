@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { logAudit } from '@/lib/audit'
 import { postDebitNoteToGL } from '@/lib/gl-posting'
 import { recalculateSupplierOutstandingBalance } from '@/lib/finance-recalculation'
+import { applyDebitNoteToBill, reverseDebitNoteAllocation } from '@/lib/note-allocation'
 import { apiError, ApiError } from '@/lib/api-error'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
@@ -39,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const lockDate = await prisma.lockDate.findFirst({ where: { companyId, lockedUntil: { gte: existing.issueDate } } })
     if (lockDate) return NextResponse.json({ error: `Period is locked until ${lockDate.lockedUntil.toLocaleDateString()}`, code: 'PERIOD_LOCKED' }, { status: 422 })
 
-    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { payablesAccountId: true } })
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { payablesAccountId: true, allowUnappliedCredit: true } })
     if (!company?.payablesAccountId) return NextResponse.json({ error: 'Accounts Payable account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
 
     const body = await req.json().catch(() => ({}))
@@ -58,6 +59,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           entryDate: existing.issueDate.toISOString(), totalAmount: Number(existing.totalAmount),
           payableAccountId: company.payablesAccountId!, expenseAccountId: expenseAccount.id, userId,
         })
+        // A2: reduce the bill in the same transaction as the journal.
+        await applyDebitNoteToBill(tx, existing, company.allowUnappliedCredit)
         await recalculateSupplierOutstandingBalance(tx, existing.supplierId, companyId)
         return tx.debitNote.findUniqueOrThrow({ where: { id: params.id } })
       }, { timeout: 60000 })
@@ -78,6 +81,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         const { reverseJournalEntry } = await import('@/lib/gl-posting')
         await reverseJournalEntry(tx, existing.journalEntryId)
       }
+      // A2: give back to the bill exactly what this note took off it.
+      if (wasIssued) await reverseDebitNoteAllocation(tx, existing)
       const dn = await tx.debitNote.update({ where: { id: params.id }, data: { status: 'VOID' } })
       if (wasIssued) await recalculateSupplierOutstandingBalance(tx, existing.supplierId, companyId)
       return dn

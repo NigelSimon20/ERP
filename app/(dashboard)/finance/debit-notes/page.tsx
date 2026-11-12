@@ -25,9 +25,10 @@ interface DebitNote {
   supplier: { id: string; name: string }
 }
 interface Supplier { id: string; name: string }
+interface OpenBill { id: string; billNumber: string; balanceDue: number; status: string }
 interface GLAccount { id: string; account_name: string; account_code: string; account_type: string }
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
-type DebitNoteForm = { supplierId: string; issueDate: string; reason: string; lineItems: LineItem[] }
+type DebitNoteForm = { supplierId: string; purchaseInvoiceId: string; issueDate: string; reason: string; lineItems: LineItem[] }
 
 const STATUS_STYLES: Record<string, string> = {
   DRAFT: 'bg-muted text-foreground',
@@ -50,10 +51,19 @@ export default function DebitNotesPage() {
   const expenseAccounts = useMemo(() => glAccounts.filter((a) => a.account_type === 'EXPENSE'), [glAccounts])
 
   const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<DebitNoteForm>({
-    defaultValues: { supplierId: '', issueDate: '', reason: '', lineItems: [blankLine()] },
+    defaultValues: { supplierId: '', purchaseInvoiceId: 'none', issueDate: '', reason: '', lineItems: [blankLine()] },
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' })
   const watchedItems = useWatch({ control, name: 'lineItems' }) ?? []
+  // A2: a debit note can be applied to one of the supplier's open bills.
+  const watchedSupplier = useWatch({ control, name: 'supplierId' })
+  const [openBills, setOpenBills] = useState<OpenBill[]>([])
+  useEffect(() => {
+    if (!watchedSupplier) { setOpenBills([]); return }
+    fetch(`/api/finance/purchase-invoices?supplierId=${watchedSupplier}`).then((r) => r.json())
+      .then((j) => setOpenBills((j.invoices ?? []).filter((b: OpenBill) => b.status !== 'VOID' && Number(b.balanceDue) > 0)))
+      .catch(() => setOpenBills([]))
+  }, [watchedSupplier])
   const totals = useMemo(() => calculateInvoiceTotals(watchedItems.map((i) => ({ quantity: Number(i?.quantity) || 0, unitPrice: Number(i?.unitPrice) || 0, taxRate: Number(i?.taxRate) || 0 }))), [watchedItems])
 
   async function fetchRows() {
@@ -73,13 +83,13 @@ export default function DebitNotesPage() {
   }, [])
 
   async function onCreate(data: DebitNoteForm) {
-    const payload = { ...data, lineItems: data.lineItems.filter((l) => l.description).map((l) => ({ description: l.description, quantity: Number(l.quantity) || 1, unitPrice: Number(l.unitPrice) || 0, taxRate: Number(l.taxRate) || 0 })) }
+    const payload = { ...data, purchaseInvoiceId: data.purchaseInvoiceId === 'none' ? undefined : data.purchaseInvoiceId, lineItems: data.lineItems.filter((l) => l.description).map((l) => ({ description: l.description, quantity: Number(l.quantity) || 1, unitPrice: Number(l.unitPrice) || 0, taxRate: Number(l.taxRate) || 0 })) }
     const res = await fetch('/api/finance/debit-notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     const json = await res.json()
     if (!res.ok) { toast.error(json.error); return }
     toast.success(`Debit note ${json.debitNote.debitNoteNumber} created (DRAFT)`)
     setShowCreateDialog(false)
-    reset({ supplierId: '', issueDate: '', reason: '', lineItems: [blankLine()] })
+    reset({ supplierId: '', purchaseInvoiceId: 'none', issueDate: '', reason: '', lineItems: [blankLine()] })
     fetchRows()
   }
 
@@ -183,6 +193,18 @@ export default function DebitNotesPage() {
               <div className="space-y-1.5">
                 <Label>Issue Date *</Label>
                 <Input type="date" {...register('issueDate', { required: true })} />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label>Apply to bill</Label>
+                <Controller control={control} name="purchaseInvoiceId" render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Select bill" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No bill (unapplied supplier credit)</SelectItem>
+                      {openBills.map((b) => <SelectItem key={b.id} value={b.id}>{b.billNumber} — {Number(b.balanceDue).toFixed(2)} due</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
               <div className="space-y-1.5 col-span-2">
                 <Label>Reason *</Label>

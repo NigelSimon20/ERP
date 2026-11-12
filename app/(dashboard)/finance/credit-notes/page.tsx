@@ -25,9 +25,10 @@ interface CreditNote {
   customer: { id: string; name: string }
 }
 interface Customer { id: string; name: string }
+interface OpenInvoice { id: string; invoiceNumber: string; balanceDue: number }
 interface GLAccount { id: string; account_name: string; account_code: string; account_type: string }
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
-type CreditNoteForm = { customerId: string; issueDate: string; reason: string; lineItems: LineItem[] }
+type CreditNoteForm = { customerId: string; salesInvoiceId: string; issueDate: string; reason: string; lineItems: LineItem[] }
 
 const STATUS_STYLES: Record<string, string> = {
   DRAFT: 'bg-muted text-foreground',
@@ -50,10 +51,19 @@ export default function CreditNotesPage() {
   const revenueAccounts = useMemo(() => glAccounts.filter((a) => a.account_type === 'REVENUE'), [glAccounts])
 
   const { register, handleSubmit, control, reset, formState: { isSubmitting } } = useForm<CreditNoteForm>({
-    defaultValues: { customerId: '', issueDate: '', reason: '', lineItems: [blankLine()] },
+    defaultValues: { customerId: '', salesInvoiceId: 'none', issueDate: '', reason: '', lineItems: [blankLine()] },
   })
   const { fields, append, remove } = useFieldArray({ control, name: 'lineItems' })
   const watchedItems = useWatch({ control, name: 'lineItems' }) ?? []
+  // A2: a credit note can be applied to one of the customer's open invoices.
+  const watchedCustomer = useWatch({ control, name: 'customerId' })
+  const [openInvoices, setOpenInvoices] = useState<OpenInvoice[]>([])
+  useEffect(() => {
+    if (!watchedCustomer) { setOpenInvoices([]); return }
+    fetch(`/api/finance/sales-invoices?customerId=${watchedCustomer}&limit=100`).then((r) => r.json())
+      .then((j) => setOpenInvoices((j.invoices ?? []).filter((i: OpenInvoice & { status: string }) => i.status !== 'VOID' && Number(i.balanceDue) > 0)))
+      .catch(() => setOpenInvoices([]))
+  }, [watchedCustomer])
   const totals = useMemo(() => calculateInvoiceTotals(watchedItems.map((i) => ({ quantity: Number(i?.quantity) || 0, unitPrice: Number(i?.unitPrice) || 0, taxRate: Number(i?.taxRate) || 0 }))), [watchedItems])
 
   async function fetchRows() {
@@ -73,13 +83,13 @@ export default function CreditNotesPage() {
   }, [])
 
   async function onCreate(data: CreditNoteForm) {
-    const payload = { ...data, lineItems: data.lineItems.filter((l) => l.description).map((l) => ({ description: l.description, quantity: Number(l.quantity) || 1, unitPrice: Number(l.unitPrice) || 0, taxRate: Number(l.taxRate) || 0 })) }
+    const payload = { ...data, salesInvoiceId: data.salesInvoiceId === 'none' ? undefined : data.salesInvoiceId, lineItems: data.lineItems.filter((l) => l.description).map((l) => ({ description: l.description, quantity: Number(l.quantity) || 1, unitPrice: Number(l.unitPrice) || 0, taxRate: Number(l.taxRate) || 0 })) }
     const res = await fetch('/api/finance/credit-notes', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
     const json = await res.json()
     if (!res.ok) { toast.error(json.error); return }
     toast.success(`Credit note ${json.creditNote.creditNoteNumber} created (DRAFT)`)
     setShowCreateDialog(false)
-    reset({ customerId: '', issueDate: '', reason: '', lineItems: [blankLine()] })
+    reset({ customerId: '', salesInvoiceId: 'none', issueDate: '', reason: '', lineItems: [blankLine()] })
     fetchRows()
   }
 
@@ -183,6 +193,18 @@ export default function CreditNotesPage() {
               <div className="space-y-1.5">
                 <Label>Issue Date *</Label>
                 <Input type="date" {...register('issueDate', { required: true })} />
+              </div>
+              <div className="space-y-1.5 col-span-2">
+                <Label>Apply to invoice</Label>
+                <Controller control={control} name="salesInvoiceId" render={({ field }) => (
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <SelectTrigger><SelectValue placeholder="Select invoice" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No invoice (unapplied customer credit)</SelectItem>
+                      {openInvoices.map((i) => <SelectItem key={i.id} value={i.id}>{i.invoiceNumber} — {Number(i.balanceDue).toFixed(2)} due</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                )} />
               </div>
               <div className="space-y-1.5 col-span-2">
                 <Label>Reason *</Label>

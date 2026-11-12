@@ -15,7 +15,7 @@ export async function recalculateCustomerOutstandingBalance(
   const [invoices, customer] = await Promise.all([
     tx.salesInvoice.findMany({
       where: { customer_id: customerId, status: { not: DB_STATUS_VOID } },
-      select: { total_amount: true, amount_paid: true, currency: true, companyId: true },
+      select: { total_amount: true, amount_paid: true, credited_amount: true, currency: true, companyId: true },
     }),
     tx.customer.findUnique({ where: { id: customerId }, select: { companyId: true } }),
   ])
@@ -37,16 +37,18 @@ export async function recalculateCustomerOutstandingBalance(
   let outstanding = 0
   for (const invoice of invoices) {
     const total = toNumber(invoice.total_amount)
-    const paid = toNumber(invoice.amount_paid)
+    const paid = toNumber(invoice.amount_paid) + toNumber(invoice.credited_amount)
     outstanding += round2dp(convert(total - paid, invoice.currency).amount)
   }
-  const credited = await tx.creditNote.aggregate({ where: { customerId, status: 'ISSUED' }, _sum: { totalAmount: true } })
+  // Only the unapplied part of each credit note (A2: the applied part is
+  // already off its invoice).
+  const credited = await tx.creditNote.aggregate({ where: { customerId, status: 'ISSUED' }, _sum: { totalAmount: true, allocatedAmount: true } })
   const unallocated = await tx.payment.findMany({
     where: { customer_id: customerId, payment_type: 'Customer Receipt', status: { not: 'Void' }, OR: [{ allocations: null }, { allocations: '[]' }, { allocations: '' }] },
     select: { amount: true, currency: true },
   })
   const unallocatedTotal = unallocated.reduce((s, p) => s + round2dp(convert(toNumber(p.amount), p.currency).amount), 0)
-  outstanding = round2dp(outstanding - toNumber(credited._sum.totalAmount) - unallocatedTotal)
+  outstanding = round2dp(outstanding - (toNumber(credited._sum.totalAmount) - toNumber(credited._sum.allocatedAmount)) - unallocatedTotal)
 
   await tx.customer.update({
     where: { id: customerId },
@@ -63,12 +65,12 @@ export async function recalculateSupplierOutstandingBalance(
 ): Promise<number> {
   const bills = await tx.purchaseInvoice.findMany({
     where: { supplierId, companyId, status: { not: 'VOID' } },
-    select: { totalAmount: true, paidAmount: true },
+    select: { totalAmount: true, paidAmount: true, creditedAmount: true },
   })
 
   // Same rule as getPayables (lib/reports/subledger.ts).
-  const debited = await tx.debitNote.aggregate({ where: { supplierId, companyId, status: 'ISSUED' }, _sum: { totalAmount: true } })
-  const outstanding = round2dp(bills.reduce((sum, bill) => sum + toNumber(bill.totalAmount) - toNumber(bill.paidAmount), 0) - toNumber(debited._sum.totalAmount))
+  const debited = await tx.debitNote.aggregate({ where: { supplierId, companyId, status: 'ISSUED' }, _sum: { totalAmount: true, allocatedAmount: true } })
+  const outstanding = round2dp(bills.reduce((sum, bill) => sum + toNumber(bill.totalAmount) - toNumber(bill.paidAmount) - toNumber(bill.creditedAmount), 0) - (toNumber(debited._sum.totalAmount) - toNumber(debited._sum.allocatedAmount)))
 
   await tx.supplier.update({
     where: { id: supplierId },

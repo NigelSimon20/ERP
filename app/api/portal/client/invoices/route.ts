@@ -19,6 +19,7 @@ export async function GET() {
       total_amount: true,
       amount_paid: true,
       balance_due: true,
+      credited_amount: true,
       status: true,
     },
   })
@@ -33,7 +34,7 @@ export async function GET() {
       paidAmount: Number(i.amount_paid ?? 0),
       balanceDue: Number(i.balance_due ?? 0),
       // Same derived UPPERCASE status as the finance API (BUG-033).
-      status: deriveInvoiceStatus({ total: i.total_amount, paid: i.amount_paid, dueDate: i.due_date, voided: i.status === DB_STATUS_VOID }),
+      status: deriveInvoiceStatus({ total: i.total_amount, paid: i.amount_paid, credited: i.credited_amount, dueDate: i.due_date, voided: i.status === DB_STATUS_VOID }),
     })),
   })
 }

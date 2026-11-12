@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     totalAmount: Number(r.total_amount ?? 0),
     paidAmount: Number(r.amount_paid ?? 0),
     balanceDue: Number(r.balance_due ?? 0),
-    status: deriveInvoiceStatus({ total: r.total_amount, paid: r.amount_paid, dueDate: r.due_date, voided: r.status === DB_STATUS_VOID }),
+    status: deriveInvoiceStatus({ total: r.total_amount, paid: r.amount_paid, credited: r.credited_amount, dueDate: r.due_date, voided: r.status === DB_STATUS_VOID }),
     notes: r.overall_description,
     customer: { id: r.customer_id ?? '', name: (r.customer_id && customerMap[r.customer_id]) || r.customer_name || '' },
   }))
@@ -88,8 +88,8 @@ export async function GET(req: NextRequest) {
     SELECT count(*)::int AS count,
            COALESCE(sum(total_amount), 0) AS invoiced,
            COALESCE(sum(amount_paid), 0) AS paid,
-           COALESCE(sum(GREATEST(COALESCE(total_amount, 0) - COALESCE(amount_paid, 0), 0)), 0) AS outstanding,
-           COALESCE(sum(CASE WHEN due_date < ${overdueCutoff} THEN GREATEST(COALESCE(total_amount, 0) - COALESCE(amount_paid, 0), 0) END), 0) AS overdue
+           COALESCE(sum(GREATEST(COALESCE(total_amount, 0) - COALESCE(amount_paid, 0) - credited_amount, 0)), 0) AS outstanding,
+           COALESCE(sum(CASE WHEN due_date < ${overdueCutoff} THEN GREATEST(COALESCE(total_amount, 0) - COALESCE(amount_paid, 0) - credited_amount, 0) END), 0) AS overdue
     FROM sales_invoices
     WHERE "companyId" = ${session.companyId} AND status IS DISTINCT FROM ${DB_STATUS_VOID}
       AND (${customerId ?? null}::text IS NULL OR customer_id = ${customerId ?? null}::text)

@@ -97,6 +97,7 @@ export async function PUT(req: NextRequest) {
       accumulatedDepreciationAccountId,
       depreciationExpenseAccountId,
       inventoryAccountId,
+      allowUnappliedCredit,
       // Notifications / integrations
       whatsappEnabled,
       whatsappNumber,
@@ -187,6 +188,7 @@ export async function PUT(req: NextRequest) {
         ...(accumulatedDepreciationAccountId !== undefined && { accumulatedDepreciationAccountId }),
         ...(depreciationExpenseAccountId !== undefined && { depreciationExpenseAccountId }),
         ...(inventoryAccountId !== undefined && { inventoryAccountId }),
+        ...(typeof allowUnappliedCredit === 'boolean' && { allowUnappliedCredit }),
         ...(whatsappEnabled !== undefined && { whatsappEnabled }),
         ...(whatsappNumber !== undefined && { whatsappNumber }),
         ...(emailNotifications !== undefined && { emailNotifications }),

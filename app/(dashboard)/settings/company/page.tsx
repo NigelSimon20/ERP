@@ -361,6 +361,7 @@ function TaxTab() {
           accumulatedDepreciationAccountId: company.accumulatedDepreciationAccountId,
           depreciationExpenseAccountId: company.depreciationExpenseAccountId,
           inventoryAccountId: company.inventoryAccountId,
+          allowUnappliedCredit: company.allowUnappliedCredit,
         }),
       })
       const json = await res.json()
@@ -406,6 +407,12 @@ function TaxTab() {
           Tax Inclusive Pricing
         </label>
         <p className="text-xs text-slate-500 -mt-2 ml-6">When enabled, line item prices are treated as already including tax; tax is extracted from the price instead of added on top.</p>
+
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input type="checkbox" checked={!!company.allowUnappliedCredit} onChange={e => setCompany({ ...company, allowUnappliedCredit: e.target.checked })} />
+          Allow unapplied credit
+        </label>
+        <p className="text-xs text-slate-500 -mt-2 ml-6">When a credit or debit note is larger than what is left on its invoice or bill, keep the excess as credit for the customer or supplier. When off, such a note is rejected.</p>
 
         <label className="flex items-center gap-2 text-sm font-medium">
           <input type="checkbox" checked={!!company.taxAppliedByDefault} onChange={e => setCompany({ ...company, taxAppliedByDefault: e.target.checked })} disabled={!company.taxEnabled} />

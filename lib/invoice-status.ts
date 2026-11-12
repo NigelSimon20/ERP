@@ -47,12 +47,15 @@ export type InvoiceStatusUi = 'VOID' | 'PAID' | 'PARTIAL' | 'OVERDUE' | 'UNPAID'
 export function deriveInvoiceStatus(inv: {
   total: unknown
   paid: unknown
+  // A2: credit notes applied to the invoice settle it like a payment.
+  credited?: unknown
   dueDate?: string | Date | null
   voided: boolean
 }): InvoiceStatusUi {
   if (inv.voided) return 'VOID'
-  const owed = Math.round((Number(inv.total ?? 0) - Number(inv.paid ?? 0)) * 100)
+  const settled = Number(inv.paid ?? 0) + Number(inv.credited ?? 0)
+  const owed = Math.round((Number(inv.total ?? 0) - settled) * 100)
   if (owed <= 0) return 'PAID'
   if (inv.dueDate && isPastDue(inv.dueDate)) return 'OVERDUE'
-  return Number(inv.paid ?? 0) > 0 ? 'PARTIAL' : 'UNPAID'
+  return settled > 0 ? 'PARTIAL' : 'UNPAID'
 }

@@ -7,6 +7,7 @@ import { logAudit } from '@/lib/audit'
 import { postCreditNoteToGL } from '@/lib/gl-posting'
 import { recalculateCustomerOutstandingBalance } from '@/lib/finance-recalculation'
 import { apiError, ApiError } from '@/lib/api-error'
+import { applyCreditNoteToInvoice, reverseCreditNoteAllocation } from '@/lib/note-allocation'
 
 export async function GET(_req: NextRequest, { params }: { params: { id: string } }) {
   const session = await getIronSession<SessionData>(await cookies(), sessionOptions)
@@ -39,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
     const lockDate = await prisma.lockDate.findFirst({ where: { companyId, lockedUntil: { gte: existing.issueDate } } })
     if (lockDate) return NextResponse.json({ error: `Period is locked until ${lockDate.lockedUntil.toLocaleDateString()}`, code: 'PERIOD_LOCKED' }, { status: 422 })
 
-    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { receivablesAccountId: true, vatAccountId: true } })
+    const company = await prisma.company.findUnique({ where: { id: companyId }, select: { receivablesAccountId: true, vatAccountId: true, allowUnappliedCredit: true } })
     if (!company?.receivablesAccountId) return NextResponse.json({ error: 'Accounts Receivable account is not configured. Set it in Settings → Company → Tax.' }, { status: 400 })
 
     const body = await req.json().catch(() => ({}))
@@ -60,6 +61,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
           totalAmount: Number(existing.totalAmount), receivablesAccountId: company.receivablesAccountId!,
           revenueAccountId: revenueAccount.id, vatAccountId: vatAccount?.id ?? null, userId,
         })
+        // A2: reduce the invoice in the same transaction as the journal.
+        await applyCreditNoteToInvoice(tx, existing, company.allowUnappliedCredit)
         await recalculateCustomerOutstandingBalance(tx, existing.customerId)
         return tx.creditNote.findUniqueOrThrow({ where: { id: params.id } })
       }, { timeout: 60000 })
@@ -80,6 +83,8 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
         const { reverseJournalEntry } = await import('@/lib/gl-posting')
         await reverseJournalEntry(tx, existing.journalEntryId)
       }
+      // A2: give back to the invoice exactly what this note took off it.
+      if (wasIssued) await reverseCreditNoteAllocation(tx, existing)
       const cn = await tx.creditNote.update({ where: { id: params.id }, data: { status: 'VOID' } })
       if (wasIssued) await recalculateCustomerOutstandingBalance(tx, existing.customerId)
       return cn

@@ -6,6 +6,7 @@ import { logAudit } from '@/lib/audit'
 import { paginate, pageLimit } from '@/lib/utils'
 import { nextCreditNoteNumber } from '@/lib/auto-numbers'
 import { calculateInvoiceLineTotal, calculateInvoiceTotals } from '@/lib/calculations'
+import { DB_STATUS_VOID } from '@/lib/invoice-status'
 import { apiError } from '@/lib/api-error'
 
 async function getSession(req: NextRequest) {
@@ -49,12 +50,25 @@ export async function POST(req: NextRequest) {
 
   try {
     const body = await req.json()
-    const { customerId, salesInvoiceId, issueDate, reason, lineItems } = body
-    if (!customerId || !issueDate || !reason) return NextResponse.json({ error: 'customerId, issueDate, reason required' }, { status: 400 })
-    if (!Array.isArray(lineItems) || lineItems.length === 0) return NextResponse.json({ error: 'At least one line item required' }, { status: 400 })
+    const { issueDate, reason, lineItems } = body
+    // A2: the invoice may come as invoiceId or salesInvoiceId; when given, the
+    // customer is the invoice's (and a different one is rejected).
+    const salesInvoiceId: string | null = body.invoiceId || body.salesInvoiceId || null
+    let customerId: string | undefined = body.customerId
+    if (salesInvoiceId) {
+      const inv = await prisma.salesInvoice.findFirst({ where: { id: salesInvoiceId, companyId: session.companyId }, select: { customer_id: true, status: true } })
+      if (!inv) return NextResponse.json({ error: 'Invoice not found', code: 'NOT_FOUND' }, { status: 404 })
+      if (inv.status === DB_STATUS_VOID) return NextResponse.json({ error: 'That invoice has been voided', code: 'INVALID_STATE' }, { status: 409 })
+      if (customerId && inv.customer_id && customerId !== inv.customer_id) {
+        return NextResponse.json({ error: 'The customer does not match the invoice’s customer', code: 'CUSTOMER_MISMATCH' }, { status: 400 })
+      }
+      customerId = inv.customer_id ?? customerId
+    }
+    if (!customerId || !issueDate || !reason) return NextResponse.json({ error: 'customerId (or invoiceId), issueDate, reason required', code: 'VALIDATION_ERROR' }, { status: 400 })
+    if (!Array.isArray(lineItems) || lineItems.length === 0) return NextResponse.json({ error: 'At least one line item required', code: 'VALIDATION_ERROR' }, { status: 400 })
 
     const customer = await prisma.customer.findFirst({ where: { id: customerId, companyId: session.companyId } })
-    if (!customer) return NextResponse.json({ error: 'Customer not found' }, { status: 404 })
+    if (!customer) return NextResponse.json({ error: 'Customer not found', code: 'NOT_FOUND' }, { status: 404 })
 
     const company = await prisma.company.findUnique({ where: { id: session.companyId }, select: { showVat: true, taxInclusive: true } })
     const taxEnabled = company?.showVat ?? true
@@ -72,8 +86,8 @@ export async function POST(req: NextRequest) {
       const cn = await tx.creditNote.create({
         data: {
           companyId: session.companyId,
-          customerId,
-          salesInvoiceId: salesInvoiceId || null,
+          customerId: customer.id,
+          salesInvoiceId,
           creditNoteNumber,
           issueDate: new Date(issueDate),
           reason,
