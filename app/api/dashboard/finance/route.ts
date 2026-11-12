@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { getIronSession } from 'iron-session'
 import { SessionData, sessionOptions } from '@/lib/session'
 import { prisma } from '@/lib/prisma'
+import { cashInBank as sharedCashInBank } from '@/lib/reports/finance-headlines'
 import { isRateStale } from '@/lib/fx/rbz'
 import { DB_STATUS_OUTSTANDING, DB_STATUS_VOID } from '@/lib/invoice-status'
 import { overdueQueryCutoff, calculateWorkingCapital, calculateCurrentRatio, calculateQuickRatio, calculateDebtToEquity } from '@/lib/calculations'
@@ -203,6 +204,9 @@ export async function GET(req: NextRequest) {
     if ((b.account_type ?? '').toLowerCase().includes('petty')) pettyCash += val
     bankBalances.push({ bankName: b.bank_name || '', accountNumber: b.account_number || '', balance: val, currency: b.currency || reportingCurrency })
   })
+  // A8: in the reporting currency, cash comes from the shared function the AI
+  // helpdesk also uses (all active accounts, not just the 25 listed above).
+  if (!isNative) cashInBank = await sharedCashInBank(prisma, companyId, reportingCurrency, now)
 
   return NextResponse.json({
     reportingCurrency,

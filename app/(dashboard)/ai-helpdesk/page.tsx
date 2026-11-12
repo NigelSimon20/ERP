@@ -37,6 +37,11 @@ export default function AIHelpdeskPage() {
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // A8: when no AI key is configured, say so instead of a chat that can't answer.
+  const [available, setAvailable] = useState<boolean | null>(null)
+  useEffect(() => {
+    fetch('/api/ai-helpdesk').then((r) => r.json()).then((j) => setAvailable(j.available !== false)).catch(() => setAvailable(true))
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -121,7 +126,15 @@ export default function AIHelpdeskPage() {
 
       {/* Message area */}
       <div className="flex-1 overflow-y-auto py-4 space-y-4">
-        {messages.length === 0 ? (
+        {available === false ? (
+          <div className="flex flex-col items-center justify-center h-full gap-3 text-center">
+            <div className="rounded-full bg-muted p-5">
+              <ShieldRegular fontSize={32} className="text-muted-foreground" />
+            </div>
+            <p className="font-semibold text-foreground">Assistant unavailable — contact your administrator</p>
+            <p className="text-sm text-muted-foreground max-w-sm">The AI assistant hasn’t been set up for this system yet.</p>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-6 text-center">
             <div className="rounded-full bg-brand-navy p-5">
               <ShieldRegular fontSize={32} className="text-primary" />
@@ -188,7 +201,8 @@ export default function AIHelpdeskPage() {
             value={input}
             onChange={e => { setInput(e.target.value); autoResize() }}
             onKeyDown={handleKeyDown}
-            placeholder="Ask about guards, sites, invoices, incidents…"
+            placeholder={available === false ? 'Assistant unavailable' : 'Ask about guards, sites, invoices, incidents…'}
+            disabled={available === false}
             rows={1}
             className="flex-1 resize-none rounded-xl border border-border px-4 py-2.5 text-sm min-h-[42px] focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             aria-label="Chat input"
@@ -196,7 +210,7 @@ export default function AIHelpdeskPage() {
           <button
             type="button"
             onClick={() => sendMessage(input)}
-            disabled={!input.trim() || loading}
+            disabled={!input.trim() || loading || available === false}
             className="shrink-0 h-10 w-10 rounded-xl bg-primary hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             aria-label="Send message"
           >
