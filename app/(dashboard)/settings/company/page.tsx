@@ -10,7 +10,7 @@ import { hexToHslTriplet } from '@/lib/color'
 // the real app shell reads -- so what's shown here is a faithful preview,
 // not a separate re-implementation that could drift from reality.
 function ChromePreview({ headerColor, sidebarColor, buttonColor, primaryColor }: { headerColor: string; sidebarColor: string; buttonColor: string; primaryColor: string }) {
-  const fallback = primaryColor || '#0b5fff'
+  const fallback = primaryColor || '#1E40AF'
   const vars = {
     ['--company-header']: hexToHslTriplet(headerColor || fallback),
     ['--company-sidebar']: hexToHslTriplet(sidebarColor || fallback),
@@ -186,7 +186,7 @@ function BrandingTab() {
         </div>
         <div className="rounded-2xl border border-slate-200 bg-card p-5">
           <label htmlFor="company-primary-color" className="block text-sm font-medium">Primary Colour</label>
-          <input id="company-primary-color" type="color" title="Primary Colour" value={company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,primaryColor:e.target.value})} className="mt-1" />
+          <input id="company-primary-color" type="color" title="Primary Colour" value={company.primaryColor||'#1E40AF'} onChange={e=>setCompany({...company,primaryColor:e.target.value})} className="mt-1" />
           <label htmlFor="company-secondary-color" className="block text-sm font-medium mt-4">Secondary Colour</label>
           <input id="company-secondary-color" type="color" title="Secondary Colour" value={company.secondaryColor||'#f5f7fa'} onChange={e=>setCompany({...company,secondaryColor:e.target.value})} className="mt-1" />
           <label htmlFor="company-accent-color" className="block text-sm font-medium mt-4">Accent Colour</label>
@@ -202,19 +202,19 @@ function BrandingTab() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-4">
             <div>
               <label htmlFor="company-header-color" className="block text-sm font-medium">Header Colour</label>
-              <input id="company-header-color" type="color" title="Header Colour" value={company.headerColor||company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,headerColor:e.target.value})} className="mt-1" />
+              <input id="company-header-color" type="color" title="Header Colour" value={company.headerColor||company.primaryColor||'#1E40AF'} onChange={e=>setCompany({...company,headerColor:e.target.value})} className="mt-1" />
             </div>
             <div>
               <label htmlFor="company-sidebar-color" className="block text-sm font-medium">Sidebar Colour</label>
-              <input id="company-sidebar-color" type="color" title="Sidebar Colour" value={company.sidebarColor||company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,sidebarColor:e.target.value})} className="mt-1" />
+              <input id="company-sidebar-color" type="color" title="Sidebar Colour" value={company.sidebarColor||company.primaryColor||'#1E40AF'} onChange={e=>setCompany({...company,sidebarColor:e.target.value})} className="mt-1" />
             </div>
             <div>
               <label htmlFor="company-button-color" className="block text-sm font-medium">Button Colour</label>
-              <input id="company-button-color" type="color" title="Button Colour" value={company.buttonColor||company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,buttonColor:e.target.value})} className="mt-1" />
+              <input id="company-button-color" type="color" title="Button Colour" value={company.buttonColor||company.primaryColor||'#1E40AF'} onChange={e=>setCompany({...company,buttonColor:e.target.value})} className="mt-1" />
             </div>
             <div>
               <label htmlFor="company-pdf-theme-color" className="block text-sm font-medium">PDF Theme Colour</label>
-              <input id="company-pdf-theme-color" type="color" title="PDF Theme Colour" value={company.pdfThemeColor||company.primaryColor||'#0b5fff'} onChange={e=>setCompany({...company,pdfThemeColor:e.target.value})} className="mt-1" />
+              <input id="company-pdf-theme-color" type="color" title="PDF Theme Colour" value={company.pdfThemeColor||company.primaryColor||'#1E40AF'} onChange={e=>setCompany({...company,pdfThemeColor:e.target.value})} className="mt-1" />
             </div>
           </div>
           <p className="text-xs font-medium text-slate-600 mb-1.5">Live preview</p>
@@ -555,7 +555,7 @@ function BackupRestoreTab() {
       const blob = await res.blob()
       const disposition = res.headers.get('Content-Disposition') ?? ''
       const match = disposition.match(/filename="(.+)"/)
-      const filename = match?.[1] ?? `ravenshield-backup-${new Date().toISOString().slice(0, 10)}.json`
+      const filename = match?.[1] ?? `infinity-nexa-backup-${new Date().toISOString().slice(0, 10)}.json`
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
@@ -575,7 +575,7 @@ function BackupRestoreTab() {
       const text = await file.text()
       const parsed = JSON.parse(text)
       if (!parsed || typeof parsed.data !== 'object') {
-        toast.error('Not a recognized Ravenshield backup file')
+        toast.error('Not a recognized Infinity Nexa ERP backup file')
         return
       }
       const res = await fetch('/api/settings/backup/restore?dryRun=1', {
@@ -631,7 +631,7 @@ function BackupRestoreTab() {
 
       <div className="rounded-2xl border border-slate-200 bg-card p-6 space-y-3">
         <div className="text-sm font-medium text-slate-900">Restore from file</div>
-        <p className="text-sm text-slate-500">Choose a Ravenshield backup JSON file. You&apos;ll see a preview of what will be restored before anything is written.</p>
+        <p className="text-sm text-slate-500">Choose an Infinity Nexa ERP backup JSON file. You&apos;ll see a preview of what will be restored before anything is written.</p>
         <input
           type="file"
           accept="application/json"

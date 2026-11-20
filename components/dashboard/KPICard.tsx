@@ -31,7 +31,7 @@ export function KPICard({ title, value, subtitle, icon: Icon, color, trend }: KP
         </div>
         {trend && (
           <div className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold flex-shrink-0 ${
-            trend.direction === 'up' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300'
+            trend.direction === 'up' ? 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400' : 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300'
           }`}>
             {trend.direction === 'up'
               ? <ArrowUpRegular className="h-2.5 w-2.5" />

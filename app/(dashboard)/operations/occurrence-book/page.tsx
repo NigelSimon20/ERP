@@ -47,7 +47,7 @@ const ENTRY_TYPE_STYLES: Record<string, string> = {
   VISITOR: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   DELIVERY: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   PATROL_NOTE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  INCIDENT_REF: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  INCIDENT_REF: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
   GENERAL: 'bg-muted text-muted-foreground',
 }
 
@@ -113,7 +113,7 @@ export default function OccurrenceBookPage() {
         title="Occurrence Book"
         description="Append-only, sequential shift log — entries can never be edited or deleted, only added"
         action={
-          <Button type="button" onClick={openAdd} disabled={!siteId} className="bg-primary hover:bg-brand-red-dark text-white">
+          <Button type="button" onClick={openAdd} disabled={!siteId} className="bg-primary hover:bg-brand-primary-dark text-white">
             <AddRegular className="h-4 w-4 mr-1" /> Add Entry
           </Button>
         }
@@ -216,7 +216,7 @@ export default function OccurrenceBookPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {isSubmitting ? 'Logging…' : 'Log Entry'}
               </Button>
             </DialogFooter>

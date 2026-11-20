@@ -39,7 +39,7 @@ export async function POST(
   }
 
   const { channel, employeeName, username, tempPassword, whatsappNumber, email, loginUrl } = parsed.data
-  const appUrl = loginUrl ?? process.env.NEXT_PUBLIC_APP_URL ?? 'https://app.ravenshield.com'
+  const appUrl = loginUrl ?? process.env.NEXT_PUBLIC_APP_URL ?? new URL(req.url).origin
 
   if (channel === 'whatsapp') {
     if (!whatsappNumber) {
@@ -47,7 +47,7 @@ export async function POST(
     }
 
     const message = [
-      `🔐 *Raven Shield ERP — Login Credentials*`,
+      `🔐 *Infinity Nexa ERP — Login Credentials*`,
       ``,
       `Hello ${employeeName},`,
       ``,
@@ -61,7 +61,7 @@ export async function POST(
       ``,
       `If you did not expect this message, please contact your administrator immediately.`,
       ``,
-      `— Raven Shield Security ERP`,
+      `— Infinity Nexa ERP`,
     ].join('\n')
 
     const result = await sendWhatsAppMessage({ to: whatsappNumber, message })
@@ -96,12 +96,12 @@ export async function POST(
       `<strong>Login URL:</strong> <a href="${appUrl}/login">${appUrl}/login</a></p>`,
       `<p><strong>Important:</strong> Please log in and change your password immediately after your first login.</p>`,
       `<p>If you did not expect this message, please contact your administrator immediately.</p>`,
-      `<p>— Raven Shield Security ERP</p>`,
+      `<p>— Infinity Nexa ERP</p>`,
     ].join('\n')
 
     const result = await sendEmail({
       to: email,
-      subject: 'Raven Shield ERP — Login Credentials',
+      subject: 'Infinity Nexa ERP — Login Credentials',
       html,
     })
 

@@ -64,7 +64,7 @@ export default function LockDatesPage() {
 
   return (
     <div>
-      <PageHeader title="Lock Dates" description="Prevent backdated entries into closed accounting periods" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Lock Date</Button>} />
+      <PageHeader title="Lock Dates" description="Prevent backdated entries into closed accounting periods" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Lock Date</Button>} />
 
       {activeLocks.length > 0 && (
         <div className="mt-5 rounded-lg border border-amber-300 bg-amber-50 p-4 flex items-start gap-3">
@@ -152,7 +152,7 @@ export default function LockDatesPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : 'Add Lock Date'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : 'Add Lock Date'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

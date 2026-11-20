@@ -14,7 +14,7 @@ import toast from 'react-hot-toast'
 interface CalEvent { id: string; title: string; date: string; type: 'task' | 'meeting' | 'patrol' | 'deployment'; status?: string; location?: string; priority?: string }
 
 const TYPE_STYLES = {
-  task:       { dot: 'bg-primary',    badge: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', label: 'Task' },
+  task:       { dot: 'bg-primary',    badge: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300', label: 'Task' },
   meeting:    { dot: 'bg-brand-navy', badge: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', label: 'Meeting' },
   patrol:     { dot: 'bg-amber-500',  badge: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', label: 'Patrol' },
   deployment: { dot: 'bg-green-500',  badge: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', label: 'Deployment' },

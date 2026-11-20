@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BrandMark } from '@/components/brand/BrandMark'
 import { useRouter } from 'next/navigation'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import toast from 'react-hot-toast'
-import { KeyRegular, ShieldRegular } from '@fluentui/react-icons';
+import { KeyRegular } from '@fluentui/react-icons';
 
 export default function ChangePasswordPage() {
   const router = useRouter()
@@ -59,8 +60,7 @@ export default function ChangePasswordPage() {
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <ShieldRegular fontSize={28} className="text-primary" />
-            <span className="text-xl font-bold text-foreground">Ravenshield</span>
+            <BrandMark />
           </div>
           <div className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 rounded-full px-3 py-1 text-xs font-medium">
             <KeyRegular className="h-3 w-3" /> Password change required
@@ -111,7 +111,7 @@ export default function ChangePasswordPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-primary hover:bg-brand-red-dark text-white"
+              className="w-full bg-primary hover:bg-brand-primary-dark text-white"
             >
               {loading ? 'Saving…' : 'Set Password & Continue'}
             </Button>

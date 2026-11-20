@@ -19,7 +19,7 @@ export function EmptyState({ icon: Icon, title, description, action }: EmptyStat
       {action && (
         <div className="mt-4">
           {typeof action === 'object' && 'label' in action ? (
-            <Button onClick={action.onClick} className="bg-brand-red hover:bg-brand-red-dark text-white">
+            <Button onClick={action.onClick} className="bg-brand-primary hover:bg-brand-primary-dark text-white">
               {action.label}
             </Button>
           ) : (

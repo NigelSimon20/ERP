@@ -1,15 +1,21 @@
-// Central theme colors for charts and UI (Ravenshield red/neutral enterprise palette).
-// Flat, enterprise styling: series colors are limited to red + grayscale only.
-export const PRIMARY = '#DC2626'
-export const PRIMARY_DARK = '#B91C1C'
-export const PRIMARY_LIGHT = '#FEE2E2'
-export const PRIMARY_BG = '#FEF2F2'
+// Central theme colours for charts and UI: the Infinity Nexa palette
+// (www.nexainventory.com): brand blue, sky, and slate neutrals.
+export const PRIMARY = '#1E40AF'
+export const PRIMARY_DARK = '#1B3A96'
+export const PRIMARY_LIGHT = '#DBEAFE'
+export const PRIMARY_BG = '#EFF6FF'
+export const SKY = '#38BDF8'
 export const WHITE = '#FFFFFF'
 
+// Semantic colours (not brand): severity and status
+export const DANGER = '#DF202E'
+export const WARNING = '#E49E22'
+export const SUCCESS = '#02985F'
+
 // Grayscale tones for chart gridlines/axes/neutral series segments
-export const GRAY_DARK = '#374151'
-export const GRAY = '#9CA3AF'
-export const GRAY_LIGHT = '#E5E7EB'
+export const GRAY_DARK = '#334155'
+export const GRAY = '#94A3B8'
+export const GRAY_LIGHT = '#E2E8F0'
 
 // Subtle gridlines + muted axis labels for recharts <CartesianGrid>/<XAxis>/<YAxis>
 export const CHART_GRID_STROKE = GRAY_LIGHT
@@ -21,7 +27,7 @@ export const CHART_TOOLTIP_STYLE = {
   boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
 }
 
-export const CHART_PALETTE = [PRIMARY, GRAY_DARK, GRAY, GRAY_LIGHT]
+export const CHART_PALETTE = [PRIMARY, SKY, GRAY_DARK, GRAY, PRIMARY_LIGHT]
 
 // Keys match the real `LeadStatus` enum values exactly (prisma/schema.prisma)
 // — a prior version of this map used different, fictional stage names
@@ -34,17 +40,18 @@ export const STAGE_COLORS: Record<string, string> = {
   QUALIFIED: PRIMARY_LIGHT,
   PROPOSAL_SENT: PRIMARY_LIGHT,
   NEGOTIATION: PRIMARY,
-  WON: GRAY_DARK,
+  WON: SUCCESS,
   LOST: GRAY,
 }
 
-export const PIE_COLORS = [PRIMARY, GRAY_LIGHT]
+export const PIE_COLORS = [PRIMARY, SKY, GRAY_LIGHT]
 
 export const SEVERITY_COLORS: Record<string, string> = {
-  LOW: GRAY_LIGHT,
-  MEDIUM: GRAY,
-  HIGH: PRIMARY,
-  CRITICAL: PRIMARY_DARK,
+  // Severity is semantic, not brand: amber and red, never the brand blue.
+  LOW: GRAY,
+  MEDIUM: SKY,
+  HIGH: WARNING,
+  CRITICAL: DANGER,
 }
 
 export default {
@@ -52,7 +59,11 @@ export default {
   PRIMARY_DARK,
   PRIMARY_LIGHT,
   PRIMARY_BG,
+  SKY,
   WHITE,
+  DANGER,
+  WARNING,
+  SUCCESS,
   GRAY_DARK,
   GRAY,
   GRAY_LIGHT,

@@ -152,7 +152,7 @@ export default function ReceiptsPage() {
       <PageHeader
         title="Receipts"
         description="Record incoming payments from customers"
-        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Record Receipt</Button>}
+        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Record Receipt</Button>}
       />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
@@ -172,7 +172,7 @@ export default function ReceiptsPage() {
               icon={ArrowCircleDownRegular}
               title="No receipts recorded"
               description="Record your first incoming receipt"
-              action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Record Receipt</Button>}
+              action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Record Receipt</Button>}
             />
           </div>
         ) : (
@@ -303,7 +303,7 @@ export default function ReceiptsPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {isSubmitting ? 'Saving…' : 'Record Receipt'}
               </Button>
             </DialogFooter>

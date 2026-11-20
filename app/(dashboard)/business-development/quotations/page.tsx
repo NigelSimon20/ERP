@@ -22,7 +22,7 @@ interface TaxSettings { taxName: string; taxRate: number; taxNumber: string | nu
 type LineItem = { description: string; quantity: string; unitPrice: string; taxRate: string }
 type FormValues = { linkType: 'customer' | 'lead'; customerId: string; leadId: string; issueDate: string; validUntil: string; notes: string; items: LineItem[] }
 
-const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-muted-foreground', SENT: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', ACCEPTED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', EXPIRED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
+const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-muted-foreground', SENT: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', ACCEPTED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300', EXPIRED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
 const DEFAULT_TAX_SETTINGS: TaxSettings = { taxName: 'Tax', taxRate: 0, taxNumber: null, taxEnabled: true, taxInclusive: false, taxAppliedByDefault: true }
 
 function blankItem(tax: TaxSettings): LineItem {
@@ -158,13 +158,13 @@ export default function QuotationsPage() {
 
   return (
     <div>
-      <PageHeader title="Quotations" description="Create and manage sales quotations" action={<Button type="button" onClick={() => { reset({ linkType: 'customer', customerId: '', leadId: '', issueDate: new Date().toISOString().split('T')[0], validUntil: '', notes: '', items: [blankItem(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Quote</Button>} />
+      <PageHeader title="Quotations" description="Create and manage sales quotations" action={<Button type="button" onClick={() => { reset({ linkType: 'customer', customerId: '', leadId: '', issueDate: new Date().toISOString().split('T')[0], validUntil: '', notes: '', items: [blankItem(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Quote</Button>} />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : quotations.length === 0 ? (
-          <div className="py-16"><EmptyState icon={DocumentRegular} title="No quotations yet" description="Create your first quotation for a lead or customer" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Quote</Button>} /></div>
+          <div className="py-16"><EmptyState icon={DocumentRegular} title="No quotations yet" description="Create your first quotation for a lead or customer" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Quote</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
@@ -300,7 +300,7 @@ export default function QuotationsPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Creating…' : 'Create Quotation'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Creating…' : 'Create Quotation'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -313,7 +313,7 @@ export default function QuotationsPage() {
           <p className="text-sm text-muted-foreground">Convert <strong>{convertTarget?.quoteNumber}</strong> ({formatCurrency(Number(convertTarget?.totalAmount))}) to a sales invoice for <strong>{convertTarget?.customer?.name}</strong>?</p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setConvertTarget(null)}>Cancel</Button>
-            <Button type="button" disabled={converting} onClick={convertToInvoice} className="bg-primary hover:bg-brand-red-dark text-white">{converting ? 'Converting…' : 'Convert to Invoice'}</Button>
+            <Button type="button" disabled={converting} onClick={convertToInvoice} className="bg-primary hover:bg-brand-primary-dark text-white">{converting ? 'Converting…' : 'Convert to Invoice'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

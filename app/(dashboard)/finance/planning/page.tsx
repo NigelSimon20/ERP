@@ -67,7 +67,7 @@ export default function PlanningPage() {
 
   return (
     <div>
-      <PageHeader title="Budget Planning" description="Set and track budgets vs actuals by department" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Set Budget</Button>} />
+      <PageHeader title="Budget Planning" description="Set and track budgets vs actuals by department" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Set Budget</Button>} />
 
       <div className="mt-4 flex items-center gap-3">
         <Select value={yearFilter} onValueChange={setYearFilter}>
@@ -161,7 +161,7 @@ export default function PlanningPage() {
             <div className="space-y-1.5"><Label>Budgeted Amount *</Label><Input type="number" step="0.01" min="0" placeholder="0.00" {...register('budgetedAmount', { required: true })} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : 'Save Budget'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : 'Save Budget'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

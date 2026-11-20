@@ -38,7 +38,7 @@ export function FeatureGrid() {
           key={idx}
           className="flex flex-col items-center text-center"
         >
-          <div className="mb-3 flex items-center justify-center w-16 h-16 bg-brand-red rounded-lg">
+          <div className="mb-3 flex items-center justify-center w-16 h-16 bg-brand-primary rounded-lg">
             {feature.icon}
           </div>
           <h3 className="font-bold text-white text-sm">

@@ -23,7 +23,7 @@ export interface PortalCardData {
 export function PortalCard({
   portal, onOpen, showStatus = false,
 }: { portal: PortalCardData; onOpen?: () => void; showStatus?: boolean }) {
-  const chipColor = portal.colorPrimary || '#DC2626'
+  const chipColor = portal.colorPrimary || '#1E40AF'
 
   return (
     <div className="rounded-xl border border-border bg-card p-6 flex flex-col gap-5">

@@ -10,13 +10,13 @@ import { AlertRegular, CheckmarkStarburstRegular, HistoryRegular, OpenRegular } 
 
 const TYPE_COLORS: Record<string, string> = {
   TASK:        'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  INCIDENT:    'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  INCIDENT:    'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
   LEAVE:       'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
   ATTENDANCE:  'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   PATROL:      'bg-brand-navy/10 text-brand-navy dark:bg-white/10 dark:text-white',
   VISITOR:     'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
   PAYROLL:     'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-300',
-  PAYMENT:     'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  PAYMENT:     'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
   CONTRACT:    'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   STOCK:       'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
   SYSTEM:      'bg-muted text-foreground',
@@ -77,7 +77,7 @@ export function NotificationBell() {
               <button
                 type="button"
                 onClick={markAllRead}
-                className="flex items-center gap-1 text-xs text-primary hover:text-brand-red-dark font-medium transition-colors"
+                className="flex items-center gap-1 text-xs text-primary hover:text-brand-primary-dark font-medium transition-colors"
                 title="Mark all as read"
               >
                 <CheckmarkStarburstRegular className="h-3 w-3" />
@@ -135,7 +135,7 @@ export function NotificationBell() {
           <button
             type="button"
             onClick={() => { setOpen(false); router.push('/notifications') }}
-            className="flex items-center gap-1.5 text-xs text-primary hover:text-brand-red-dark font-semibold transition-colors"
+            className="flex items-center gap-1.5 text-xs text-primary hover:text-brand-primary-dark font-semibold transition-colors"
           >
             <HistoryRegular className="h-3 w-3" />
             View all notifications

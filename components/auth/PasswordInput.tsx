@@ -45,7 +45,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
               focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 focus:border-primary
               hover:border-border
               disabled:bg-muted/50 disabled:text-muted-foreground disabled:cursor-not-allowed
-              ${error ? 'border-brand-red focus:ring-brand-red focus:border-brand-red' : ''}
+              ${error ? 'border-destructive focus:ring-destructive focus:border-destructive' : ''}
               ${className}
             `}
             {...props}
@@ -68,7 +68,7 @@ const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
 
         {/* Error Message */}
         {error && (
-          <p className="text-sm font-medium text-brand-red mt-1">
+          <p className="text-sm font-medium text-brand-primary mt-1">
             {error}
           </p>
         )}

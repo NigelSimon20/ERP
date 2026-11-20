@@ -91,7 +91,7 @@ export default function SuppliersPage() {
           </a>
           <Button type="button" variant="outline" onClick={() => setShowImportWizard(true)}><ArrowUploadRegular className="h-4 w-4 mr-1" /> Import</Button>
           <Button type="button" variant="outline" onClick={exportCsv}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export CSV</Button>
-          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Supplier</Button>
+          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Supplier</Button>
         </div>
       } />
 
@@ -106,7 +106,7 @@ export default function SuppliersPage() {
         {loading ? (
           <div className="divide-y divide-border">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-40 bg-muted rounded" /><div className="h-3 flex-1 bg-muted rounded" /></div>)}</div>
         ) : filtered.length === 0 ? (
-          <div className="py-16"><EmptyState icon={BuildingRegular} title="No suppliers yet" description="Add your first supplier to record purchase invoices" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Supplier</Button>} /></div>
+          <div className="py-16"><EmptyState icon={BuildingRegular} title="No suppliers yet" description="Add your first supplier to record purchase invoices" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Supplier</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[600px]">
@@ -171,7 +171,7 @@ export default function SuppliersPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Supplier'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Supplier'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

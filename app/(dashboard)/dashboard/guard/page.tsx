@@ -246,7 +246,7 @@ export default function GuardDashboardPage() {
           <div className="bg-card erp-card">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-foreground">My Leave</h3>
-              <Button type="button" size="sm" onClick={() => { reset(); setShowLeaveDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white h-7 px-2.5 text-xs">
+              <Button type="button" size="sm" onClick={() => { reset(); setShowLeaveDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white h-7 px-2.5 text-xs">
                 <AddRegular className="h-3.5 w-3.5 mr-1" /> Request Leave
               </Button>
             </div>
@@ -270,10 +270,10 @@ export default function GuardDashboardPage() {
 
         {/* Quick Actions */}
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => { reset(); setShowLeaveDialog(true) }} className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-primary text-white hover:bg-brand-red-dark">
+          <button type="button" onClick={() => { reset(); setShowLeaveDialog(true) }} className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-primary text-white hover:bg-brand-primary-dark">
             <CalendarLtrRegular fontSize={13} /> Request Leave
           </button>
-          <Link href="/tasks-requests/tasks" className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-primary text-white hover:bg-brand-red-dark">
+          <Link href="/tasks-requests/tasks" className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg bg-primary text-white hover:bg-brand-primary-dark">
             <TaskListLtrRegular fontSize={13} /> My Tasks
           </Link>
         </div>
@@ -300,7 +300,7 @@ export default function GuardDashboardPage() {
             <div className="space-y-1.5"><Label>Reason</Label><Textarea placeholder="Optional" rows={2} {...register('reason')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowLeaveDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

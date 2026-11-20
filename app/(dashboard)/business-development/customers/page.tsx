@@ -19,8 +19,8 @@ interface Site { id: string; name: string; status: string; contractEnd: string |
 interface CustomerDetail extends Customer { invoices: Invoice[]; receipts: Receipt[]; sites: Site[]; outstandingBalance: number }
 type EditForm = { name: string; email: string; phone: string; contactPerson: string; address: string; paymentTerms: string; creditLimit: string }
 
-const INV_STATUS: Record<string, string> = { UNPAID: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', PARTIAL: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', VOID: 'bg-muted text-muted-foreground' }
-const SITE_STATUS: Record<string, string> = { ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', INACTIVE: 'bg-muted text-muted-foreground', SUSPENDED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const INV_STATUS: Record<string, string> = { UNPAID: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', PARTIAL: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300', VOID: 'bg-muted text-muted-foreground' }
+const SITE_STATUS: Record<string, string> = { ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', INACTIVE: 'bg-muted text-muted-foreground', SUSPENDED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300' }
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -176,7 +176,7 @@ export default function CustomersPage() {
                       </div>
                       <div className="flex gap-2 pt-1">
                         <Button type="button" size="sm" variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
-                        <Button type="submit" size="sm" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : 'Save'}</Button>
+                        <Button type="submit" size="sm" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : 'Save'}</Button>
                       </div>
                     </form>
                   ) : (

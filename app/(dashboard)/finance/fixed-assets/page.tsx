@@ -96,7 +96,7 @@ export default function FixedAssetsPage() {
 
   return (
     <div>
-      <PageHeader title="Fixed Assets" description="Track and depreciate your company assets" action={<div className="flex items-center gap-2"><Button type="button" variant="outline" onClick={exportPdf}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export PDF</Button><Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Asset</Button></div>} />
+      <PageHeader title="Fixed Assets" description="Track and depreciate your company assets" action={<div className="flex items-center gap-2"><Button type="button" variant="outline" onClick={exportPdf}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export PDF</Button><Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Asset</Button></div>} />
 
       {/* Summary Cards */}
       <div className="mt-5 grid grid-cols-3 gap-4">
@@ -118,7 +118,7 @@ export default function FixedAssetsPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : assets.length === 0 ? (
-          <div className="py-16"><EmptyState icon={BoxRegular} title="No fixed assets registered" description="Add your first asset to start tracking depreciation" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Asset</Button>} /></div>
+          <div className="py-16"><EmptyState icon={BoxRegular} title="No fixed assets registered" description="Add your first asset to start tracking depreciation" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Asset</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[900px]">
@@ -190,7 +190,7 @@ export default function FixedAssetsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Asset'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Asset'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

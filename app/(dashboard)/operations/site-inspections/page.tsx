@@ -36,7 +36,7 @@ const RATING_STYLES: Record<string, string> = {
   LOW: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
   MEDIUM: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
-  CRITICAL: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  CRITICAL: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
 }
 function RatingBadge({ rating }: { rating: string }) {
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${RATING_STYLES[rating] ?? 'bg-muted text-foreground'}`}>{rating}</span>
@@ -95,7 +95,7 @@ export default function SiteInspectionsPage() {
       <PageHeader
         title="Site Inspections"
         description="Security site inspection checklists and findings"
-        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Inspection</Button>}
+        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Inspection</Button>}
       />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
@@ -177,7 +177,7 @@ export default function SiteInspectionsPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="button" onClick={onCreate} disabled={submitting} className="bg-primary hover:bg-brand-red-dark text-white">{submitting ? 'Saving…' : 'Save Inspection'}</Button>
+              <Button type="button" onClick={onCreate} disabled={submitting} className="bg-primary hover:bg-brand-primary-dark text-white">{submitting ? 'Saving…' : 'Save Inspection'}</Button>
             </DialogFooter>
           </div>
         </DialogContent>

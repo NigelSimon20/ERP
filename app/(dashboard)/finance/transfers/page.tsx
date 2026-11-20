@@ -80,13 +80,13 @@ export default function TransfersPage() {
 
   return (
     <div>
-      <PageHeader title="Bank Transfers" description="Move funds between your bank accounts" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Transfer</Button>} />
+      <PageHeader title="Bank Transfers" description="Move funds between your bank accounts" action={<Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Transfer</Button>} />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
           <div className="divide-y divide-border">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-24 bg-muted rounded" /><div className="h-3 flex-1 bg-muted rounded" /><div className="h-3 w-20 bg-muted rounded" /></div>)}</div>
         ) : transfers.length === 0 ? (
-          <div className="py-16"><EmptyState icon={ArrowSwapRegular} title="No transfers recorded yet" description="Create a transfer to move funds between bank accounts" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Transfer</Button>} /></div>
+          <div className="py-16"><EmptyState icon={ArrowSwapRegular} title="No transfers recorded yet" description="Create a transfer to move funds between bank accounts" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Transfer</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
@@ -179,7 +179,7 @@ export default function TransfersPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {isSubmitting ? 'Processing…' : 'Confirm Transfer'}
               </Button>
             </DialogFooter>

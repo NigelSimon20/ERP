@@ -22,7 +22,7 @@ interface GreetingCardProps {
 export function GreetingCard({ userName, showIcon = true }: GreetingCardProps) {
   const { phrase, subMessage, phase } = useGreeting()
 
-  // Map phases to appropriate icons — neutral/brand-red only, no blue/purple decorative accents
+  // Map phases to appropriate icons — neutral/brand-primary only, no blue/purple decorative accents
   const phaseIcons: Record<string, React.ReactNode> = {
     morning: <WeatherSunnyRegular className="w-6 h-6 text-primary" />,
     afternoon: <CloudRegular className="w-6 h-6 text-muted-foreground" />,

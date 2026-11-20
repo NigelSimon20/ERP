@@ -20,7 +20,7 @@ interface Guard { id: string; name: string }
 type ScheduleForm = { siteId: string; guardId: string; scheduledTime: string; notes: string }
 type CompletionForm = { actualTime: string; status: string; notes: string }
 
-const STATUS_STYLES: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', MISSED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', DELAYED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
+const STATUS_STYLES: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', MISSED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300', DELAYED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400' }
 
 function fmtTime(dt: string | null) { return dt ? new Date(dt).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—' }
 
@@ -92,7 +92,7 @@ export default function PatrolsPage() {
 
   return (
     <div>
-      <PageHeader title="Patrols" description="Schedule and track guard patrols" action={<Button type="button" onClick={() => { sReset(); setShowScheduleDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} />
+      <PageHeader title="Patrols" description="Schedule and track guard patrols" action={<Button type="button" onClick={() => { sReset(); setShowScheduleDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} />
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <Input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-40" />
@@ -113,7 +113,7 @@ export default function PatrolsPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : patrols.length === 0 ? (
-          <div className="py-16"><EmptyState icon={ShieldRegular} title="No patrols scheduled" description={`No patrols for ${date}`} action={<Button type="button" onClick={() => setShowScheduleDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} /></div>
+          <div className="py-16"><EmptyState icon={ShieldRegular} title="No patrols scheduled" description={`No patrols for ${date}`} action={<Button type="button" onClick={() => setShowScheduleDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Schedule Patrol</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
@@ -175,7 +175,7 @@ export default function PatrolsPage() {
             <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Route or instructions" {...sr('notes')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowScheduleDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={sSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{sSubmitting ? 'Saving…' : 'Schedule'}</Button>
+              <Button type="submit" disabled={sSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{sSubmitting ? 'Saving…' : 'Schedule'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -198,7 +198,7 @@ export default function PatrolsPage() {
             <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Observations or issues" {...cr('notes')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setCompletionTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={cSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{cSubmitting ? 'Saving…' : 'Save Record'}</Button>
+              <Button type="submit" disabled={cSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{cSubmitting ? 'Saving…' : 'Save Record'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

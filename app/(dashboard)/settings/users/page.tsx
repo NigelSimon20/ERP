@@ -202,7 +202,7 @@ export default function UsersSettingsPage() {
         title="Users"
         description="Manage who can access this ERP and what they can do"
         action={
-          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white">
+          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white">
             <AddRegular className="h-4 w-4 mr-1" /> Add User
           </Button>
         }
@@ -365,7 +365,7 @@ export default function UsersSettingsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button type="submit" disabled={createForm.formState.isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={createForm.formState.isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {createForm.formState.isSubmitting ? 'Creating…' : 'Create User'}
               </Button>
             </DialogFooter>
@@ -421,7 +421,7 @@ export default function UsersSettingsPage() {
             )} />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
-              <Button type="submit" disabled={editForm.formState.isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={editForm.formState.isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {editForm.formState.isSubmitting ? 'Saving…' : 'Save Changes'}
               </Button>
             </DialogFooter>
@@ -465,7 +465,7 @@ export default function UsersSettingsPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" onClick={() => setCredentials(null)} className="bg-primary hover:bg-brand-red-dark text-white">
+            <Button type="button" onClick={() => setCredentials(null)} className="bg-primary hover:bg-brand-primary-dark text-white">
               Done
             </Button>
           </DialogFooter>

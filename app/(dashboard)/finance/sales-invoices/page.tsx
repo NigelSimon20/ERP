@@ -43,7 +43,7 @@ const STATUS_STYLES: Record<string, string> = {
   UNPAID: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   PARTIAL: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
   PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
   VOID: 'bg-muted text-brand-muted-light line-through',
 }
 const STATUS_TABS = ['ALL', 'UNPAID', 'PARTIAL', 'PAID', 'OVERDUE', 'VOID']
@@ -231,7 +231,7 @@ export default function SalesInvoicesPage() {
       <PageHeader
         title="Sales Invoices"
         description="Create and manage customer invoices"
-        action={<Button type="button" onClick={() => { invReset({ customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: defaultRevenueAccountId, lineItems: [blankLine(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Invoice</Button>}
+        action={<Button type="button" onClick={() => { invReset({ customerId: '', issueDate: '', dueDate: '', description: '', revenueAccountId: defaultRevenueAccountId, lineItems: [blankLine(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Invoice</Button>}
       />
 
       {/* Summary Cards */}
@@ -271,7 +271,7 @@ export default function SalesInvoicesPage() {
           </div>
         ) : invoices.length === 0 ? (
           <div className="py-16">
-            <EmptyState icon={DocumentRegular} title="No invoices found" description={statusTab === 'ALL' ? 'Create your first invoice to get started' : `No ${statusTab.toLowerCase()} invoices`} action={statusTab === 'ALL' ? <Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Create your first invoice</Button> : undefined} />
+            <EmptyState icon={DocumentRegular} title="No invoices found" description={statusTab === 'ALL' ? 'Create your first invoice to get started' : `No ${statusTab.toLowerCase()} invoices`} action={statusTab === 'ALL' ? <Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Create your first invoice</Button> : undefined} />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -411,7 +411,7 @@ export default function SalesInvoicesPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={invSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={invSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {invSubmitting ? 'Creating…' : 'Create Invoice'}
               </Button>
             </DialogFooter>
@@ -447,7 +447,7 @@ export default function SalesInvoicesPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setReceiptTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={rcpSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={rcpSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {rcpSubmitting ? 'Saving…' : 'Record Receipt'}
               </Button>
             </DialogFooter>

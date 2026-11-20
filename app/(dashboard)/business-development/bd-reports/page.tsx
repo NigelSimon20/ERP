@@ -166,7 +166,7 @@ export default function BdReportsPage() {
                 <XAxis type="number" tick={{ fontSize: 10 }} tickFormatter={v => `$${(v / 1000).toFixed(0)}k`} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={80} />
                 <Tooltip formatter={v => formatCurrency(Number(v))} />
-                <Bar dataKey="revenue" name="Revenue" fill="#DC2626" radius={[0, 3, 3, 0]} />
+                <Bar dataKey="revenue" name="Revenue" fill="#1E40AF" radius={[0, 3, 3, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
@@ -179,7 +179,7 @@ export default function BdReportsPage() {
               <div className="relative flex items-center justify-center w-32 h-32 shrink-0">
                 <svg viewBox="0 0 36 36" className="w-32 h-32 -rotate-90">
                   <circle cx="18" cy="18" r="15.9" fill="none" stroke="#E5E7EB" strokeWidth="3.5" />
-                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#DC2626" strokeWidth="3.5" strokeDasharray={`${conversionRate} ${100 - conversionRate}`} strokeLinecap="round" />
+                  <circle cx="18" cy="18" r="15.9" fill="none" stroke="#1E40AF" strokeWidth="3.5" strokeDasharray={`${conversionRate} ${100 - conversionRate}`} strokeLinecap="round" />
                 </svg>
                 <span className="absolute text-2xl font-bold text-primary">{conversionRate}%</span>
               </div>

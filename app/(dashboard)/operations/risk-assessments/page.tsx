@@ -32,7 +32,7 @@ const RATING_STYLES: Record<string, string> = {
   LOW: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
   MEDIUM: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400',
-  CRITICAL: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  CRITICAL: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
 }
 function RatingBadge({ rating }: { rating: string }) {
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${RATING_STYLES[rating] ?? 'bg-muted text-foreground'}`}>{rating}</span>
@@ -76,7 +76,7 @@ export default function RiskAssessmentsPage() {
       <PageHeader
         title="Risk Assessments"
         description="Formal risk assessments for sites and operations"
-        action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Assessment</Button>}
+        action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Assessment</Button>}
       />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
@@ -156,7 +156,7 @@ export default function RiskAssessmentsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : 'Save Assessment'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : 'Save Assessment'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

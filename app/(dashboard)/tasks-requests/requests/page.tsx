@@ -20,8 +20,8 @@ interface Request { id: string; requestType: string; title: string; description:
 type FormValues = { requestType: string; title: string; description: string; assignedTo: string; priority: string }
 
 const REQUEST_TYPES = ['Leave', 'Equipment', 'Training', 'IT Support', 'Maintenance', 'Finance', 'HR', 'Procurement', 'Other']
-const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-muted text-muted-foreground', IN_REVIEW: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', COMPLETED: 'bg-brand-navy text-white' }
-const PRIORITY_BADGE: Record<string, string> = { LOW: 'bg-muted text-muted-foreground', MEDIUM: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', HIGH: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', URGENT: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-muted text-muted-foreground', IN_REVIEW: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300', COMPLETED: 'bg-brand-navy text-white' }
+const PRIORITY_BADGE: Record<string, string> = { LOW: 'bg-muted text-muted-foreground', MEDIUM: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', HIGH: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', URGENT: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300' }
 
 export default function RequestsPage() {
   const [requests, setRequests] = useState<Request[]>([])
@@ -107,7 +107,7 @@ export default function RequestsPage() {
   return (
     <div>
       <PageHeader title="Requests" description="Submit and manage staff requests" action={
-        <Button type="button" onClick={() => { reset(); setWaReminder(false); setReminderTime(null); setShowCreate(true) }} className="bg-brand-red hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Submit Request</Button>
+        <Button type="button" onClick={() => { reset(); setWaReminder(false); setReminderTime(null); setShowCreate(true) }} className="bg-brand-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Submit Request</Button>
       } />
 
       <div className="mt-4 flex items-center gap-3 flex-wrap">
@@ -126,7 +126,7 @@ export default function RequestsPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : filtered.length === 0 ? (
-          <div className="py-16"><EmptyState icon={MailInboxRegular} title="No requests" description="Submit a request to get started" action={<Button type="button" onClick={() => setShowCreate(true)} className="bg-brand-red hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Submit Request</Button>} /></div>
+          <div className="py-16"><EmptyState icon={MailInboxRegular} title="No requests" description="Submit a request to get started" action={<Button type="button" onClick={() => setShowCreate(true)} className="bg-brand-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Submit Request</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
@@ -210,7 +210,7 @@ export default function RequestsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-brand-red hover:bg-brand-red-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-brand-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -226,7 +226,7 @@ export default function RequestsPage() {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setRejectTarget(null)}>Cancel</Button>
-            <Button type="button" onClick={handleReject} className="bg-primary hover:bg-brand-red-dark text-white">Reject</Button>
+            <Button type="button" onClick={handleReject} className="bg-destructive hover:bg-destructive/90 text-white">Reject</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

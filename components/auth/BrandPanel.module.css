@@ -1,16 +1,20 @@
+/* Infinity Nexa: deep navy ink with the brand's blue and sky glow
+   (as on www.nexainventory.com). No photo: the old one carried the previous
+   brand's emblem. */
 .brandPanel {
   position: relative;
-  background-image: url('/assets/login/login-bg.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   min-height: 100vh;
+  background:
+    radial-gradient(60% 50% at 85% 10%, rgba(56, 189, 248, 0.28) 0%, rgba(56, 189, 248, 0) 70%),
+    radial-gradient(70% 60% at 10% 95%, rgba(30, 64, 175, 0.55) 0%, rgba(30, 64, 175, 0) 70%),
+    linear-gradient(160deg, #0a1733 0%, #13244a 55%, #1b3a96 100%);
 }
 
 .brandPanel::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
   pointer-events: none;
 }

@@ -38,7 +38,7 @@ const STAGE_COLORS: Record<string, string> = {
   CONTACTED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
   QUALIFIED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   PROPOSAL_SENT: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-  NEGOTIATION: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  NEGOTIATION: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
   WON: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
   LOST: 'bg-muted text-muted-foreground',
 }
@@ -142,7 +142,7 @@ export default function BDDashboardPage() {
                   <XAxis dataKey="status" tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={CT} />
-                  <Bar dataKey="count" name="Leads" fill="#DC2626" radius={[4,4,0,0]} />
+                  <Bar dataKey="count" name="Leads" fill="#1E40AF" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>
             }

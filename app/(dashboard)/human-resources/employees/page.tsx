@@ -27,7 +27,7 @@ interface CredentialsData {
   role: string
 }
 
-const STATUS_STYLES: Record<string, string> = { Active: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', Resigned: 'bg-muted text-muted-foreground', Blacklisted: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', Terminated: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const STATUS_STYLES: Record<string, string> = { Active: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', Resigned: 'bg-muted text-muted-foreground', Blacklisted: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', Terminated: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300' }
 const DEPARTMENTS = ['Operations', 'Finance', 'Business Development', 'HR', 'Admin']
 const RANKS = ['Guard', 'Senior Guard', 'Supervisor', 'Team Leader', 'Manager', 'Admin']
 
@@ -183,7 +183,7 @@ export default function EmployeesPage() {
     const w = window.open('', '_blank')
     if (!w) return
     w.document.write(`<pre style="font-family:monospace;padding:2em;">
-Raven Shield ERP — Login Credentials
+Infinity Nexa ERP — Login Credentials
 ======================================
 Employee : ${cred.guardName}
 Username : ${cred.username}
@@ -211,7 +211,7 @@ Please change your password on first login.
           </a>
           <Button type="button" variant="outline" onClick={() => setShowImportWizard(true)}><ArrowUploadRegular className="h-4 w-4 mr-1" /> Import</Button>
           <Button type="button" variant="outline" onClick={exportCsv}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export CSV</Button>
-          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Employee</Button>
+          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Employee</Button>
         </div>
       } />
 
@@ -240,7 +240,7 @@ Please change your password on first login.
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : guards.length === 0 ? (
-          <div className="py-16"><EmptyState icon={PeopleRegular} title="No employees found" description="Add guards and staff members to get started" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Employee</Button>} /></div>
+          <div className="py-16"><EmptyState icon={PeopleRegular} title="No employees found" description="Add guards and staff members to get started" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Employee</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[900px]">
@@ -360,7 +360,7 @@ Please change your password on first login.
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Employee'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Employee'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -390,7 +390,7 @@ Please change your password on first login.
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setAccountTarget(null)}>Cancel</Button>
-              <Button type="button" disabled={creatingAccount === accountTarget.id} onClick={createAccount} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="button" disabled={creatingAccount === accountTarget.id} onClick={createAccount} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {creatingAccount === accountTarget.id ? 'Creating…' : 'Create Account'}
               </Button>
             </DialogFooter>

@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+/* Fonts (Nunito Sans, Chillax) are self-hosted via next/font in app/layout.tsx. */
 
 @tailwind base;
 @tailwind components;
@@ -7,70 +7,72 @@
 /* ─── Design Tokens ─────────────────────────────────────────────────────────── */
 @layer base {
   :root {
-    /* shadcn/ui compatibility */
+    /* Infinity Nexa — light (tokens from www.nexainventory.com) */
     --background: 210 40% 98%;
-    --foreground: 220 39% 11%;
+    --foreground: 223 26% 11%;
     --card: 0 0% 100%;
-    --card-foreground: 220 39% 11%;
+    --card-foreground: 223 26% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 220 39% 11%;
-    --primary: 0 72% 51%;
+    --popover-foreground: 223 26% 11%;
+    --primary: 226 71% 40%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 220 14% 96%;
-    --secondary-foreground: 220 9% 46%;
-    --muted: 220 14% 96%;
-    --muted-foreground: 220 9% 46%;
-    --accent: 0 93% 94%;
-    --accent-foreground: 0 72% 51%;
-    --destructive: 0 72% 51%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
-    --ring: 0 72% 51%;
+    --secondary: 228 26% 96%;
+    --secondary-foreground: 220 15% 19%;
+    --muted: 210 22% 96%;
+    --muted-foreground: 219 6% 43%;
+    --accent: 222 52% 95%;
+    --accent-foreground: 226 71% 40%;
+    --destructive: 356 75% 50%;
+    --destructive-foreground: 0 0% 99%;
+    --border: 220 12% 90%;
+    --input: 220 12% 90%;
+    --ring: 217 91% 60%;
     --radius: 0.625rem;
 
     /* Brand design tokens */
-    --brand-red: #DC2626;
-    --brand-red-dark: #B91C1C;
-    --brand-red-light: #FEE2E2;
-    --brand-red-lighter: #FEF2F2;
-    --brand-navy: #111827;
-    --brand-text: #111827;
-    --brand-muted: #6B7280;
-    --brand-muted-light: #9CA3AF;
+    --brand-primary: #1E40AF;
+    --brand-primary-dark: #1B3A96;
+    --brand-primary-light: #DBEAFE;
+    --brand-primary-lighter: #EFF6FF;
+    --brand-sky: #38BDF8;
+    --brand-navy: #0A1733;
+    --brand-text: #141822;
+    --brand-muted: #676C75;
+    --brand-muted-light: #94A3B8;
     --brand-bg: #FFFFFF;
     --brand-bg-secondary: #F8FAFC;
-    --brand-border: #E5E7EB;
-    --brand-border-light: #F3F4F6;
+    --brand-border: #E2E4E8;
+    --brand-border-light: #F1F5F9;
   }
 
   .dark {
-    --background: 222 18% 10%;
-    --foreground: 210 20% 92%;
-    --card: 222 16% 14%;
-    --card-foreground: 210 20% 92%;
-    --popover: 222 16% 14%;
-    --popover-foreground: 210 20% 92%;
-    --primary: 0 72% 51%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 217 15% 22%;
-    --secondary-foreground: 210 20% 92%;
-    --muted: 222 16% 18%;
-    --muted-foreground: 215 12% 65%;
-    --accent: 0 45% 18%;
-    --accent-foreground: 0 85% 75%;
-    --destructive: 0 62% 45%;
-    --destructive-foreground: 210 20% 92%;
-    --border: 217 15% 22%;
-    --input: 217 15% 22%;
-    --ring: 0 72% 51%;
+    /* Infinity Nexa — dark: deep navy ink */
+    --background: 221 67% 12%;
+    --foreground: 210 15% 95%;
+    --card: 222 61% 16%;
+    --card-foreground: 210 15% 95%;
+    --popover: 221 59% 18%;
+    --popover-foreground: 210 15% 95%;
+    --primary: 213 94% 68%;
+    --primary-foreground: 222 68% 10%;
+    --secondary: 224 14% 16%;
+    --secondary-foreground: 220 14% 91%;
+    --muted: 222 13% 15%;
+    --muted-foreground: 220 6% 60%;
+    --accent: 220 15% 19%;
+    --accent-foreground: 223 23% 94%;
+    --destructive: 0 85% 62%;
+    --destructive-foreground: 5 46% 5%;
+    --border: 222 13% 20%;
+    --input: 222 12% 22%;
+    --ring: 198 93% 60%;
 
     /* Brand design tokens (dark) */
-    --brand-text: #E5E7EB;
-    --brand-bg: #171E2A;
-    --brand-bg-secondary: #10151F;
-    --brand-border: #2A3548;
-    --brand-border-light: #232C3D;
+    --brand-text: #F0F2F4;
+    --brand-bg: #101F42;
+    --brand-bg-secondary: #0A1733;
+    --brand-border: #2C3039;
+    --brand-border-light: #272B34;
   }
 }
 
@@ -81,13 +83,13 @@
   body {
     background: hsl(var(--background));
     color: hsl(var(--foreground));
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-nunito-sans), 'Nunito Sans', system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Inter', system-ui, sans-serif;
+    font-family: var(--font-chillax), var(--font-nunito-sans), system-ui, sans-serif;
     color: hsl(var(--foreground));
     font-weight: 700;
     letter-spacing: -0.01em;
@@ -129,14 +131,14 @@
   }
   .erp-badge-success { @apply bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400; }
   .erp-badge-warning { @apply bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400; }
-  .erp-badge-danger  { @apply bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300; }
+  .erp-badge-danger  { @apply bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300; }
   .erp-badge-info    { @apply bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400; }
   .erp-badge-muted   { @apply bg-muted text-muted-foreground; }
-  .erp-badge-primary { @apply bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300; }
+  .erp-badge-primary { @apply bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300; }
   .erp-badge-low     { @apply bg-muted text-muted-foreground; }
   .erp-badge-medium  { @apply bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400; }
   .erp-badge-high    { @apply bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400; }
-  .erp-badge-urgent  { @apply bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300; }
+  .erp-badge-urgent  { @apply bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300; }
 
   .invoice-container { background: var(--background-color, #ffffff); }
   .invoice-header { border-color: var(--border-color); }
@@ -181,7 +183,7 @@
     @apply erp-btn bg-green-600 text-white hover:bg-green-700;
   }
   .erp-btn-danger {
-    @apply erp-btn bg-primary text-primary-foreground hover:bg-[#B91C1C];
+    @apply erp-btn bg-primary text-primary-foreground hover:bg-[#1B3A96];
   }
   .erp-btn-sm { @apply !px-3 !py-1.5 !text-xs !rounded-lg; }
   .erp-btn-lg { @apply !px-6 !py-3 !text-base !rounded-xl; }

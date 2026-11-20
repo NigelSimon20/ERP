@@ -71,7 +71,7 @@ export function parseRbzRates(html: string): { effectiveDate: Date; rates: RbzRa
 export async function fetchRbzRates(): Promise<{ effectiveDate: Date; rates: RbzRate[] }> {
   let res: Response
   try {
-    res = await fetch(RBZ_URL, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RavenshieldERP/1.0)' }, cache: 'no-store', signal: AbortSignal.timeout(20000) })
+    res = await fetch(RBZ_URL, { headers: { 'User-Agent': 'Mozilla/5.0 (compatible; InfinityNexaERP/1.0)' }, cache: 'no-store', signal: AbortSignal.timeout(20000) })
   } catch {
     throw new ApiError('The RBZ website could not be reached. Try again later or enter the rate manually.', 503, 'RBZ_UNAVAILABLE')
   }

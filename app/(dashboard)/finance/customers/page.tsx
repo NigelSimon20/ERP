@@ -116,7 +116,7 @@ export default function CustomersPage() {
           </a>
           <Button type="button" variant="outline" onClick={() => setShowImportWizard(true)}><ArrowUploadRegular className="h-4 w-4 mr-1" /> Import</Button>
           <Button type="button" variant="outline" onClick={exportCsv}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export CSV</Button>
-          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Customer</Button>
+          <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Customer</Button>
         </div>
       } />
 
@@ -131,7 +131,7 @@ export default function CustomersPage() {
         {loading ? (
           <div className="divide-y divide-border">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-40 bg-muted rounded" /><div className="h-3 flex-1 bg-muted rounded" /><div className="h-3 w-20 bg-muted rounded" /></div>)}</div>
         ) : filtered.length === 0 ? (
-          <div className="py-16"><EmptyState icon={PeopleRegular} title="No customers yet" description="Add your first customer to start raising invoices" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Customer</Button>} /></div>
+          <div className="py-16"><EmptyState icon={PeopleRegular} title="No customers yet" description="Add your first customer to start raising invoices" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Customer</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[700px]">
@@ -211,7 +211,7 @@ export default function CustomersPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Customer'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Customer'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -253,7 +253,7 @@ export default function CustomersPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button type="button" onClick={() => setPortalCredentials(null)} className="bg-primary hover:bg-brand-red-dark text-white">
+            <Button type="button" onClick={() => setPortalCredentials(null)} className="bg-primary hover:bg-brand-primary-dark text-white">
               Done
             </Button>
           </DialogFooter>

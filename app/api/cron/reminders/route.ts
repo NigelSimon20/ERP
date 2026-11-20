@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
     if (user?.whatsapp) {
       await sendWhatsAppMessage({
         to: user.whatsapp,
-        message: `🔔 *Task Reminder — Ravenshield*\n\n*${task.title}*\nDue: ${formatDate(task.dueDate)}\nPriority: ${task.priority}\n\n_Ravenshield Security ERP_`,
+        message: `🔔 *Task Reminder — Infinity Nexa*\n\n*${task.title}*\nDue: ${formatDate(task.dueDate)}\nPriority: ${task.priority}\n\n_Infinity Nexa ERP_`,
       }).catch(() => {})
     }
     await prisma.task.update({ where: { id: task.id }, data: { reminderSent: true } })
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       if (user?.whatsapp) {
         await sendWhatsAppMessage({
           to: user.whatsapp,
-          message: `📋 *Request Reminder — Ravenshield*\n\n*${request.title}*\nType: ${request.requestType}\nStatus: ${request.status}\n\n_Ravenshield Security ERP_`,
+          message: `📋 *Request Reminder — Infinity Nexa*\n\n*${request.title}*\nType: ${request.requestType}\nStatus: ${request.status}\n\n_Infinity Nexa ERP_`,
         }).catch(() => {})
       }
     }

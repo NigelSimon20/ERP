@@ -90,8 +90,8 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
       {/* General Error Message */}
       {generalError && (
-        <div className="p-4 bg-brand-red/10 border border-brand-red/20 rounded-lg">
-          <p className="text-sm font-medium text-brand-red-dark">{generalError}</p>
+        <div className="p-4 bg-brand-primary/10 border border-brand-primary/20 rounded-lg">
+          <p className="text-sm font-medium text-destructive">{generalError}</p>
         </div>
       )}
 
@@ -119,13 +119,13 @@ export function LoginForm({ onForgotPassword }: LoginFormProps) {
               focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 focus:border-primary
               hover:border-border
               disabled:bg-muted/50 disabled:text-muted-foreground disabled:cursor-not-allowed
-              ${errors.email ? 'border-brand-red focus:ring-brand-red focus:border-brand-red' : ''}
+              ${errors.email ? 'border-destructive focus:ring-destructive focus:border-destructive' : ''}
             `}
             disabled={isSubmitting}
           />
         </div>
         {errors.email && (
-          <p className="text-sm font-medium text-brand-red mt-1">
+          <p className="text-sm font-medium text-brand-primary mt-1">
             {errors.email.message}
           </p>
         )}

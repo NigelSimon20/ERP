@@ -202,7 +202,7 @@ async function notifyPayslips(runId: string, period: string) {
   for (const s of slips) {
     const g = s.employee_id ? byId.get(s.employee_id) : undefined
     if (!g?.phone) continue
-    const msg = `\u{1F4B0} Payslip Ready — ${g.full_name ?? ''}\nPeriod: ${period}\nGross: ${Number(s.total_earnings).toFixed(2)} | Deductions: ${Number(s.total_deductions).toFixed(2)} | Net Pay: ${Number(s.net_pay).toFixed(2)}\n— Ravenshield ERP`
+    const msg = `\u{1F4B0} Payslip Ready — ${g.full_name ?? ''}\nPeriod: ${period}\nGross: ${Number(s.total_earnings).toFixed(2)} | Deductions: ${Number(s.total_deductions).toFixed(2)} | Net Pay: ${Number(s.net_pay).toFixed(2)}\n— Infinity Nexa ERP`
     fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ to: g.phone, message: msg }) }).catch(() => {})
   }
 }

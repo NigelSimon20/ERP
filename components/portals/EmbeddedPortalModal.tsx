@@ -44,7 +44,7 @@ export function EmbeddedPortalModal({
                 href={url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-brand-red-dark text-white text-sm font-medium px-4 py-2"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-brand-primary-dark text-white text-sm font-medium px-4 py-2"
               >
                 Open in new tab instead <OpenRegular className="h-4 w-4" />
               </a>

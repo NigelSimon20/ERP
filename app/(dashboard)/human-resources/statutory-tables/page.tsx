@@ -145,7 +145,7 @@ export default function StatutoryTablesPage() {
           <Textarea rows={8} className="font-mono text-xs" value={config} onChange={(e) => setConfig(e.target.value)} />
           <p className="text-xs text-muted-foreground">{HELP[kind]} The template shows the shape only; enter the figures from the source document.</p>
         </div>
-        <Button type="button" disabled={saving || !effectiveFrom || !sourceDocument} onClick={save} className="bg-primary hover:bg-brand-red-dark text-white">
+        <Button type="button" disabled={saving || !effectiveFrom || !sourceDocument} onClick={save} className="bg-primary hover:bg-brand-primary-dark text-white">
           {saving ? 'Saving…' : 'Save as draft'}
         </Button>
       </div>

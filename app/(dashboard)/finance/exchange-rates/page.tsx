@@ -116,7 +116,7 @@ export default function ExchangeRatesPage() {
           <Button type="button" variant="outline" onClick={syncFromRbz} disabled={syncing}>
             <ArrowSyncRegular className={`h-4 w-4 mr-1 ${syncing ? 'animate-spin' : ''}`} /> {syncing ? 'Syncing…' : 'Sync from RBZ'}
           </Button>
-          <Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Rate</Button>
+          <Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Rate</Button>
         </div>
       } />
 
@@ -157,7 +157,7 @@ export default function ExchangeRatesPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : rates.length === 0 ? (
-          <div className="py-16"><EmptyState icon={GlobeRegular} title="No exchange rates defined" description="Add your first rate to enable multi-currency support" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Rate</Button>} /></div>
+          <div className="py-16"><EmptyState icon={GlobeRegular} title="No exchange rates defined" description="Add your first rate to enable multi-currency support" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Rate</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
@@ -212,7 +212,7 @@ export default function ExchangeRatesPage() {
             <div className="space-y-1.5"><Label>Effective Date *</Label><Input type="date" {...register('effectiveDate', { required: true })} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : 'Add Rate'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : 'Add Rate'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -20,7 +20,7 @@ type CreateForm = { guardId: string; leaveType: string; startDate: string; endDa
 type RejectForm = { rejectionNote: string }
 
 const STATUS_TABS = ['ALL', 'PENDING', 'APPROVED', 'REJECTED']
-const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300' }
 const LEAVE_TYPES = ['ANNUAL', 'SICK', 'MATERNITY', 'PATERNITY', 'UNPAID', 'COMPASSIONATE', 'STUDY', 'CASH_IN_LIEU']
 
 export default function LeaveManagementPage() {
@@ -116,7 +116,7 @@ export default function LeaveManagementPage() {
 
   return (
     <div>
-      <PageHeader title="Leave Management" description="Manage guard leave and time-off requests" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} />
+      <PageHeader title="Leave Management" description="Manage guard leave and time-off requests" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} />
 
       <div className="mt-4 flex gap-1 border-b border-border">
         {STATUS_TABS.map(tab => (
@@ -128,7 +128,7 @@ export default function LeaveManagementPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : requests.length === 0 ? (
-          <div className="py-16"><EmptyState icon={CalendarLtrRegular} title="No leave requests" description="No requests match your current filter" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} /></div>
+          <div className="py-16"><EmptyState icon={CalendarLtrRegular} title="No leave requests" description="No requests match your current filter" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
@@ -214,7 +214,7 @@ export default function LeaveManagementPage() {
             <div className="space-y-1.5"><Label>Reason</Label><Textarea placeholder="Reason for leave request…" rows={2} {...register('reason')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -231,7 +231,7 @@ export default function LeaveManagementPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setRejectTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={rSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{rSubmitting ? 'Rejecting…' : 'Reject Leave'}</Button>
+              <Button type="submit" disabled={rSubmitting} className="bg-destructive hover:bg-destructive/90 text-white">{rSubmitting ? 'Rejecting…' : 'Reject Leave'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

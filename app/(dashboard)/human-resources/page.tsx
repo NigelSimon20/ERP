@@ -9,7 +9,7 @@ import { ArrowTrendingRegular, CalendarLtrRegular, ClockRegular, ErrorCircleRegu
 interface KpiData { totalActive: number; totalHeadcount: number; lastPayrollNet: number; lastPayrollDate: string | null; pendingLeave: number; avgDailyRate: number; onLeaveToday: number; expiredContracts: number }
 
 function KpiCard({ icon: Icon, label, value, sub, color = 'blue', href }: { icon: React.ElementType; label: string; value: string; sub?: string; color?: string; href: string }) {
-  const iconColors: Record<string, string> = { blue: 'text-blue-600 bg-blue-50', red: 'text-primary bg-red-50', green: 'text-green-600 bg-green-50', amber: 'text-amber-600 bg-amber-50', navy: 'text-foreground bg-muted' }
+  const iconColors: Record<string, string> = { blue: 'text-blue-600 bg-blue-50', red: 'text-primary bg-brand-primary-lighter', green: 'text-green-600 bg-green-50', amber: 'text-amber-600 bg-amber-50', navy: 'text-foreground bg-muted' }
   return (
     <Link href={href} className="block rounded-lg border border-border bg-card p-4 hover:shadow-sm transition-shadow">
       <div className="flex items-center gap-3 mb-3">

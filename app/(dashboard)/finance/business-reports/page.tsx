@@ -119,7 +119,7 @@ export default function BusinessReportsPage() {
           </div>
         </div>
         <div className="mt-4 flex items-center gap-3">
-          <Button type="button" onClick={generate} disabled={loading} className="bg-primary hover:bg-brand-red-dark text-white">
+          <Button type="button" onClick={generate} disabled={loading} className="bg-primary hover:bg-brand-primary-dark text-white">
             {loading ? <><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Generating…</> : <><DataBarVerticalRegular className="h-4 w-4 mr-2" />Generate Report</>}
           </Button>
           {result && <Button type="button" variant="outline" onClick={downloadCSV}><ArrowDownloadRegular className="h-4 w-4 mr-2" />Download CSV</Button>}

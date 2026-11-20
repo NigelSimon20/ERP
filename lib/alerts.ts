@@ -47,7 +47,7 @@ async function notifyRoleDigest(params: {
     notified++
 
     if (user.whatsapp) {
-      const res = await sendWhatsAppMessage({ to: user.whatsapp, message: `🔔 *${title} — Ravenshield*\n\n${message}` }).catch(() => ({ success: false }))
+      const res = await sendWhatsAppMessage({ to: user.whatsapp, message: `🔔 *${title} — Infinity Nexa*\n\n${message}` }).catch(() => ({ success: false }))
       if (res.success) whatsappSent++
     }
   }

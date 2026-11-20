@@ -30,7 +30,7 @@ type RejectForm = { rejectionNote: string }
 const STATUS_STYLES: Record<string, string> = {
   PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
 }
 function StatusBadge({ status }: { status: string }) {
   return <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status] ?? 'bg-muted text-foreground'}`}>{status}</span>
@@ -98,7 +98,7 @@ export default function OvertimePage() {
       <PageHeader
         title="Overtime Requests"
         description="Submit and approve overtime hours — approved hours feed straight into payroll"
-        action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>}
+        action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>}
       />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
@@ -177,7 +177,7 @@ export default function OvertimePage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -193,7 +193,7 @@ export default function OvertimePage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setRejectTarget(null)}>Cancel</Button>
-              <Button type="submit" className="bg-primary hover:bg-brand-red-dark text-white">Reject</Button>
+              <Button type="submit" className="bg-destructive hover:bg-destructive/90 text-white">Reject</Button>
             </DialogFooter>
           </form>
         </DialogContent>

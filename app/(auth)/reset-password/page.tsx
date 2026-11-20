@@ -18,7 +18,7 @@ function ResetPasswordForm() {
   const [done, setDone] = useState(false)
 
   if (!token) {
-    return <p role="alert" className="text-sm text-center text-brand-red">This reset link is incomplete. Request a new one.</p>
+    return <p role="alert" className="text-sm text-center text-destructive">This reset link is incomplete. Request a new one.</p>
   }
   if (done) {
     return (
@@ -52,7 +52,7 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5" noValidate>
-      {error && <p role="alert" className="text-sm font-medium text-brand-red">{error}</p>}
+      {error && <p role="alert" className="text-sm font-medium text-destructive">{error}</p>}
       <PasswordInput id="password" label="New password" autoComplete="new-password" value={password}
         onChange={(e) => setPassword(e.target.value)} disabled={submitting} />
       <PasswordInput id="confirm" label="Confirm new password" autoComplete="new-password" value={confirm}

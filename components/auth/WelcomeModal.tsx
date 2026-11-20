@@ -100,7 +100,7 @@ export function WelcomeModal({ data, onClose }: WelcomeModalProps) {
         }`}
       >
         {/* Header strip */}
-        <div className="relative bg-gradient-to-br from-primary to-brand-red-dark px-6 pt-8 pb-10">
+        <div className="relative bg-gradient-to-br from-primary to-brand-primary-dark px-6 pt-8 pb-10">
           {/* Shield icon bg */}
           <div className="absolute top-4 right-4 opacity-10">
             <ShieldRegular className="w-20 h-20 text-white" />

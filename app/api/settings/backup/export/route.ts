@@ -29,7 +29,7 @@ export async function GET() {
     newValues: { action: 'export', tables: Object.keys(backup.data).length },
   })
 
-  const filename = `ravenshield-backup-${new Date().toISOString().slice(0, 10)}.json`
+  const filename = `infinity-nexa-backup-${new Date().toISOString().slice(0, 10)}.json`
   return new NextResponse(JSON.stringify(backup, null, 2), {
     status: 200,
     headers: {

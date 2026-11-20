@@ -218,7 +218,7 @@ function TimesheetTab() {
         </div>
         <div className="ml-auto flex items-center gap-2">
           <Button type="button" variant="outline" onClick={exportCsv}><ArrowDownloadRegular className="h-4 w-4 mr-1" /> Export</Button>
-          <Button type="button" onClick={saveChanges} disabled={saving || pendingCount === 0} className="bg-primary hover:bg-brand-red-dark text-white">
+          <Button type="button" onClick={saveChanges} disabled={saving || pendingCount === 0} className="bg-primary hover:bg-brand-primary-dark text-white">
             {saving ? 'Saving…' : `Save Changes${pendingCount ? ` (${pendingCount})` : ''}`}
           </Button>
         </div>

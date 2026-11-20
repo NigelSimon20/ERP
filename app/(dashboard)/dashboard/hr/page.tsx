@@ -29,7 +29,7 @@ interface HRData {
   upcomingBirthdays: { name: string; birthday: string; department: string }[]
 }
 
-const LEAVE_COLORS = ['#DC2626', '#374151', '#F59E0B', '#22C55E', '#9CA3AF', '#111827']
+const LEAVE_COLORS = ['#1E40AF', '#38BDF8', '#E49E22', '#02985F', '#94A3B8', '#0A1733']
 const CT = { fontSize: 12, borderRadius: 10, border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }
 const TICK = { fontSize: 11, fill: '#9CA3AF' }
 const DASHBOARD_REFRESH_MS = 30_000

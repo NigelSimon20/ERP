@@ -153,7 +153,7 @@ export default function ChartOfAccountsPage() {
       <PageHeader
         title="Chart of Accounts"
         description="Manage your general ledger accounts"
-        action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>}
+        action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>}
       />
 
       {loading ? (
@@ -169,7 +169,7 @@ export default function ChartOfAccountsPage() {
         </div>
       ) : accounts.length === 0 ? (
         <div className="mt-16">
-          <EmptyState icon={BookRegular} title="No accounts yet" description="Add your first account to start your chart of accounts" action={<div className="flex flex-wrap justify-center gap-2 mt-4"><Button onClick={loadDefaultChart} disabled={loadingDefault} className="bg-primary hover:bg-brand-red-dark text-white">{loadingDefault ? 'Loading…' : 'Load default chart'}</Button><Button variant="outline" onClick={openCreate}><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button></div>} />
+          <EmptyState icon={BookRegular} title="No accounts yet" description="Add your first account to start your chart of accounts" action={<div className="flex flex-wrap justify-center gap-2 mt-4"><Button onClick={loadDefaultChart} disabled={loadingDefault} className="bg-primary hover:bg-brand-primary-dark text-white">{loadingDefault ? 'Loading…' : 'Load default chart'}</Button><Button variant="outline" onClick={openCreate}><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button></div>} />
         </div>
       ) : (
         <div className="mt-6 space-y-6">
@@ -270,7 +270,7 @@ export default function ChartOfAccountsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Account'}
               </Button>
             </DialogFooter>

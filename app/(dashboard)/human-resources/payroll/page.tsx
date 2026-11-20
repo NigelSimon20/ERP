@@ -143,7 +143,7 @@ export default function PayrollPage() {
                   </Select>
                 )} />
               </div>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {isSubmitting ? 'Calculating…' : 'Calculate Payroll Preview'}
               </Button>
             </form>
@@ -212,7 +212,7 @@ export default function PayrollPage() {
 
               <div className="mt-4 flex items-center gap-3">
                 <Button type="button" variant="outline" onClick={() => setStep(1)}><ChevronLeftRegular className="h-4 w-4 mr-1" /> Back to Setup</Button>
-                <Button type="button" disabled={confirming} onClick={onConfirm} className="bg-primary hover:bg-brand-red-dark text-white">{confirming ? 'Creating…' : 'Create Draft Payroll Run'}</Button>
+                <Button type="button" disabled={confirming} onClick={onConfirm} className="bg-primary hover:bg-brand-primary-dark text-white">{confirming ? 'Creating…' : 'Create Draft Payroll Run'}</Button>
               </div>
             </div>
           )}

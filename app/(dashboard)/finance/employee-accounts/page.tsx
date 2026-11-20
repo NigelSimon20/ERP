@@ -74,13 +74,13 @@ export default function EmployeeAccountsPage() {
 
   return (
     <div>
-      <PageHeader title="Employee Accounts" description="Manage guard bank accounts for payroll disbursement" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>} />
+      <PageHeader title="Employee Accounts" description="Manage guard bank accounts for payroll disbursement" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>} />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
           <div className="divide-y divide-border">{[1, 2, 3].map((i) => <div key={i} className="flex items-center gap-4 px-4 py-3 animate-pulse"><div className="h-3 w-32 bg-muted rounded" /><div className="h-3 flex-1 bg-muted rounded" /></div>)}</div>
         ) : accounts.length === 0 ? (
-          <div className="py-16"><EmptyState icon={PaymentRegular} title="No employee bank accounts" description="Add bank accounts to enable payroll disbursement" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>} /></div>
+          <div className="py-16"><EmptyState icon={PaymentRegular} title="No employee bank accounts" description="Add bank accounts to enable payroll disbursement" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Account</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
@@ -163,7 +163,7 @@ export default function EmployeeAccountsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Account'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Account'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

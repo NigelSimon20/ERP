@@ -44,7 +44,7 @@ const STATUS_STYLES: Record<string, string> = {
   DRAFT: 'bg-muted text-muted-foreground',
   ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
   EXPIRED: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-  TERMINATED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  TERMINATED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
 }
 const BILLING_FREQUENCIES = ['MONTHLY', 'QUARTERLY', 'ANNUALLY', 'ONCE_OFF']
 
@@ -135,7 +135,7 @@ export default function ContractsPage() {
       <PageHeader
         title="Contracts"
         description="Track ongoing customer contracts and their recurring revenue"
-        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Contract</Button>}
+        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Contract</Button>}
       />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
@@ -143,7 +143,7 @@ export default function ContractsPage() {
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : contracts.length === 0 ? (
           <div className="py-16">
-            <EmptyState icon={DocumentRegular} title="No contracts yet" description="Create your first customer contract" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Contract</Button>} />
+            <EmptyState icon={DocumentRegular} title="No contracts yet" description="Create your first customer contract" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Contract</Button>} />
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -253,7 +253,7 @@ export default function ContractsPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {isSubmitting ? 'Saving…' : 'Create Contract'}
               </Button>
             </DialogFooter>

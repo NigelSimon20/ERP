@@ -3,7 +3,7 @@
 const SUCCESS = 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400'
 const WARNING = 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400'
 const INFO = 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400'
-const DANGER = 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300'
+const DANGER = 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300'
 const MUTED = 'bg-muted text-muted-foreground'
 
 const STATUS_STYLES: Record<string, string> = {

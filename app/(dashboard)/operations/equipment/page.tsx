@@ -146,7 +146,7 @@ export default function EquipmentPage() {
 
   return (
     <div>
-      <PageHeader title="Equipment" description="Manage security equipment stock" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Equipment</Button>} />
+      <PageHeader title="Equipment" description="Manage security equipment stock" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Equipment</Button>} />
 
       <div className="mt-4 flex gap-1 border-b border-border">
         {(['ALL', 'ACTIVE', 'INACTIVE'] as const).map(tab => (
@@ -158,7 +158,7 @@ export default function EquipmentPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : equipment.length === 0 ? (
-          <div className="py-16"><EmptyState icon={WrenchRegular} title="No equipment found" description="Add equipment to start tracking your inventory" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Equipment</Button>} /></div>
+          <div className="py-16"><EmptyState icon={WrenchRegular} title="No equipment found" description="Add equipment to start tracking your inventory" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Equipment</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[960px]">
@@ -231,7 +231,7 @@ export default function EquipmentPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Equipment'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Equipment'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -252,7 +252,7 @@ export default function EquipmentPage() {
                 <Input type="number" min="1" step="1" value={issueQuantity} onChange={(e) => setIssueQuantity(e.target.value)} aria-label="Quantity" />
               </div>
               <Input placeholder="Serial number (optional)" value={issueSerial} onChange={(e) => setIssueSerial(e.target.value)} />
-              <Button type="button" size="sm" disabled={issuing} onClick={submitIssue} className="bg-primary hover:bg-brand-red-dark text-white w-full">{issuing ? 'Issuing…' : 'Issue'}</Button>
+              <Button type="button" size="sm" disabled={issuing} onClick={submitIssue} className="bg-primary hover:bg-brand-primary-dark text-white w-full">{issuing ? 'Issuing…' : 'Issue'}</Button>
             </div>
 
             <div>

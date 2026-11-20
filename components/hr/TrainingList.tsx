@@ -128,7 +128,7 @@ export function TrainingList() {
       SCHEDULED: 'bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400',
       IN_PROGRESS: 'bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400',
       COMPLETED: 'bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400',
-      CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+      CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
     }[status] || 'bg-muted text-foreground'
   }
 
@@ -247,7 +247,7 @@ export function TrainingList() {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button type="button" disabled={saving} onClick={onSubmit} className="bg-primary hover:bg-brand-red-dark text-white">{saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Training'}</Button>
+            <Button type="button" disabled={saving} onClick={onSubmit} className="bg-primary hover:bg-brand-primary-dark text-white">{saving ? 'Saving…' : editing ? 'Save Changes' : 'Create Training'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -53,10 +53,10 @@ function tintWhite(rgb: { r: number; g: number; b: number }, amount = 0.92) {
   }
 }
 
-// Ravenshield's actual brand mark, bundled with the app -- used whenever a
+// The Infinity Nexa logo, bundled with the app -- used whenever a
 // company hasn't uploaded (or can't reach) a logo of its own, so PDFs never
 // go out with a blank header.
-const DEFAULT_LOGO_URL = '/assets/raven-logo.jpeg'
+const DEFAULT_LOGO_URL = '/brand/infinity-nexa-logo.png'
 
 // Best-effort image fetch -> data URL. Company.logo/digitalSignature/companyStamp
 // are free-text URL fields (not guaranteed to be same-origin or even valid), so
@@ -79,7 +79,7 @@ async function fetchImageDataUrl(url: string): Promise<string | null> {
 }
 
 // jsPDF's addImage() needs a format that matches the actual encoding of the
-// data -- passing 'PNG' for a JPEG data URL (e.g. raven-logo.jpeg) makes it
+// data -- passing 'PNG' for a JPEG data URL (e.g. a .jpeg company logo) makes it
 // silently fail to decode, dropping the logo from the page with no visible
 // error. Read the real mime type off the "data:image/xxx;base64,..." prefix
 // instead of assuming one.
@@ -97,7 +97,7 @@ export async function startBrandedDoc(company: PdfCompany, title: string, subtit
   const margin = 14
   const pageWidth = doc.internal.pageSize.width
   const pageHeight = doc.internal.pageSize.height
-  const themeRgb = hexToRgb(company.pdfThemeColor || company.primaryColor || '#0b5fff')
+  const themeRgb = hexToRgb(company.pdfThemeColor || company.primaryColor || '#1E40AF')
   const ctx: BrandedDoc = { doc, themeRgb, margin, pageWidth, pageHeight }
 
   doc.setFillColor(themeRgb.r, themeRgb.g, themeRgb.b)

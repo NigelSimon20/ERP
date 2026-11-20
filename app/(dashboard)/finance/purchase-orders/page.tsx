@@ -103,7 +103,7 @@ export default function PurchaseOrdersPage() {
       <PageHeader
         title="Purchase Orders"
         description="Order goods and services from suppliers ahead of receiving and billing"
-        action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Purchase Order</Button>}
+        action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Purchase Order</Button>}
       />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
@@ -220,7 +220,7 @@ export default function PurchaseOrdersPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Creating…' : 'Create Purchase Order'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Creating…' : 'Create Purchase Order'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -234,7 +234,7 @@ export default function FinanceReportsPage() {
             <Input type="date" value={asAt} onChange={(e) => setAsAt(e.target.value)} className="w-36 h-9 text-sm" />
           </div>
         )}
-        <Button type="button" onClick={generate} disabled={loading} className="bg-primary hover:bg-brand-red-dark text-white h-9">
+        <Button type="button" onClick={generate} disabled={loading} className="bg-primary hover:bg-brand-primary-dark text-white h-9">
           {loading ? 'Generating…' : 'Generate Report'}
         </Button>
         {report && (

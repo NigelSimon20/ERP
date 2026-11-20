@@ -19,7 +19,7 @@ interface Guard { id: string; name: string; employeeNumber: string }
 interface Site { id: string; name: string }
 type FormValues = { guardId: string; siteId: string; shift: string; startDate: string; endDate: string; hoursPerDay: string; ratePerHour: string }
 
-const STATUS_STYLES: Record<string, string> = { ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', COMPLETED: 'bg-muted text-muted-foreground', CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const STATUS_STYLES: Record<string, string> = { ACTIVE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', COMPLETED: 'bg-muted text-muted-foreground', CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300' }
 const SHIFTS = ['DAY', 'NIGHT', 'FULLDAY', 'ROTATING']
 
 export default function DeploymentsPage() {
@@ -86,7 +86,7 @@ export default function DeploymentsPage() {
 
   return (
     <div>
-      <PageHeader title="Deployments" description="Manage guard assignments to sites" action={<Button type="button" onClick={() => { reset(); setFormError(''); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Deployment</Button>} />
+      <PageHeader title="Deployments" description="Manage guard assignments to sites" action={<Button type="button" onClick={() => { reset(); setFormError(''); setShowDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Deployment</Button>} />
 
       {/* Filters */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
@@ -113,7 +113,7 @@ export default function DeploymentsPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : deployments.length === 0 ? (
-          <div className="py-16"><EmptyState icon={PeopleRegular} title="No deployments found" description="Create a deployment to assign a guard to a site" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Deployment</Button>} /></div>
+          <div className="py-16"><EmptyState icon={PeopleRegular} title="No deployments found" description="Create a deployment to assign a guard to a site" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Deployment</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[900px]">
@@ -202,7 +202,7 @@ export default function DeploymentsPage() {
             {formError && <p className="text-sm text-primary bg-primary/5 border border-primary/20 rounded p-2">{formError}</p>}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : 'Create Deployment'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : 'Create Deployment'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

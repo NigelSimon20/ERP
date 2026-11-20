@@ -24,7 +24,7 @@ type LineItem = { description: string; quantity: string; unitPrice: string; taxR
 type InvoiceForm = { supplierId: string; reference: string; issueDate: string; dueDate: string; description: string; expenseAccountId: string; lineItems: LineItem[] }
 type PaymentForm = { bankAccountId: string; amount: string; paymentDate: string; notes: string }
 
-const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-foreground', UNPAID: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', PARTIAL: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', VOID: 'bg-muted text-brand-muted-light' }
+const STATUS_STYLES: Record<string, string> = { DRAFT: 'bg-muted text-foreground', UNPAID: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', PARTIAL: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300', VOID: 'bg-muted text-brand-muted-light' }
 const STATUS_TABS = ['ALL', 'UNPAID', 'PARTIAL', 'PAID', 'OVERDUE', 'VOID']
 const DEFAULT_TAX_SETTINGS: TaxSettings = { taxName: 'Tax', taxRate: 0, taxEnabled: true, taxInclusive: false, taxAppliedByDefault: true }
 function blankLine(tax: TaxSettings): LineItem {
@@ -138,7 +138,7 @@ export default function PurchaseInvoicesPage() {
 
   return (
     <div>
-      <PageHeader title="Purchase Invoices" description="Record and manage supplier bills" action={<Button type="button" onClick={() => { invReset({ supplierId: '', reference: '', issueDate: '', dueDate: '', description: '', expenseAccountId: '', lineItems: [blankLine(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Bill</Button>} />
+      <PageHeader title="Purchase Invoices" description="Record and manage supplier bills" action={<Button type="button" onClick={() => { invReset({ supplierId: '', reference: '', issueDate: '', dueDate: '', description: '', expenseAccountId: '', lineItems: [blankLine(taxSettings)] }); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Bill</Button>} />
 
       <div className="mt-5 flex gap-1 border-b border-border">
         {STATUS_TABS.map((tab) => (
@@ -150,7 +150,7 @@ export default function PurchaseInvoicesPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : invoices.length === 0 ? (
-          <div className="py-16"><EmptyState icon={DocumentRegular} title="No purchase invoices yet" description="Record bills from suppliers here" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Bill</Button>} /></div>
+          <div className="py-16"><EmptyState icon={DocumentRegular} title="No purchase invoices yet" description="Record bills from suppliers here" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Bill</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
@@ -265,7 +265,7 @@ export default function PurchaseInvoicesPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={invSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{invSubmitting ? 'Creating…' : 'Create Bill'}</Button>
+              <Button type="submit" disabled={invSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{invSubmitting ? 'Creating…' : 'Create Bill'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -288,7 +288,7 @@ export default function PurchaseInvoicesPage() {
             <div className="space-y-1.5"><Label>Notes</Label><Input placeholder="Optional notes" {...pmtReg('notes')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setPaymentTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={pmtSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{pmtSubmitting ? 'Saving…' : 'Record Payment'}</Button>
+              <Button type="submit" disabled={pmtSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{pmtSubmitting ? 'Saving…' : 'Record Payment'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

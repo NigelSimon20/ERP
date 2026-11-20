@@ -117,7 +117,7 @@ export default function DepartmentReportsPage() {
             <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} />
           </div>
           <div className="flex gap-2">
-            <Button type="button" onClick={generate} disabled={loading} className="bg-primary hover:bg-brand-red-dark text-white flex-1">
+            <Button type="button" onClick={generate} disabled={loading} className="bg-primary hover:bg-brand-primary-dark text-white flex-1">
               {loading ? <><div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Loading…</> : <><DataBarVerticalRegular className="h-4 w-4 mr-2" />Generate</>}
             </Button>
             {result && <Button type="button" variant="outline" onClick={downloadCSV} aria-label="Download CSV"><ArrowDownloadRegular className="h-4 w-4" /></Button>}

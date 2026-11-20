@@ -40,7 +40,7 @@ const STATUS_STYLES: Record<string, string> = {
   READY: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
   PROCESSING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  FAILED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  FAILED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
   ROLLED_BACK: 'bg-muted text-muted-foreground',
 }
 

@@ -109,7 +109,7 @@ export default function BankAccountsPage() {
       <PageHeader
         title="Bank Accounts"
         description="Manage your company bank accounts"
-        action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Bank Account</Button>}
+        action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Bank Account</Button>}
       />
 
       {loading ? (
@@ -124,7 +124,7 @@ export default function BankAccountsPage() {
         </div>
       ) : accounts.length === 0 ? (
         <div className="mt-16">
-          <EmptyState icon={BuildingRegular} title="No bank accounts" description="Add your first bank account to start tracking balances" action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-4"><AddRegular className="h-4 w-4 mr-1" /> Add Bank Account</Button>} />
+          <EmptyState icon={BuildingRegular} title="No bank accounts" description="Add your first bank account to start tracking balances" action={<Button onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-4"><AddRegular className="h-4 w-4 mr-1" /> Add Bank Account</Button>} />
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -227,7 +227,7 @@ export default function BankAccountsPage() {
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Account'}
               </Button>
             </DialogFooter>

@@ -20,7 +20,7 @@ interface Inspection { id: string; inspectedAt: string; odometer: number | null;
 type FormValues = { registrationNumber: string; make: string; model: string; assignedSiteId: string; assignedGuardId: string; status: string }
 
 const BLANK: FormValues = { registrationNumber: '', make: '', model: '', assignedSiteId: '', assignedGuardId: '', status: 'ACTIVE' }
-const CONDITION_STYLES: Record<string, string> = { GOOD: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', NEEDS_ATTENTION: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', UNSAFE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const CONDITION_STYLES: Record<string, string> = { GOOD: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', NEEDS_ATTENTION: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', UNSAFE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300' }
 
 export default function VehiclesPage() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
@@ -108,13 +108,13 @@ export default function VehiclesPage() {
 
   return (
     <div>
-      <PageHeader title="Vehicles" description="Manage the vehicle fleet and inspection records" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Vehicle</Button>} />
+      <PageHeader title="Vehicles" description="Manage the vehicle fleet and inspection records" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Vehicle</Button>} />
 
       <div className="mt-3 rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : vehicles.length === 0 ? (
-          <div className="py-16"><EmptyState icon={VehicleCarRegular} title="No vehicles" description="Add a vehicle to start tracking inspections" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Vehicle</Button>} /></div>
+          <div className="py-16"><EmptyState icon={VehicleCarRegular} title="No vehicles" description="Add a vehicle to start tracking inspections" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Vehicle</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
@@ -193,7 +193,7 @@ export default function VehiclesPage() {
             )}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Vehicle'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Add Vehicle'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -215,7 +215,7 @@ export default function VehiclesPage() {
                 <option value="UNSAFE">Unsafe</option>
               </select>
               <Input placeholder="Defects noted (optional)" value={defectsNoted} onChange={(e) => setDefectsNoted(e.target.value)} />
-              <Button type="button" size="sm" disabled={inspecting} onClick={submitInspection} className="bg-primary hover:bg-brand-red-dark text-white w-full">{inspecting ? 'Saving…' : 'Log Inspection'}</Button>
+              <Button type="button" size="sm" disabled={inspecting} onClick={submitInspection} className="bg-primary hover:bg-brand-primary-dark text-white w-full">{inspecting ? 'Saving…' : 'Log Inspection'}</Button>
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">History</p>

@@ -260,7 +260,7 @@ export default function FinanceDashboardPage() {
                   <YAxis tickFormatter={fmtY} tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} width={52} />
                   <Tooltip formatter={(value: any) => formatCurrency(Number(value ?? 0), vc)} contentStyle={CT} />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#DC2626" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#1E40AF" strokeWidth={2} dot={false} />
                   <Line type="monotone" dataKey="expenses" name="Expenses" stroke="#111827" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
@@ -278,7 +278,7 @@ export default function FinanceDashboardPage() {
                   <XAxis type="number" tickFormatter={fmtY} tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} />
                   <YAxis type="category" dataKey="bankName" tick={{ fontSize: 11, fill: '#6B7280' }} axisLine={false} tickLine={false} width={80} />
                   <Tooltip formatter={(value: any) => formatCurrency(Number(value ?? 0), vc)} contentStyle={CT} />
-                  <Bar dataKey="balance" name="Balance" fill="#DC2626" radius={[0,4,4,0]} />
+                  <Bar dataKey="balance" name="Balance" fill="#1E40AF" radius={[0,4,4,0]} />
                 </BarChart>
               </ResponsiveContainer>
             }

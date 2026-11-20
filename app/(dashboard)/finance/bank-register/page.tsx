@@ -22,8 +22,8 @@ interface RegisterData {
 const TYPE_STYLES: Record<string, string> = {
   Receipt: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
   'Transfer In': 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
-  Payment: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
-  'Transfer Out': 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  Payment: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
+  'Transfer Out': 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
 }
 
 export default function BankRegisterPage() {

@@ -148,7 +148,7 @@ export default function OperationsDashboardPage() {
                   <XAxis type="number" domain={[0,100]} tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} tickFormatter={v => `${v}%`} />
                   <YAxis type="category" dataKey="siteName" tick={{ fontSize: 10, fill: '#6B7280' }} axisLine={false} tickLine={false} width={100} />
                   <Tooltip formatter={(value: any) => `${Number(value ?? 0)}%`} contentStyle={CT} />
-                  <Bar dataKey="rate" name="Attendance" fill="#DC2626" radius={[0,4,4,0]} />
+                  <Bar dataKey="rate" name="Attendance" fill="#1E40AF" radius={[0,4,4,0]} />
                 </BarChart>
               </ResponsiveContainer>
             }

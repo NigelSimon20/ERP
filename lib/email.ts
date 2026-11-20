@@ -1,6 +1,6 @@
 import { Resend } from 'resend'
 
-const FROM = process.env.RESEND_FROM_EMAIL || 'Ravenshield ERP <onboarding@resend.dev>'
+const FROM = process.env.RESEND_FROM_EMAIL || 'Infinity Nexa ERP <onboarding@resend.dev>'
 
 export async function sendEmail(params: {
   to: string

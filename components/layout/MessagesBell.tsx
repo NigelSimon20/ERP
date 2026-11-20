@@ -54,7 +54,7 @@ export function MessagesBell() {
           <button
             type="button"
             onClick={() => { setOpen(false); router.push('/messages?compose=1') }}
-            className="flex items-center gap-1 text-xs text-primary hover:text-brand-red-dark font-medium transition-colors"
+            className="flex items-center gap-1 text-xs text-primary hover:text-brand-primary-dark font-medium transition-colors"
             title="New message"
           >
             <EditRegular className="h-3.5 w-3.5" />
@@ -106,7 +106,7 @@ export function MessagesBell() {
           <button
             type="button"
             onClick={() => { setOpen(false); router.push('/messages') }}
-            className="text-xs text-primary hover:text-brand-red-dark font-semibold transition-colors"
+            className="text-xs text-primary hover:text-brand-primary-dark font-semibold transition-colors"
           >
             View all messages
           </button>

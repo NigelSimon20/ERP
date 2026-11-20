@@ -86,7 +86,7 @@ function DashboardContent() {
                 return formatCurrency(Number(v ?? 0))
               }} />
               <Legend />
-              <Bar dataKey="revenue" name="Revenue" fill="#DC2626" radius={[3, 3, 0, 0]} />
+              <Bar dataKey="revenue" name="Revenue" fill="#1E40AF" radius={[3, 3, 0, 0]} />
               <Bar dataKey="expenses" name="Expenses" fill="#111827" radius={[3, 3, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

@@ -55,7 +55,7 @@ const ACTION_ICON: Record<string, React.ElementType> = {
 const ACTION_STYLE: Record<string, string> = {
   CREATE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
   UPDATE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  DELETE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  DELETE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
   LOGIN:  'bg-border text-muted-foreground',
   LOGOUT: 'bg-border text-muted-foreground',
 }
@@ -236,7 +236,7 @@ export default function ExecutiveDashboardPage() {
                       <YAxis tickFormatter={fmtY} tick={CHART_TICK} axisLine={false} tickLine={false} width={52} />
                       <Tooltip formatter={(value: any) => formatCurrency(Number(value ?? 0), vc)} contentStyle={CT} />
                       <Legend wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                      <Bar dataKey="revenue" name="Revenue" fill="#DC2626" radius={[5,5,0,0]} maxBarSize={32} />
+                      <Bar dataKey="revenue" name="Revenue" fill="#1E40AF" radius={[5,5,0,0]} maxBarSize={32} />
                       <Bar dataKey="expenses" name="Expenses" fill="#E5E7EB" radius={[5,5,0,0]} maxBarSize={32} />
                     </BarChart>
                   </ResponsiveContainer>

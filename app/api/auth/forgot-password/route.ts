@@ -69,14 +69,14 @@ export async function POST(req: NextRequest) {
     const link = `${base}/reset-password?token=${token}`
     const mail = await sendEmail({
       to: user.email,
-      subject: 'Reset your RavenShield ERP password',
+      subject: 'Reset your Infinity Nexa ERP password',
       text: `Hi ${user.name},\n\nUse this link to set a new password. It expires in 30 minutes and works once:\n${link}\n\nIf you didn't ask for this, ignore this email; your password is unchanged.`,
       html: `<p>Hi ${escapeHtml(user.name)},</p><p>Use this link to set a new password. It expires in 30 minutes and works once:</p><p><a href="${link}">Reset my password</a></p><p>If you didn't ask for this, ignore this email; your password is unchanged.</p>`,
     })
     if (!mail.success) {
       const to = user.whatsapp || user.phone
       const wa = to
-        ? await sendWhatsAppMessage({ to, message: `RavenShield ERP password reset (expires in 30 minutes): ${link}` })
+        ? await sendWhatsAppMessage({ to, message: `Infinity Nexa ERP password reset (expires in 30 minutes): ${link}` })
         : { success: false, error: 'no phone on file' }
       if (!wa.success) console.error('[forgot-password] could not deliver reset link', { userId: user.id, email: mail.error, whatsapp: wa.error })
     }

@@ -123,7 +123,7 @@ export default function CreditNotesPage() {
       <PageHeader
         title="Credit Notes"
         description="Reduce a customer's outstanding balance for returns, discounts, or corrections"
-        action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Credit Note</Button>}
+        action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Credit Note</Button>}
       />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
@@ -248,7 +248,7 @@ export default function CreditNotesPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Creating…' : 'Save as Draft'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Creating…' : 'Save as Draft'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -268,7 +268,7 @@ export default function CreditNotesPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIssueTarget(null)}>Cancel</Button>
-              <Button type="button" onClick={confirmIssue} className="bg-primary hover:bg-brand-red-dark text-white">Issue Credit Note</Button>
+              <Button type="button" onClick={confirmIssue} className="bg-primary hover:bg-brand-primary-dark text-white">Issue Credit Note</Button>
             </DialogFooter>
           </div>
         </DialogContent>

@@ -105,7 +105,7 @@ export default function AIHelpdeskPage() {
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h1 className="text-lg font-bold text-foreground">Ravenshield AI Assistant</h1>
+              <h1 className="text-lg font-bold text-foreground">Infinity Nexa AI Assistant</h1>
               <SparkleFilled fontSize={15} className="text-primary" />
             </div>
             <p className="text-xs text-muted-foreground">Ask me anything about your company data</p>
@@ -211,7 +211,7 @@ export default function AIHelpdeskPage() {
             type="button"
             onClick={() => sendMessage(input)}
             disabled={!input.trim() || loading || available === false}
-            className="shrink-0 h-10 w-10 rounded-xl bg-primary hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
+            className="shrink-0 h-10 w-10 rounded-xl bg-primary hover:bg-brand-primary-dark disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center transition-colors"
             aria-label="Send message"
           >
             <SendRegular fontSize={18} className="text-white" />

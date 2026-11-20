@@ -19,7 +19,7 @@ type RegisterForm = z.infer<typeof registerSchema>
 type StrengthLabel = 'Weak' | 'Fair' | 'Strong'
 
 const STRENGTH_STYLES: Record<StrengthLabel, { bar: string; text: string }> = {
-  Weak:   { bar: 'bg-brand-red',   text: 'text-brand-red' },
+  Weak:   { bar: 'bg-brand-primary',   text: 'text-brand-primary' },
   Fair:   { bar: 'bg-amber-500', text: 'text-amber-500' },
   Strong: { bar: 'bg-green-600', text: 'text-green-600' },
 }
@@ -88,7 +88,7 @@ export default function RegisterPage() {
         return
       }
 
-      toast.success('Account created! Welcome to Ravenshield.')
+      toast.success('Account created! Welcome to Infinity Nexa ERP.')
       router.replace('/dashboard/executive')
     } catch {
       setError('Network error. Please try again.')
@@ -103,11 +103,11 @@ export default function RegisterPage() {
         <section className="flex min-h-screen items-center justify-center px-4 py-8 sm:px-6 lg:px-10">
           <div className="w-full max-w-2xl rounded-[2rem] border border-slate-200 bg-card p-6 shadow-[0_30px_90px_rgba(15,23,42,0.16)] sm:p-8 lg:p-10">
             <div className="mb-6 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-brand-red">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-primary-lighter text-brand-primary">
                 <BuildingRegular className="h-5 w-5" />
               </div>
               <h2 className="text-3xl font-bold text-slate-900">Create your account</h2>
-              <p className="mt-2 text-sm text-slate-600">Set up Ravenshield for your company and launch your operations workspace.</p>
+              <p className="mt-2 text-sm text-slate-600">Set up Infinity Nexa ERP for your company and launch your operations workspace.</p>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -118,7 +118,7 @@ export default function RegisterPage() {
                     <PersonRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                     <Input id="name" placeholder="John Doe" className="pl-10" autoFocus {...register('name')} />
                   </div>
-                  {errors.name && <p className="text-xs text-brand-red">{errors.name.message}</p>}
+                  {errors.name && <p className="text-xs text-destructive">{errors.name.message}</p>}
                 </div>
 
                 <div className="space-y-1.5">
@@ -127,7 +127,7 @@ export default function RegisterPage() {
                     <MailRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                     <Input id="email" type="email" placeholder="admin@company.com" className="pl-10" {...register('email')} />
                   </div>
-                  {errors.email && <p className="text-xs text-brand-red">{errors.email.message}</p>}
+                  {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
                 </div>
               </div>
 
@@ -138,7 +138,7 @@ export default function RegisterPage() {
                     <CallRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
                     <Input id="phone" placeholder="+263 77 000 0000" className="pl-10" {...register('phone')} />
                   </div>
-                  {errors.phone && <p className="text-xs text-brand-red">{errors.phone.message}</p>}
+                  {errors.phone && <p className="text-xs text-destructive">{errors.phone.message}</p>}
                 </div>
 
                 <div className="space-y-1.5">
@@ -154,9 +154,9 @@ export default function RegisterPage() {
                 <Label htmlFor="companyName">Company name</Label>
                 <div className="relative">
                   <BuildingRegular className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brand-muted-light" />
-                  <Input id="companyName" placeholder="Ravenshield Security Ltd" className="pl-10" {...register('companyName')} />
+                  <Input id="companyName" placeholder="Your company name" className="pl-10" {...register('companyName')} />
                 </div>
-                {errors.companyName && <p className="text-xs text-brand-red">{errors.companyName.message}</p>}
+                {errors.companyName && <p className="text-xs text-destructive">{errors.companyName.message}</p>}
               </div>
 
               <div className="space-y-1.5">
@@ -217,7 +217,7 @@ export default function RegisterPage() {
                     </ul>
                   </div>
                 )}
-                {errors.password && <p className="text-xs text-brand-red">{errors.password.message}</p>}
+                {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
               </div>
 
               <div className="space-y-1.5">
@@ -241,7 +241,7 @@ export default function RegisterPage() {
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <p className="text-xs text-brand-red">{errors.confirmPassword.message}</p>
+                  <p className="text-xs text-destructive">{errors.confirmPassword.message}</p>
                 )}
               </div>
 
@@ -250,25 +250,25 @@ export default function RegisterPage() {
                   type="checkbox"
                   checked={terms}
                   onChange={(e) => setTerms(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-red focus:ring-brand-red"
+                  className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
                 />
                 <span className="text-sm leading-snug text-slate-600">
                   I agree to the{' '}
-                  <span className="font-medium text-brand-red hover:underline">Terms of Service</span>
+                  <span className="font-medium text-brand-primary hover:underline">Terms of Service</span>
                 </span>
               </label>
 
               {error && (
-                <div className="flex items-center gap-2 rounded-lg border border-brand-red/20 bg-brand-red/10 px-3 py-2">
-                  <ErrorCircleRegular className="h-4 w-4 flex-shrink-0 text-brand-red" />
-                  <p className="text-sm text-brand-red">{error}</p>
+                <div className="flex items-center gap-2 rounded-lg border border-brand-primary/20 bg-brand-primary/10 px-3 py-2">
+                  <ErrorCircleRegular className="h-4 w-4 flex-shrink-0 text-destructive" />
+                  <p className="text-sm text-destructive">{error}</p>
                 </div>
               )}
 
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="h-12 w-full bg-brand-red text-base font-semibold text-white transition-all duration-300 hover:bg-brand-red-dark"
+                className="h-12 w-full bg-brand-primary text-base font-semibold text-white transition-all duration-300 hover:bg-brand-primary-dark"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
@@ -282,7 +282,7 @@ export default function RegisterPage() {
 
             <p className="mt-6 text-center text-sm text-slate-600">
               Already have an account?{' '}
-              <Link href="/login" className="font-medium text-brand-red hover:underline">
+              <Link href="/login" className="font-medium text-brand-primary hover:underline">
                 Sign in
               </Link>
             </p>

@@ -19,7 +19,7 @@ interface AttendeeUser { id: string; userId: string; attendanceStatus: string; u
 interface Meeting { id: string; title: string; description: string | null; location: string | null; meetingDate: string; startTime: string; endTime: string; status: string; notes: string | null; whatsappReminder: boolean; organizerId: string; organizerUser: User | null; attendeeUsers: AttendeeUser[] }
 type MeetingForm = { title: string; description: string; meetingDate: string; startTime: string; endTime: string; location: string }
 
-const STATUS_BADGE: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const STATUS_BADGE: Record<string, string> = { SCHEDULED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', COMPLETED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', CANCELLED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300' }
 
 export default function MeetingsPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([])
@@ -102,7 +102,7 @@ export default function MeetingsPage() {
   return (
     <div>
       <PageHeader title="Meetings" description="Schedule and manage team meetings" action={
-        <Button type="button" onClick={() => { reset(); setAttendeeIds([]); setWaReminder(false); setReminderTime(null); setShowCreate(true) }} className="bg-brand-red hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Schedule Meeting</Button>
+        <Button type="button" onClick={() => { reset(); setAttendeeIds([]); setWaReminder(false); setReminderTime(null); setShowCreate(true) }} className="bg-brand-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Schedule Meeting</Button>
       } />
 
       <div className="mt-4 flex items-center gap-3">
@@ -118,7 +118,7 @@ export default function MeetingsPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : meetings.length === 0 ? (
-          <div className="py-16 bg-card"><EmptyState icon={CalendarLtrRegular} title="No meetings" description="Schedule a meeting to get started" action={<Button type="button" onClick={() => setShowCreate(true)} className="bg-brand-red hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Schedule Meeting</Button>} /></div>
+          <div className="py-16 bg-card"><EmptyState icon={CalendarLtrRegular} title="No meetings" description="Schedule a meeting to get started" action={<Button type="button" onClick={() => setShowCreate(true)} className="bg-brand-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Schedule Meeting</Button>} /></div>
         ) : (
           <div className="overflow-x-auto bg-card">
             <table className="w-full text-sm min-w-[800px] bg-card">
@@ -159,7 +159,7 @@ export default function MeetingsPage() {
                     {m.status === 'SCHEDULED' && (
                       <div className="flex items-center gap-1">
                         <button type="button" onClick={() => { setCompleteTarget(m); setCompletionNotes('') }} className="p-1 rounded hover:bg-green-50 text-brand-muted-light hover:text-green-600" aria-label="Complete"><TaskListSquareLtrRegular className="h-4 w-4" /></button>
-                        <button type="button" onClick={() => cancelMeeting(m)} disabled={processing === m.id} className="p-1 rounded hover:bg-brand-red/10 text-brand-muted-light hover:text-brand-red disabled:opacity-50" aria-label="Cancel"><DismissRegular className="h-4 w-4" /></button>
+                        <button type="button" onClick={() => cancelMeeting(m)} disabled={processing === m.id} className="p-1 rounded hover:bg-destructive/10 text-brand-muted-light hover:text-destructive disabled:opacity-50" aria-label="Cancel"><DismissRegular className="h-4 w-4" /></button>
                       </div>
                     )}
                   </td>
@@ -206,7 +206,7 @@ export default function MeetingsPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-brand-red hover:bg-brand-red-dark text-white">{isSubmitting ? 'Scheduling…' : 'Schedule Meeting'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-brand-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Scheduling…' : 'Schedule Meeting'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

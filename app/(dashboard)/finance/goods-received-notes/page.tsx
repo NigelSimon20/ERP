@@ -98,7 +98,7 @@ export default function GoodsReceivedNotesPage() {
       <PageHeader
         title="Goods Received Notes"
         description="Record goods received against approved purchase orders"
-        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New GRN</Button>}
+        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New GRN</Button>}
       />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
@@ -184,7 +184,7 @@ export default function GoodsReceivedNotesPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="button" onClick={onCreate} disabled={submitting} className="bg-primary hover:bg-brand-red-dark text-white">{submitting ? 'Saving…' : 'Record Receipt'}</Button>
+              <Button type="button" onClick={onCreate} disabled={submitting} className="bg-primary hover:bg-brand-primary-dark text-white">{submitting ? 'Saving…' : 'Record Receipt'}</Button>
             </DialogFooter>
           </div>
         </DialogContent>

@@ -25,7 +25,7 @@ interface Guard { id: string; name: string }
 type FormValues = { title: string; description: string; siteId: string; guardId: string; severity: string; reportedAt: string }
 type StatusUpdate = { status: string; notes: string }
 
-const SEV_STYLES: Record<string, string> = { LOW: 'bg-muted text-muted-foreground', MEDIUM: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', CRITICAL: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const SEV_STYLES: Record<string, string> = { LOW: 'bg-muted text-muted-foreground', MEDIUM: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', CRITICAL: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300' }
 const STATUS_STYLES: Record<string, string> = { OPEN: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', INVESTIGATING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', RESOLVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', CLOSED: 'bg-muted text-muted-foreground' }
 const SEVERITIES = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']
 const SEV_TABS = ['ALL', ...SEVERITIES]
@@ -99,7 +99,7 @@ export default function IncidentsPage() {
 
   return (
     <div>
-      <PageHeader title="Incidents" description="Track and manage security incidents" action={<Button type="button" onClick={() => { cReset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Report Incident</Button>} />
+      <PageHeader title="Incidents" description="Track and manage security incidents" action={<Button type="button" onClick={() => { cReset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Report Incident</Button>} />
 
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <div className="flex gap-1 border-b border-border">
@@ -123,7 +123,7 @@ export default function IncidentsPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : incidents.length === 0 ? (
-          <div className="py-16"><EmptyState icon={WarningRegular} title="No incidents found" description="All clear — no incidents match your filters" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Report Incident</Button>} /></div>
+          <div className="py-16"><EmptyState icon={WarningRegular} title="No incidents found" description="All clear — no incidents match your filters" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Report Incident</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
@@ -215,7 +215,7 @@ export default function IncidentsPage() {
             <div className="space-y-1.5"><Label>Description</Label><Textarea placeholder="Full details of what occurred…" rows={3} {...cr('description')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={cSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{cSubmitting ? 'Reporting…' : 'Report Incident'}</Button>
+              <Button type="submit" disabled={cSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{cSubmitting ? 'Reporting…' : 'Report Incident'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -238,7 +238,7 @@ export default function IncidentsPage() {
             <div className="space-y-1.5"><Label>Notes</Label><Textarea placeholder="Investigation notes or resolution details…" rows={3} {...ur('notes')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setUpdateTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={uSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{uSubmitting ? 'Saving…' : 'Update Incident'}</Button>
+              <Button type="submit" disabled={uSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{uSubmitting ? 'Saving…' : 'Update Incident'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

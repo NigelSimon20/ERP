@@ -54,7 +54,7 @@ interface FormState {
 
 const EMPTY_FORM: FormState = {
   name: '', category: 'EXTERNAL', description: '', url: '', logoUrl: '', icon: 'Globe',
-  colorPrimary: '#DC2626', colorSecondary: '', buttonText: 'Open Portal', openBehavior: 'NEW_TAB',
+  colorPrimary: '#1E40AF', colorSecondary: '', buttonText: 'Open Portal', openBehavior: 'NEW_TAB',
   isActive: true, supportContact: '', roles: ['SUPER_ADMIN', 'ADMIN'],
 }
 
@@ -96,7 +96,7 @@ export default function PortalsTab() {
     setEditing(p)
     setForm({
       name: p.name, category: p.category, description: p.description, url: p.url,
-      logoUrl: p.logoUrl ?? '', icon: p.icon ?? 'Globe', colorPrimary: p.colorPrimary ?? '#DC2626',
+      logoUrl: p.logoUrl ?? '', icon: p.icon ?? 'Globe', colorPrimary: p.colorPrimary ?? '#1E40AF',
       colorSecondary: p.colorSecondary ?? '', buttonText: p.buttonText, openBehavior: p.openBehavior,
       isActive: p.isActive, supportContact: p.supportContact ?? '', roles: p.roles,
     })
@@ -232,7 +232,7 @@ export default function PortalsTab() {
         <p className="text-sm leading-6 text-slate-600">
           Manage the External Portals Hub — add, brand, and permission any internal or third-party portal (government, banking, telecoms, and more). Changes appear immediately, no code changes required.
         </p>
-        <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white shrink-0">
+        <Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white shrink-0">
           <AddRegular className="h-4 w-4 mr-1" /> Add Portal
         </Button>
       </div>
@@ -399,8 +399,8 @@ export default function PortalsTab() {
                 <div className="space-y-1.5">
                   <Label>Primary Colour</Label>
                   <div className="flex items-center gap-2">
-                    <input type="color" value={form.colorPrimary || '#DC2626'} onChange={(e) => setForm({ ...form, colorPrimary: e.target.value })} className="h-9 w-9 rounded border border-border" />
-                    <Input value={form.colorPrimary} onChange={(e) => setForm({ ...form, colorPrimary: e.target.value })} placeholder="#DC2626" />
+                    <input type="color" value={form.colorPrimary || '#1E40AF'} onChange={(e) => setForm({ ...form, colorPrimary: e.target.value })} className="h-9 w-9 rounded border border-border" />
+                    <Input value={form.colorPrimary} onChange={(e) => setForm({ ...form, colorPrimary: e.target.value })} placeholder="#1E40AF" />
                   </div>
                 </div>
                 <div className="space-y-1.5">
@@ -464,7 +464,7 @@ export default function PortalsTab() {
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Cancel</Button>
-            <Button type="button" onClick={handleSave} disabled={saving} className="bg-primary hover:bg-brand-red-dark text-white">
+            <Button type="button" onClick={handleSave} disabled={saving} className="bg-primary hover:bg-brand-primary-dark text-white">
               {saving ? 'Saving…' : editing ? 'Save Changes' : 'Add Portal'}
             </Button>
           </DialogFooter>

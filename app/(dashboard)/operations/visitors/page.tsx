@@ -65,7 +65,7 @@ export default function VisitorsPage() {
 
   return (
     <div>
-      <PageHeader title="Visitor Register" description="Log and track visitors on site" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Check In Visitor</Button>} />
+      <PageHeader title="Visitor Register" description="Log and track visitors on site" action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Check In Visitor</Button>} />
 
       <div className="mt-4 flex items-center gap-2">
         <label className="flex items-center gap-2 text-sm">
@@ -78,7 +78,7 @@ export default function VisitorsPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : visitors.length === 0 ? (
-          <div className="py-16"><EmptyState icon={PersonRegular} title="No visitors" description={onSiteOnly ? 'No visitors currently on site' : 'No visitors logged yet'} action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Check In Visitor</Button>} /></div>
+          <div className="py-16"><EmptyState icon={PersonRegular} title="No visitors" description={onSiteOnly ? 'No visitors currently on site' : 'No visitors logged yet'} action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Check In Visitor</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[900px]">
@@ -144,7 +144,7 @@ export default function VisitorsPage() {
             <div className="space-y-1.5"><Label>Vehicle Registration</Label><Input placeholder="Optional" {...register('vehicleReg')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Checking in…' : 'Check In'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Checking in…' : 'Check In'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

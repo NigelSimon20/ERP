@@ -13,7 +13,7 @@ const LANGUAGE = process.env.BIRD_WHATSAPP_LOCALE || 'en'
 // Business-initiated WhatsApp messages (outside a 24h customer care window)
 // require a pre-approved template, one per distinct variable shape. This
 // generic template carries invoice/contract/stock alerts and task/request
-// reminders via a single body placeholder (e.g. "Ravenshield Security
+// reminders via a single body placeholder (e.g. "Infinity Nexa
 // ERP\n\n{{1}}"). Meeting reminders use a dedicated appointment template
 // instead (see sendMeetingReminder) since its two-variable date/time shape
 // was already approved in Bird.

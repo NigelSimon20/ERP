@@ -31,7 +31,7 @@ export default function InvoiceView({ invoiceId }: { invoiceId: string }) {
   useEffect(() => {
     if (!company || !containerRef.current) return
     const root = containerRef.current
-    root.style.setProperty('--primary-color', company.primaryColor || '#0b5fff')
+    root.style.setProperty('--primary-color', company.primaryColor || '#1E40AF')
     root.style.setProperty('--secondary-color', company.secondaryColor || '#f5f7fa')
     root.style.setProperty('--accent-color', company.accentColor || '#06b6d4')
     root.style.setProperty('--background-color', '#ffffff')

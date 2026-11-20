@@ -26,7 +26,7 @@ type FormValues = { siteId: string; reason: string; guardsNeeded: string; startD
 type RejectForm = { rejectionReason: string }
 type AssignForm = { guardId: string; shiftType: 'DAY' | 'NIGHT'; hoursPerDay: string; ratePerHour: string }
 
-const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300', FULFILLED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' }
+const STATUS_STYLES: Record<string, string> = { PENDING: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', APPROVED: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', REJECTED: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300', FULFILLED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400' }
 
 export default function CoverageRequestsPage() {
   const [requests, setRequests] = useState<CoverageRequest[]>([])
@@ -140,7 +140,7 @@ export default function CoverageRequestsPage() {
 
   return (
     <div>
-      <PageHeader title="Coverage Requests" description="Manage requests for additional guard coverage" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} />
+      <PageHeader title="Coverage Requests" description="Manage requests for additional guard coverage" action={<Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} />
 
       <div className="mt-4 flex items-center gap-3">
         <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -159,7 +159,7 @@ export default function CoverageRequestsPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : requests.length === 0 ? (
-          <div className="py-16"><EmptyState icon={PeopleRegular} title="No coverage requests" description="Create a request when additional guards are needed at a site" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} /></div>
+          <div className="py-16"><EmptyState icon={PeopleRegular} title="No coverage requests" description="Create a request when additional guards are needed at a site" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> New Request</Button>} /></div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[800px]">
@@ -238,7 +238,7 @@ export default function CoverageRequestsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Submitting…' : 'Submit Request'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -255,7 +255,7 @@ export default function CoverageRequestsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setRejectTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={rSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{rSubmitting ? 'Rejecting…' : 'Reject Request'}</Button>
+              <Button type="submit" disabled={rSubmitting} className="bg-destructive hover:bg-destructive/90 text-white">{rSubmitting ? 'Rejecting…' : 'Reject Request'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -289,7 +289,7 @@ export default function CoverageRequestsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setAssignTarget(null)}>Cancel</Button>
-              <Button type="submit" disabled={aSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{aSubmitting ? 'Assigning…' : 'Assign Guard'}</Button>
+              <Button type="submit" disabled={aSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{aSubmitting ? 'Assigning…' : 'Assign Guard'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

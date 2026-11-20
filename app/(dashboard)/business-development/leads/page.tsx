@@ -33,10 +33,10 @@ const STAGES = [
   { id: 'PROPOSAL_SENT', label: 'Proposal Sent', color: 'bg-amber-100 border-amber-200 text-amber-700 dark:bg-amber-500/15 dark:border-amber-500/30 dark:text-amber-400' },
   { id: 'NEGOTIATION', label: 'Negotiation', color: 'bg-orange-100 border-orange-200 text-orange-700 dark:bg-orange-500/15 dark:border-orange-500/30 dark:text-orange-400' },
   { id: 'WON', label: 'Won', color: 'bg-green-100 border-green-200 text-green-700 dark:bg-green-500/15 dark:border-green-500/30 dark:text-green-400' },
-  { id: 'LOST', label: 'Lost', color: 'bg-primary/10 border-primary/20 text-primary dark:bg-primary/15 dark:text-red-300' },
+  { id: 'LOST', label: 'Lost', color: 'bg-primary/10 border-primary/20 text-primary dark:bg-primary/15 dark:text-blue-300' },
 ]
 
-const STAGE_BADGE: Record<string, string> = { NEW: 'bg-muted text-muted-foreground', CONTACTED: 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400', QUALIFIED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PROPOSAL_SENT: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', NEGOTIATION: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', WON: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', LOST: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300' }
+const STAGE_BADGE: Record<string, string> = { NEW: 'bg-muted text-muted-foreground', CONTACTED: 'bg-slate-100 text-slate-700 dark:bg-slate-500/15 dark:text-slate-400', QUALIFIED: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400', PROPOSAL_SENT: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400', NEGOTIATION: 'bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-400', WON: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400', LOST: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300' }
 const SOURCES = ['Website', 'Referral', 'Cold Call', 'Email', 'Social Media', 'Event', 'Partner', 'Other']
 
 function DraggableCard({ lead }: { lead: Lead }) {
@@ -170,7 +170,7 @@ export default function LeadsPage() {
             <button type="button" onClick={() => setView('kanban')} className={`p-2 ${view === 'kanban' ? 'bg-brand-navy text-white' : 'text-brand-muted-light hover:text-foreground'}`} aria-label="Kanban view"><GridRegular className="h-4 w-4" /></button>
             <button type="button" onClick={() => setView('list')} className={`p-2 ${view === 'list' ? 'bg-brand-navy text-white' : 'text-brand-muted-light hover:text-foreground'}`} aria-label="List view"><ListRegular className="h-4 w-4" /></button>
           </div>
-          <Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Lead</Button>
+          <Button type="button" onClick={() => { reset(); setShowCreateDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Lead</Button>
         </div>
       } />
 
@@ -187,7 +187,7 @@ export default function LeadsPage() {
       {loading ? (
         <div className="mt-6 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
       ) : leads.length === 0 ? (
-        <div className="mt-8"><EmptyState icon={GridRegular} title="No leads yet" description="Start building your pipeline by adding your first lead" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Lead</Button>} /></div>
+        <div className="mt-8"><EmptyState icon={GridRegular} title="No leads yet" description="Start building your pipeline by adding your first lead" action={<Button type="button" onClick={() => setShowCreateDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Add Lead</Button>} /></div>
       ) : view === 'kanban' ? (
         /* ── Kanban ── */
         <div className="mt-4 overflow-x-auto pb-4">
@@ -301,7 +301,7 @@ export default function LeadsPage() {
             <div className="space-y-1.5"><Label>Notes</Label><Textarea rows={2} placeholder="Any notes about this lead…" {...register('notes')} /></div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreateDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : 'Create Lead'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : 'Create Lead'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -320,7 +320,7 @@ export default function LeadsPage() {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => { setLostTarget(null); setLostReason('') }}>Cancel</Button>
-            <Button type="button" onClick={confirmLost} className="bg-primary hover:bg-brand-red-dark text-white">Mark as Lost</Button>
+            <Button type="button" onClick={confirmLost} className="bg-primary hover:bg-brand-primary-dark text-white">Mark as Lost</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

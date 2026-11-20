@@ -296,7 +296,7 @@ export function HRDocumentList() {
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-            <Button type="button" disabled={saving || uploading} onClick={saveDocument} className="bg-primary hover:bg-brand-red-dark text-white">{saving ? 'Saving…' : 'Save'}</Button>
+            <Button type="button" disabled={saving || uploading} onClick={saveDocument} className="bg-primary hover:bg-brand-primary-dark text-white">{saving ? 'Saving…' : 'Save'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -33,7 +33,7 @@ interface UserActivity {
 const ACTION_COLORS: Record<string, string> = {
   CREATE: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
   UPDATE: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  DELETE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  DELETE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
   LOGIN: 'bg-muted text-muted-foreground',
   LOGOUT: 'bg-muted text-muted-foreground',
   VIEW: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
@@ -75,7 +75,7 @@ function ChangesCell({ log }: { log: AuditLog }) {
       <button
         type="button"
         onClick={() => setExpanded(e => !e)}
-        className="flex items-center gap-1 text-xs text-primary hover:text-brand-red-dark"
+        className="flex items-center gap-1 text-xs text-primary hover:text-brand-primary-dark"
       >
         {expanded ? <ChevronDownRegular className="h-3 w-3" /> : <ChevronRightRegular className="h-3 w-3" />}
         {expanded ? 'Hide' : 'Show'} changes
@@ -272,7 +272,7 @@ export default function AuditTrailPage() {
               <label className="block text-xs text-muted-foreground mb-1">To</label>
               <input type="date" value={activityTo} onChange={(e) => setActivityTo(e.target.value)} className="text-sm border border-border rounded-lg px-3 py-2 bg-card" aria-label="Activity to date" />
             </div>
-            <button type="button" onClick={fetchActivity} className="text-sm px-3 py-2 rounded-lg bg-primary text-white hover:bg-brand-red-dark">Generate</button>
+            <button type="button" onClick={fetchActivity} className="text-sm px-3 py-2 rounded-lg bg-primary text-white hover:bg-brand-primary-dark">Generate</button>
             {activity.length > 0 && (
               <button type="button" onClick={exportActivityPdf} className="ml-auto flex items-center gap-1.5 text-sm px-3 py-2 rounded-lg border border-border hover:bg-muted/50">
                 <ArrowDownloadRegular className="h-4 w-4" /> Export PDF

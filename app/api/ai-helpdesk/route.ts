@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   // quotes the dashboard's revenue, receivables and cash.
   const fin = await financeHeadlines(prisma, companyId)
 
-  const systemPrompt = `You are the Ravenshield AI Assistant, an intelligent assistant for Ravenshield Security ERP. You help users understand their company data and answer questions. Here is the current live data for this company:
+  const systemPrompt = `You are the Infinity Nexa AI Assistant, an intelligent assistant for Infinity Nexa ERP. You help users understand their company data and answer questions. Here is the current live data for this company:
 
 Active Guards: ${activeGuards}
 Active Sites: ${activeSites}

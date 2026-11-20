@@ -342,7 +342,7 @@ export function ImportWizardDialog({ open, onOpenChange, apiBase, moduleLabel, o
           {step === 'mapping' && (
             <>
               <Button type="button" variant="outline" onClick={() => setStep('upload')}>Back</Button>
-              <Button type="button" disabled={busy} onClick={handleValidate} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="button" disabled={busy} onClick={handleValidate} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {busy ? 'Validating…' : 'Validate & Preview'}
               </Button>
             </>
@@ -355,7 +355,7 @@ export function ImportWizardDialog({ open, onOpenChange, apiBase, moduleLabel, o
                   type="button"
                   disabled={busy || (counts.NEW ?? 0) + (counts.UPDATE ?? 0) === 0}
                   onClick={handleCommit}
-                  className="bg-primary hover:bg-brand-red-dark text-white"
+                  className="bg-primary hover:bg-brand-primary-dark text-white"
                 >
                   {busy ? 'Importing…' : <><ArrowUploadRegular className="h-4 w-4 mr-1" /> Commit Import</>}
                 </Button>
@@ -369,7 +369,7 @@ export function ImportWizardDialog({ open, onOpenChange, apiBase, moduleLabel, o
                   {busy ? 'Rolling back…' : 'Undo This Import'}
                 </Button>
               )}
-              <Button type="button" onClick={() => handleClose(false)} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="button" onClick={() => handleClose(false)} className="bg-primary hover:bg-brand-primary-dark text-white">
                 Done
               </Button>
             </>

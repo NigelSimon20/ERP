@@ -104,7 +104,7 @@ export async function ensureDefaultPortals(companyId: string): Promise<void> {
       description: 'Guards view their deployment schedule, attendance records, and download payslips.',
       url: '/portal/guard',
       icon: 'Shield',
-      colorPrimary: '#DC2626',
+      colorPrimary: '#1E40AF',
       buttonText: 'Open Guard Portal',
       isSystem: true,
       displayOrder: 1,

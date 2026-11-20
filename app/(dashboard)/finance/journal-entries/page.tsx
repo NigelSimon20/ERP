@@ -170,7 +170,7 @@ export default function JournalEntriesPage() {
       <PageHeader
         title="Journal Entries"
         description="Record and post general ledger entries"
-        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Journal Entry</Button>}
+        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> New Journal Entry</Button>}
       />
 
       {/* Filters */}
@@ -361,7 +361,7 @@ export default function JournalEntriesPage() {
                 type="submit"
                 disabled={submitting || !isBalanced}
                 onClick={() => setSubmitMode('post')}
-                className="bg-primary hover:bg-brand-red-dark text-white"
+                className="bg-primary hover:bg-brand-primary-dark text-white"
               >
                 {submitting && submitMode === 'post' ? 'Posting…' : 'Save & Post'}
               </Button>

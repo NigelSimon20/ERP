@@ -140,7 +140,7 @@ export default function PayslipItemsPage() {
 
   return (
     <div>
-      <PageHeader title="Payslip Items" description="Configure earnings and deduction components for payroll" action={<Button type="button" onClick={() => openCreate()} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Item</Button>} />
+      <PageHeader title="Payslip Items" description="Configure earnings and deduction components for payroll" action={<Button type="button" onClick={() => openCreate()} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Add Item</Button>} />
 
       <div className="mt-5 space-y-5">
         <Section title="Earnings" items={earnings} type="EARNING" />
@@ -192,7 +192,7 @@ export default function PayslipItemsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Item'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Saving…' : editing ? 'Save Changes' : 'Create Item'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

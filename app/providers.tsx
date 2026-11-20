@@ -27,11 +27,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
         position="top-right"
         toastOptions={{
           success: {
-            style: { background: '#16A34A', color: 'white' },
+            style: { background: '#02985F', color: 'white' },
             duration: 3000,
           },
           error: {
-            style: { background: '#DC2626', color: 'white' },
+            style: { background: '#DF202E', color: 'white' },
             duration: 5000,
           },
         }}

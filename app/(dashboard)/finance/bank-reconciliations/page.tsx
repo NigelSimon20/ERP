@@ -127,7 +127,7 @@ export default function BankReconciliationsPage() {
       <PageHeader title="Bank Reconciliations" description="Compare your book balance with bank statements" action={
         <div className="flex gap-2">
           {recs.length > 0 && <Button type="button" variant="outline" onClick={exportPdf} className="gap-1.5"><ArrowDownloadRegular className="h-3.5 w-3.5" /> Export PDF</Button>}
-          <Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Start Reconciliation</Button>
+          <Button type="button" onClick={() => { reset(); setShowDialog(true) }} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Start Reconciliation</Button>
         </div>
       } />
 
@@ -135,7 +135,7 @@ export default function BankReconciliationsPage() {
         {loading ? (
           <div className="py-8 flex justify-center"><div className="h-6 w-6 border-2 border-primary border-t-transparent rounded-full animate-spin" /></div>
         ) : recs.length === 0 ? (
-          <div className="py-16"><EmptyState icon={CheckmarkCircleRegular} title="No reconciliations yet" description="Start a reconciliation to compare your bank balance with your statements" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Start Reconciliation</Button>} /></div>
+          <div className="py-16"><EmptyState icon={CheckmarkCircleRegular} title="No reconciliations yet" description="Start a reconciliation to compare your bank balance with your statements" action={<Button type="button" onClick={() => setShowDialog(true)} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Start Reconciliation</Button>} /></div>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-muted/50 border-b border-border">
@@ -208,7 +208,7 @@ export default function BankReconciliationsPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">{isSubmitting ? 'Starting…' : 'Start Reconciliation'}</Button>
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">{isSubmitting ? 'Starting…' : 'Start Reconciliation'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -239,7 +239,7 @@ export default function BankReconciliationsPage() {
               </div>
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setAdjustingRec(null)}>Cancel</Button>
-                <Button type="button" onClick={postAdjustment} disabled={posting || !offsetAccountId} className="bg-primary hover:bg-brand-red-dark text-white">{posting ? 'Posting…' : 'Post Adjustment'}</Button>
+                <Button type="button" onClick={postAdjustment} disabled={posting || !offsetAccountId} className="bg-primary hover:bg-brand-primary-dark text-white">{posting ? 'Posting…' : 'Post Adjustment'}</Button>
               </DialogFooter>
             </div>
           )}

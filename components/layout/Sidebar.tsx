@@ -341,13 +341,13 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
     >
       {/* Logo */}
       <div className={cn('flex items-center h-16 flex-shrink-0 border-b border-border/60', isCollapsed ? 'justify-center px-2' : 'gap-3 px-5')}>
-        <div className="flex items-center justify-center w-8 h-8 rounded-xl flex-shrink-0 overflow-hidden">
-          <Image src="/assets/raven-logo.jpeg" alt="RavenShield" width={32} height={32} className="object-cover" />
+        <div className="flex items-center justify-center w-10 h-8 flex-shrink-0">
+          <Image src="/brand/infinity-nexa-mark.png" alt="Infinity Nexa" width={40} height={20} className="object-contain" priority />
         </div>
         {!isCollapsed && (
           <div className="min-w-0">
-            <p className="font-bold text-foreground text-sm leading-none tracking-tight">Ravenshield</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5 font-medium">Security ERP</p>
+            <p className="font-display font-semibold text-foreground text-[15px] leading-none tracking-tight"><span className="text-primary">Infinity</span> <span className="text-muted-foreground">Nexa</span></p>
+            <p className="text-[11px] text-muted-foreground mt-1 font-medium">ERP</p>
           </div>
         )}
       </div>
@@ -395,7 +395,7 @@ export function Sidebar({ role = 'READ_ONLY', onClose, collapsible = true }: { r
         )}
         {!isCollapsed && (
           <p className="text-[10px] text-muted-foreground/60 font-medium text-center uppercase tracking-widest">
-            Ravenshield ERP &bull; v2.0
+            Infinity Nexa ERP &bull; v2.0
           </p>
         )}
       </div>

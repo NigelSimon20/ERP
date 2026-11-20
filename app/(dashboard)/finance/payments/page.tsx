@@ -160,7 +160,7 @@ export default function PaymentsPage() {
       <PageHeader
         title="Payments"
         description="Record outgoing payments and supplier bills"
-        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Record Payment</Button>}
+        action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white"><AddRegular className="h-4 w-4 mr-1" /> Record Payment</Button>}
       />
 
       <div className="mt-4 rounded-lg border border-border bg-card overflow-hidden">
@@ -180,7 +180,7 @@ export default function PaymentsPage() {
               icon={PaymentRegular}
               title="No payments recorded"
               description="Record your first outgoing payment"
-              action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-red-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Record Payment</Button>}
+              action={<Button type="button" onClick={openCreate} className="bg-primary hover:bg-brand-primary-dark text-white mt-3"><AddRegular className="h-4 w-4 mr-1" /> Record Payment</Button>}
             />
           </div>
         ) : (
@@ -344,7 +344,7 @@ export default function PaymentsPage() {
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowDialog(false)}>Cancel</Button>
-              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={isSubmitting} className="bg-primary hover:bg-brand-primary-dark text-white">
                 {isSubmitting ? 'Saving…' : 'Record Payment'}
               </Button>
             </DialogFooter>

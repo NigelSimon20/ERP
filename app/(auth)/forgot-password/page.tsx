@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
               <p role="status" className="text-sm text-foreground text-center">{message}</p>
             ) : (
               <form onSubmit={onSubmit} className="space-y-5" noValidate>
-                {error && <p role="alert" className="text-sm font-medium text-brand-red">{error}</p>}
+                {error && <p role="alert" className="text-sm font-medium text-destructive">{error}</p>}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-sm font-medium text-foreground">Email</Label>
                   <div className="relative">

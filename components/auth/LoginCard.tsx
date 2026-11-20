@@ -38,8 +38,8 @@ export function LoginCard({
 
           {/* Footer Security Pledge */}
           <div className="pt-4 border-t border-border flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <Shield className="w-4 h-4 text-brand-red" />
-            <span>Your Security. Our Pledge.</span>
+            <Shield className="w-4 h-4 text-brand-primary" />
+            <span>Powered by Infinity Nexa</span>
           </div>
         </div>
       </div>

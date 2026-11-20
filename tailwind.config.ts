@@ -44,33 +44,44 @@ const config: Config = {
           foreground: 'hsl(var(--card-foreground))',
         },
         brand: {
-          // Primary — Ravenshield Red (design spec)
-          red: '#DC2626',
-          'red-dark': '#B91C1C',
-          'red-light': '#FEE2E2',
-          'red-lighter': '#FEF2F2',
-          // Navigation/Sidebar — Dark Navy (theme-invariant by design)
-          navy: '#111827',
-          'navy-light': '#1F2937',
-          'navy-dark': '#0D1117',
+          // Primary — Infinity Nexa blue (www.nexainventory.com / www.infinitynexa.co.zw)
+          primary: '#1E40AF',
+          'primary-dark': '#1B3A96',
+          'primary-light': '#DBEAFE',
+          'primary-lighter': '#EFF6FF',
+          sky: '#38BDF8',
+          // Ink — the brand's deep navy
+          navy: '#0A1733',
+          'navy-light': '#13244A',
+          'navy-dark': '#071026',
+          // Blue scale (brand-50 … brand-700 on the websites)
+          50: '#EFF6FF',
+          100: '#DBEAFE',
+          200: '#BFDBFE',
+          300: '#93C5FD',
+          400: '#60A5FA',
+          500: '#3B82F6',
+          600: '#1E40AF',
+          700: '#1B3A96',
           // Surfaces
           light: '#F8FAFC',
           white: '#FFFFFF',
           // Text
-          muted: '#6B7280',
-          'muted-light': '#9CA3AF',
+          muted: '#676C75',
+          'muted-light': '#94A3B8',
           // Structural
-          border: '#E5E7EB',
-          // Semantic
-          success: '#16A34A',
-          warning: '#D97706',
-          danger: '#DC2626',
-          info: '#2563EB',
+          border: '#E2E4E8',
+          // Semantic (not brand colours: red stays for errors and destructive actions)
+          success: '#02985F',
+          warning: '#E49E22',
+          danger: '#DF202E',
+          info: '#0091CC',
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Inter', 'system-ui', 'sans-serif'],
+        // Infinity Nexa: Nunito Sans for text, Chillax for headings (app/layout.tsx)
+        sans: ['var(--font-nunito-sans)', 'Nunito Sans', 'system-ui', 'sans-serif'],
+        display: ['var(--font-chillax)', 'var(--font-nunito-sans)', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
       borderRadius: {
@@ -86,7 +97,7 @@ const config: Config = {
         'card-hover': '0 4px 12px rgba(0,0,0,0.08)',
         dropdown: '0 16px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04)',
         topbar: '0 1px 0 #E5E7EB',
-        'focus-red': '0 0 0 3px rgba(220,38,38,0.15)',
+        'focus-primary': '0 0 0 3px rgba(30,64,175,0.15)',
       },
       keyframes: {
         'fade-in': {

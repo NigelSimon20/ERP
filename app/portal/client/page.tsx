@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { BrandMark } from '@/components/brand/BrandMark'
 import * as Tabs from '@radix-ui/react-tabs'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatCurrency } from '@/lib/utils'
 import toast from 'react-hot-toast'
-import { ArrowDownloadRegular, BuildingRegular, DocumentRegular, LocationRegular, PaymentRegular, ShieldRegular, SignOutRegular, WarningRegular } from '@fluentui/react-icons';
+import { ArrowDownloadRegular, BuildingRegular, DocumentRegular, LocationRegular, PaymentRegular, SignOutRegular, WarningRegular } from '@fluentui/react-icons';
 
 interface SessionUser { id: string; name: string; email: string; role: string; companyId: string }
 interface Invoice { id: string; invoiceNumber: string; issueDate: string; dueDate: string; totalAmount: number; paidAmount: number; balanceDue: number; status: string }
@@ -19,7 +20,7 @@ const STATUS_COLORS: Record<string, string> = {
   PAID: 'bg-green-100 text-green-700 dark:bg-green-500/15 dark:text-green-400',
   UNPAID: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
   PARTIAL: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
-  OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  OVERDUE: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
   VOID: 'bg-muted text-muted-foreground',
 }
 
@@ -27,7 +28,7 @@ const SEVERITY_COLORS: Record<string, string> = {
   LOW: 'bg-muted text-muted-foreground',
   MEDIUM: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
   HIGH: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
-  CRITICAL: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-red-300',
+  CRITICAL: 'bg-primary/10 text-primary dark:bg-primary/15 dark:text-blue-300',
 }
 
 export default function ClientPortalPage() {
@@ -143,8 +144,7 @@ export default function ClientPortalPage() {
         <div className="w-full max-w-sm">
           <div className="text-center mb-8">
             <div className="flex items-center justify-center gap-2 mb-3">
-              <ShieldRegular fontSize={28} className="text-primary" />
-              <span className="text-xl font-bold text-foreground">Ravenshield</span>
+              <BrandMark />
             </div>
             <div className="inline-flex items-center gap-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-700 dark:text-blue-400 rounded-full px-3 py-1 text-xs font-medium">
               <BuildingRegular className="h-3 w-3" /> Client Portal
@@ -161,7 +161,7 @@ export default function ClientPortalPage() {
                 <Label htmlFor="password">Password</Label>
                 <Input id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" required />
               </div>
-              <Button type="submit" disabled={loginLoading} className="w-full bg-primary hover:bg-brand-red-dark text-white">
+              <Button type="submit" disabled={loginLoading} className="w-full bg-primary hover:bg-brand-primary-dark text-white">
                 {loginLoading ? 'Signing in…' : 'Sign In'}
               </Button>
             </form>
@@ -177,8 +177,7 @@ export default function ClientPortalPage() {
       <header className="bg-brand-navy text-white">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <ShieldRegular fontSize={20} className="text-primary" />
-            <span className="font-bold">Ravenshield</span>
+            <BrandMark size="sm" tone="light" />
             <span className="text-brand-muted-light text-sm mx-1">·</span>
             <span className="text-sm text-brand-muted-light">Client Portal</span>
           </div>

@@ -227,7 +227,7 @@ function MessagesPageInner() {
                 type="button"
                 onClick={handleSend}
                 disabled={sending || !draft.trim()}
-                className="p-2.5 rounded-lg bg-primary text-white hover:bg-brand-red-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+                className="p-2.5 rounded-lg bg-primary text-white hover:bg-brand-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex-shrink-0"
                 aria-label="Send message"
               >
                 <SendRegular className="h-4 w-4" />

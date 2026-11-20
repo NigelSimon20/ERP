@@ -81,7 +81,7 @@ export default function TasksRequestsDashboard() {
 
       {/* KPIs */}
       <div className="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="Open Tasks" value={openTasks.length} icon={ClipboardTaskListLtrRegular} href="/tasks-requests/tasks" color="bg-red-50 text-primary" />
+        <KpiCard title="Open Tasks" value={openTasks.length} icon={ClipboardTaskListLtrRegular} href="/tasks-requests/tasks" color="bg-brand-primary-lighter text-primary" />
         <KpiCard title="Pending Requests" value={requests.length} icon={MailInboxRegular} href="/tasks-requests/requests" color="bg-amber-50 text-amber-600" />
         <KpiCard title="Upcoming Meetings" value={upcomingMeetings.length} icon={CalendarLtrRegular} href="/tasks-requests/meetings" color="bg-blue-50 text-blue-600" />
         <KpiCard title="Overdue Tasks" value={overdueTasks.length} icon={WarningRegular} href="/tasks-requests/tasks" color="bg-orange-50 text-orange-600" />

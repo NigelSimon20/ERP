@@ -191,7 +191,7 @@ export default function FileManagerPage() {
               onClick={() => { setActiveFolder(folder.key); setSearch('') }}
               className={`w-full flex items-center justify-between px-4 py-2 text-sm transition-colors ${
                 activeFolder === folder.key
-                  ? 'bg-red-50 text-primary font-medium'
+                  ? 'bg-brand-primary-lighter text-primary font-medium'
                   : 'text-muted-foreground hover:bg-muted/50'
               }`}
             >
@@ -230,7 +230,7 @@ export default function FileManagerPage() {
             <Button
               type="button"
               size="sm"
-              className="ml-2 bg-primary hover:bg-brand-red-dark text-white h-8"
+              className="ml-2 bg-primary hover:bg-brand-primary-dark text-white h-8"
               onClick={() => fileInputRef.current?.click()}
             >
               <ArrowUploadRegular className="h-3.5 w-3.5 mr-1" /> Upload
@@ -260,7 +260,7 @@ export default function FileManagerPage() {
               <p className="text-xs text-muted-foreground mb-2">Uploading… {uploadProgress}%</p>
               <svg width="100%" height="6" className="rounded-full overflow-hidden">
                 <rect x="0" y="0" width="100%" height="6" fill="#E5E7EB" rx="3" />
-                <rect x="0" y="0" width={`${uploadProgress}%`} height="6" fill="#DC2626" rx="3" />
+                <rect x="0" y="0" width={`${uploadProgress}%`} height="6" fill="#1E40AF" rx="3" />
               </svg>
             </div>
           ) : (
@@ -349,7 +349,7 @@ export default function FileManagerPage() {
           <p className="text-sm text-muted-foreground">Are you sure you want to delete <strong>{deleteTarget?.originalName}</strong>? This cannot be undone.</p>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => setDeleteTarget(null)}>Cancel</Button>
-            <Button type="button" onClick={deleteFile} className="bg-primary hover:bg-brand-red-dark text-white">Delete</Button>
+            <Button type="button" onClick={deleteFile} className="bg-destructive hover:bg-destructive/90 text-white">Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
